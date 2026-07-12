@@ -1,0 +1,11 @@
+Please fix the food input dropdown menu in my calorie app. 
+
+Apply these updates:
+1. POPULATE THE DROPDOWN: Fill the "Select Food" dropdown menu on the frontend with a pre-set list of standard fitness foods that match the backend 100g database values:
+   - Cooked White Rice (130 kcal, 2.7g P, 28g C, 0.3g F per 100g)
+   - Chicken Breast (165 kcal, 31g P, 0g C, 3.6g F per 100g)
+   - Oatmeal (389 kcal, 16.9g P, 66g C, 6.9g F per 100g)
+   - Whole Egg (70 kcal, 6g P, 0.5g C, 5g F per unit)
+2. ADD CUSTOM FOOD OPTION: Add a "Custom Food" text input field right next to the dropdown or weight input. If I want to log a food that isn't in the dropdown list, let me type its custom name, calories, and macros manually so I am never locked out of tracking a meal.
+3. CONNECT THE FRONTEND MATH: Ensure that when I click a food from the dropdown and type the weight in grams, the page instantly displays the calculated macros before I even click "Log".
+

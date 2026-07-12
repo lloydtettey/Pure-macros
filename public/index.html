@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>PURE MACROS — Performance Nutrition Dashboard</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Auth Gate -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-panel">
+      <div class="auth-brand">
+        <span class="brand-mark" aria-hidden="true">⚡</span>
+        <span class="brand-name">PURE MACROS</span>
+      </div>
+      <p class="auth-tagline">Performance Nutrition Dashboard</p>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-tab="login">Log In</button>
+        <button type="button" class="auth-tab" data-tab="register">Register</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <label class="field">
+          <span>Username</span>
+          <input type="text" id="loginUsername" autocomplete="username" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="loginPassword" autocomplete="current-password" required />
+        </label>
+        <p class="form-error" id="loginError"></p>
+        <button type="submit" class="btn-primary auth-submit">Log In</button>
+      </form>
+
+      <form id="registerForm" class="auth-form hidden">
+        <label class="field">
+          <span>Username</span>
+          <input type="text" id="registerUsername" autocomplete="username" minlength="3" required />
+        </label>
+        <label class="field">
+          <span>Password <span class="field-hint">(6+ characters)</span></span>
+          <input type="password" id="registerPassword" autocomplete="new-password" minlength="6" required />
+        </label>
+        <p class="form-error" id="registerError"></p>
+        <button type="submit" class="btn-primary auth-submit">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app hidden" id="appRoot">
+    <header class="app-fixed-top" id="appFixedTop">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-mark">⚡</span>
+          <span class="brand-name">PURE MACROS</span>
+        </div>
+        <span class="tab-title" id="tabTitle">Today</span>
+      </div>
+    </header>
+
+    <main class="tab-content" id="tabContent">
+
+      <!-- ============ TODAY TAB ============ -->
+      <section class="tab-view" id="tab-today" data-tab-view="today">
+        <div class="today-header-row">
+          <div class="today-header-title">
+            <span>Today</span>
+            <span class="today-header-chevron" aria-hidden="true">⌄</span>
+          </div>
+          <div class="today-header-actions">
+            <span class="streak-chip" id="headerStreakChip">
+              <span id="headerStreakValue">0</span>
+              <span class="streak-chip-icon" aria-hidden="true">🔥</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="week-ribbon" id="dateStrip"></div>
+
+        <section class="card calorie-linear-card" id="summary">
+          <h2 class="card-title card-title--sentence">Calories</h2>
+          <div class="calorie-linear-row">
+            <span class="calorie-linear-logged"><span id="caloriesConsumed">0</span> cal / <span id="calorieGoalLabel">2,200</span></span>
+            <span id="calorieRemaining" class="calorie-linear-remaining">2,200 left</span>
+          </div>
+          <div class="bar-track calorie-linear-track">
+            <div class="bar-fill calorie-linear-fill" id="calorieLinearFill"></div>
+          </div>
+        </section>
+
+        <section class="card macros-pct-card" id="macrosSummary">
+          <div class="macros-pct-header">
+            <h2 class="card-title">Macros</h2>
+            <button type="button" class="macros-swap-btn" id="macrosSwapBtn" aria-label="Switch between percent and grams">⇄</button>
+          </div>
+          <div class="macros-pct-cols">
+            <div class="macro-pct-col" data-macro="carbs">
+              <span class="macro-pct-dot carbs" aria-hidden="true"></span>
+              <span class="macro-pct-label">Carbs</span>
+              <span class="macro-pct-value" id="carbsValueDisplay">0%</span>
+            </div>
+            <div class="macro-pct-col" data-macro="fat">
+              <span class="macro-pct-dot fat" aria-hidden="true"></span>
+              <span class="macro-pct-label">Fat</span>
+              <span class="macro-pct-value" id="fatValueDisplay">0%</span>
+            </div>
+            <div class="macro-pct-col" data-macro="protein">
+              <span class="macro-pct-dot protein" aria-hidden="true"></span>
+              <span class="macro-pct-label">Protein</span>
+              <span class="macro-pct-value" id="proteinValueDisplay">0%</span>
+            </div>
+          </div>
+          <div class="bar-track macros-pct-track">
+            <div class="macros-pct-segment carbs" id="carbsBar"></div>
+            <div class="macros-pct-segment fat" id="fatBar"></div>
+            <div class="macros-pct-segment protein" id="proteinBar"></div>
+          </div>
+        </section>
+
+        <section class="trackers-grid" id="trackers">
+          <div class="card water-card">
+            <h2 class="card-title">Hydration</h2>
+            <div class="water-cups" id="waterCups"></div>
+            <p class="water-total"><span id="waterFilled">0</span> / 8 cups</p>
+          </div>
+
+          <div class="card exercise-card">
+            <h2 class="card-title">Exercise</h2>
+            <div class="exercise-burned-row">
+              <span class="exercise-burned-value"><span id="exerciseCaloriesBurned">0</span> kcal</span>
+              <span class="exercise-burned-label">burned today</span>
+            </div>
+            <ul class="exercise-entry-list" id="exerciseEntryList"></ul>
+          </div>
+        </section>
+
+        <section class="meals" id="meals">
+          <article class="card meal-card" data-meal="breakfast">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <span class="meal-icon">🍳</span>
+                <span class="meal-title">Breakfast</span>
+              </div>
+              <span class="meal-kcal" data-role="meal-kcal">0 kcal</span>
+            </div>
+            <button type="button" class="scan-plate-btn" data-role="scan-plate">
+              <span class="scan-icon" aria-hidden="true">📷</span> Scan Plate
+            </button>
+            <input type="file" accept="image/*" capture="environment" class="scan-file-input" data-role="scan-file-input" hidden />
+            <ul class="food-list" data-role="food-list"></ul>
+            <form class="inline-add-form" data-meal="breakfast">
+              <select class="f-food" required>
+                <option value="" disabled selected>Select food…</option>
+              </select>
+              <div class="state-toggle hidden" data-role="state-toggle">
+                <button type="button" class="state-toggle-btn" data-state="cooked">Cooked</button>
+                <button type="button" class="state-toggle-btn" data-state="raw">Raw</button>
+              </div>
+              <input type="number" class="f-grams" placeholder="Weight (grams)" min="1" step="1" required />
+              <button type="submit" class="btn-add-inline" aria-label="Add food">+</button>
+              <div class="custom-food-fields hidden" data-role="custom-food-fields">
+                <input type="text" class="f-custom-name" placeholder="Custom food name" />
+                <div class="custom-macro-grid">
+                  <input type="number" class="f-custom-kcal" placeholder="kcal /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-protein" placeholder="Protein /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-carbs" placeholder="Carbs /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-fat" placeholder="Fat /100g" min="0" step="any" />
+                </div>
+              </div>
+              <p class="food-preview" data-role="food-preview"></p>
+            </form>
+            <p class="form-error" data-role="form-error"></p>
+          </article>
+
+          <article class="card meal-card" data-meal="lunch">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <span class="meal-icon">🥗</span>
+                <span class="meal-title">Lunch</span>
+              </div>
+              <span class="meal-kcal" data-role="meal-kcal">0 kcal</span>
+            </div>
+            <button type="button" class="scan-plate-btn" data-role="scan-plate">
+              <span class="scan-icon" aria-hidden="true">📷</span> Scan Plate
+            </button>
+            <input type="file" accept="image/*" capture="environment" class="scan-file-input" data-role="scan-file-input" hidden />
+            <ul class="food-list" data-role="food-list"></ul>
+            <form class="inline-add-form" data-meal="lunch">
+              <select class="f-food" required>
+                <option value="" disabled selected>Select food…</option>
+              </select>
+              <div class="state-toggle hidden" data-role="state-toggle">
+                <button type="button" class="state-toggle-btn" data-state="cooked">Cooked</button>
+                <button type="button" class="state-toggle-btn" data-state="raw">Raw</button>
+              </div>
+              <input type="number" class="f-grams" placeholder="Weight (grams)" min="1" step="1" required />
+              <button type="submit" class="btn-add-inline" aria-label="Add food">+</button>
+              <div class="custom-food-fields hidden" data-role="custom-food-fields">
+                <input type="text" class="f-custom-name" placeholder="Custom food name" />
+                <div class="custom-macro-grid">
+                  <input type="number" class="f-custom-kcal" placeholder="kcal /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-protein" placeholder="Protein /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-carbs" placeholder="Carbs /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-fat" placeholder="Fat /100g" min="0" step="any" />
+                </div>
+              </div>
+              <p class="food-preview" data-role="food-preview"></p>
+            </form>
+            <p class="form-error" data-role="form-error"></p>
+          </article>
+
+          <article class="card meal-card" data-meal="dinner">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <span class="meal-icon">🍝</span>
+                <span class="meal-title">Dinner</span>
+              </div>
+              <span class="meal-kcal" data-role="meal-kcal">0 kcal</span>
+            </div>
+            <button type="button" class="scan-plate-btn" data-role="scan-plate">
+              <span class="scan-icon" aria-hidden="true">📷</span> Scan Plate
+            </button>
+            <input type="file" accept="image/*" capture="environment" class="scan-file-input" data-role="scan-file-input" hidden />
+            <ul class="food-list" data-role="food-list"></ul>
+            <form class="inline-add-form" data-meal="dinner">
+              <select class="f-food" required>
+                <option value="" disabled selected>Select food…</option>
+              </select>
+              <div class="state-toggle hidden" data-role="state-toggle">
+                <button type="button" class="state-toggle-btn" data-state="cooked">Cooked</button>
+                <button type="button" class="state-toggle-btn" data-state="raw">Raw</button>
+              </div>
+              <input type="number" class="f-grams" placeholder="Weight (grams)" min="1" step="1" required />
+              <button type="submit" class="btn-add-inline" aria-label="Add food">+</button>
+              <div class="custom-food-fields hidden" data-role="custom-food-fields">
+                <input type="text" class="f-custom-name" placeholder="Custom food name" />
+                <div class="custom-macro-grid">
+                  <input type="number" class="f-custom-kcal" placeholder="kcal /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-protein" placeholder="Protein /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-carbs" placeholder="Carbs /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-fat" placeholder="Fat /100g" min="0" step="any" />
+                </div>
+              </div>
+              <p class="food-preview" data-role="food-preview"></p>
+            </form>
+            <p class="form-error" data-role="form-error"></p>
+          </article>
+
+          <article class="card meal-card" data-meal="snack">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <span class="meal-icon">🍎</span>
+                <span class="meal-title">Snacks</span>
+              </div>
+              <span class="meal-kcal" data-role="meal-kcal">0 kcal</span>
+            </div>
+            <button type="button" class="scan-plate-btn" data-role="scan-plate">
+              <span class="scan-icon" aria-hidden="true">📷</span> Scan Plate
+            </button>
+            <input type="file" accept="image/*" capture="environment" class="scan-file-input" data-role="scan-file-input" hidden />
+            <ul class="food-list" data-role="food-list"></ul>
+            <form class="inline-add-form" data-meal="snack">
+              <select class="f-food" required>
+                <option value="" disabled selected>Select food…</option>
+              </select>
+              <div class="state-toggle hidden" data-role="state-toggle">
+                <button type="button" class="state-toggle-btn" data-state="cooked">Cooked</button>
+                <button type="button" class="state-toggle-btn" data-state="raw">Raw</button>
+              </div>
+              <input type="number" class="f-grams" placeholder="Weight (grams)" min="1" step="1" required />
+              <button type="submit" class="btn-add-inline" aria-label="Add food">+</button>
+              <div class="custom-food-fields hidden" data-role="custom-food-fields">
+                <input type="text" class="f-custom-name" placeholder="Custom food name" />
+                <div class="custom-macro-grid">
+                  <input type="number" class="f-custom-kcal" placeholder="kcal /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-protein" placeholder="Protein /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-carbs" placeholder="Carbs /100g" min="0" step="any" />
+                  <input type="number" class="f-custom-fat" placeholder="Fat /100g" min="0" step="any" />
+                </div>
+              </div>
+              <p class="food-preview" data-role="food-preview"></p>
+            </form>
+            <p class="form-error" data-role="form-error"></p>
+          </article>
+        </section>
+      </section>
+
+      <!-- ============ PLAN TAB ============ -->
+      <section class="tab-view hidden" id="tab-plan" data-tab-view="plan">
+        <!-- ---- Empty state: quiz not completed yet ---- -->
+        <div class="plan-empty-state hidden" id="planEmptyState">
+          <span class="plan-empty-icon" aria-hidden="true">🍽️</span>
+          <h2 class="plan-empty-title">Build your Meal Plan</h2>
+          <p class="plan-empty-copy">Answer a quick 9-step questionnaire so we can tailor recipes to your goals, kitchen, and taste.</p>
+          <button type="button" class="btn-primary" id="planStartQuizBtn">Start the Quiz</button>
+        </div>
+
+        <!-- ---- Hub: quiz completed ---- -->
+        <div class="plan-hub hidden" id="planHub">
+          <div class="plan-hub-header">
+            <div>
+              <h2 class="plan-hub-title">Your Meal Plan</h2>
+              <p class="plan-hub-subtitle" id="planHubSubtitle">Tailored to your goals</p>
+            </div>
+            <button type="button" class="btn-secondary plan-retake-btn" id="planRetakeQuizBtn">Retake Quiz</button>
+          </div>
+
+          <div class="plan-recipe-grid" id="planRecipeGrid"></div>
+        </div>
+      </section>
+
+      <!-- ============ PROGRESS TAB ============ -->
+      <section class="tab-view hidden" id="tab-progress" data-tab-view="progress">
+        <div class="progress-subnav" id="progressSubnav">
+          <button type="button" class="progress-subnav-btn active" data-subtab="overview">Overview</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="calories">Calories</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="nutrients">Nutrients</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="macros">Macros</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="steps">Steps</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="weight">Weight</button>
+          <button type="button" class="progress-subnav-btn" data-subtab="sleep">Sleep</button>
+        </div>
+
+        <!-- ---- Overview ---- -->
+        <div class="progress-subview" data-subview="overview">
+          <section class="card">
+            <h2 class="card-title">Last 7 Days — Calories</h2>
+            <div class="bar-chart" id="overviewCalorieChart"></div>
+          </section>
+
+          <section class="card">
+            <h2 class="card-title">Tracking Summary</h2>
+            <div class="tracking-summary-row">
+              <span class="tracking-summary-label">Start Weight</span>
+              <span class="tracking-summary-value" id="summaryStartWeight">—</span>
+            </div>
+            <div class="tracking-summary-row">
+              <span class="tracking-summary-label">Current Weight</span>
+              <span class="tracking-summary-value" id="summaryCurrentWeight">—</span>
+            </div>
+            <div class="tracking-summary-row">
+              <span class="tracking-summary-label">Net Change</span>
+              <span class="tracking-summary-value tracking-summary-delta" id="summaryWeightDelta">—</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card-title">7-Day Macro Averages</h2>
+            <div class="macros-mini overview-macros">
+              <div class="macro-row" data-macro="protein">
+                <div class="macro-label">
+                  <span class="macro-dot protein"></span>
+                  <span>Protein</span>
+                  <span class="macro-value"><span id="overviewAvgProtein">0</span>g avg</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill protein" id="overviewAvgProteinBar"></div></div>
+              </div>
+              <div class="macro-row" data-macro="carbs">
+                <div class="macro-label">
+                  <span class="macro-dot carbs"></span>
+                  <span>Carbs</span>
+                  <span class="macro-value"><span id="overviewAvgCarbs">0</span>g avg</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill carbs" id="overviewAvgCarbsBar"></div></div>
+              </div>
+              <div class="macro-row" data-macro="fat">
+                <div class="macro-label">
+                  <span class="macro-dot fat"></span>
+                  <span>Fat</span>
+                  <span class="macro-value"><span id="overviewAvgFat">0</span>g avg</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill fat" id="overviewAvgFatBar"></div></div>
+              </div>
+            </div>
+          </section>
+
+          <button type="button" class="btn-primary manage-goals-btn" id="manageGoalsBtn">Manage Goals</button>
+        </div>
+
+        <!-- ---- Calories / Nutrients / Macros ---- -->
+        <div class="progress-subview hidden" data-subview="calnutmac">
+          <div class="unit-toggle" id="cnmToggle">
+            <button type="button" class="unit-toggle-btn active" data-mode="calories">Calories</button>
+            <button type="button" class="unit-toggle-btn" data-mode="nutrients">Nutrients</button>
+            <button type="button" class="unit-toggle-btn" data-mode="macros">Macros</button>
+          </div>
+
+          <div class="cnm-panel" data-cnm-panel="calories">
+            <section class="card">
+              <h2 class="card-title">Calorie History</h2>
+              <div class="history-range-picker">
+                <label class="field">
+                  <span>From</span>
+                  <select id="historyStartSelect"></select>
+                </label>
+                <label class="field">
+                  <span>To</span>
+                  <select id="historyEndSelect"></select>
+                </label>
+              </div>
+              <p class="history-average-line">Daily average: <span id="caloriesHistoryAvg">0</span> kcal</p>
+              <div class="bar-chart bar-chart--scroll" id="caloriesHistoryChart"></div>
+            </section>
+          </div>
+
+          <div class="cnm-panel hidden" data-cnm-panel="nutrients">
+            <section class="card">
+              <h2 class="card-title">Micronutrients <span class="field-hint">(daily avg)</span></h2>
+              <ul class="nutrient-list" id="nutrientList"></ul>
+            </section>
+          </div>
+
+          <div class="cnm-panel hidden" data-cnm-panel="macros">
+            <section class="card">
+              <h2 class="card-title">Macro History</h2>
+              <div class="macro-history-chart-wrap">
+                <div class="scaled-bar-chart-axis" id="macroHistoryAxis"></div>
+                <svg class="macro-history-svg" id="macroHistorySvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+              </div>
+              <div class="macro-history-x-labels" id="macroHistoryXLabels"></div>
+              <div class="macro-history-legend">
+                <span class="macro-history-legend-item"><span class="macro-dot protein"></span>Protein</span>
+                <span class="macro-history-legend-item"><span class="macro-dot carbs"></span>Carbs</span>
+                <span class="macro-history-legend-item"><span class="macro-dot fat"></span>Fat</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <h2 class="card-title">Today's Macros</h2>
+              <div class="macros-mini">
+                <div class="macro-row" data-macro="protein">
+                  <div class="macro-label">
+                    <span class="macro-dot protein"></span>
+                    <span>Protein</span>
+                    <span class="macro-value"><span id="macrosPanelProteinValue">0</span>g / <span id="macrosPanelProteinGoal">150</span>g</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill protein" id="macrosPanelProteinBar"></div></div>
+                </div>
+                <div class="macro-row" data-macro="carbs">
+                  <div class="macro-label">
+                    <span class="macro-dot carbs"></span>
+                    <span>Carbs</span>
+                    <span class="macro-value"><span id="macrosPanelCarbsValue">0</span>g / <span id="macrosPanelCarbsGoal">250</span>g</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill carbs" id="macrosPanelCarbsBar"></div></div>
+                </div>
+                <div class="macro-row" data-macro="fat">
+                  <div class="macro-label">
+                    <span class="macro-dot fat"></span>
+                    <span>Fats</span>
+                    <span class="macro-value"><span id="macrosPanelFatValue">0</span>g / <span id="macrosPanelFatGoal">70</span>g</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill fat" id="macrosPanelFatBar"></div></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <h2 class="card-title">Macro Distribution <span class="field-hint">(daily avg)</span></h2>
+              <div class="macro-rings" id="macroRings"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ---- Steps ---- -->
+        <div class="progress-subview hidden" data-subview="steps">
+          <section class="card">
+            <div class="stat-mini-grid">
+              <div class="stat-mini-card">
+                <span class="stat-mini-value" id="stepsAvg">0</span>
+                <span class="stat-mini-label">Avg Steps</span>
+              </div>
+              <div class="stat-mini-card">
+                <span class="stat-mini-value" id="stepsBestMonth">—</span>
+                <span class="stat-mini-label">Best Month</span>
+              </div>
+              <div class="stat-mini-card">
+                <span class="stat-mini-value" id="stepsTotal">0</span>
+                <span class="stat-mini-label">Total Steps</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card-title">Monthly Steps</h2>
+            <div class="scaled-bar-chart">
+              <div class="scaled-bar-chart-axis" id="stepsChartAxis"></div>
+              <div class="bar-chart" id="stepsMonthlyChart"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card-title">Log Steps</h2>
+            <div class="weight-log">
+              <span class="profile-label">Log today's steps</span>
+              <div class="weight-form" id="stepsForm">
+                <input type="number" id="stepsInput" placeholder="Steps" min="0" step="1" />
+                <button type="button" class="btn-add-inline" id="stepsSubmitBtn" aria-label="Log steps">+</button>
+              </div>
+              <p class="form-error" id="stepsError"></p>
+              <ul class="weight-timeline" id="stepsTimeline"></ul>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---- Weight ---- -->
+        <div class="progress-subview hidden" data-subview="weight">
+          <section class="card">
+            <h2 class="card-title">Weight Tracking</h2>
+            <div class="weight-log">
+              <span class="profile-label"><span id="weightLogLabel">Log today's weight</span> <span class="unit-hint" id="weightUnitHint">(kg)</span></span>
+              <div class="weight-form" id="weightForm">
+                <input type="number" id="weightInput" placeholder="Weight (kg)" min="1" step="0.1" />
+                <button type="button" class="btn-add-inline" id="weightSubmitBtn" aria-label="Log weight">+</button>
+              </div>
+              <p class="form-error" id="weightError"></p>
+              <ul class="weight-timeline" id="weightTimeline"></ul>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---- Sleep ---- -->
+        <div class="progress-subview hidden" data-subview="sleep">
+          <div class="sleep-header" id="sleepHeader">
+            <button type="button" class="sleep-step-btn" id="sleepPrevDayBtn" aria-label="Previous day">‹</button>
+            <button type="button" class="sleep-header-date-btn" id="sleepDateBtn">
+              <span class="sleep-header-day" id="sleepHeaderDay">—</span>
+              <span class="sleep-header-date" id="sleepHeaderDate">—</span>
+              <span class="sleep-header-cal-icon" aria-hidden="true">📅</span>
+            </button>
+            <button type="button" class="sleep-step-btn" id="sleepNextDayBtn" aria-label="Next day">›</button>
+            <input type="date" id="sleepDateInput" class="sleep-date-input" aria-label="Pick a date" />
+          </div>
+
+          <section class="card sleep-ring-card">
+            <div class="sleep-summary">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 160 160" class="ring">
+                  <circle cx="80" cy="80" r="70" class="ring-track" />
+                  <circle cx="80" cy="80" r="70" class="ring-progress sleep-ring-progress" id="sleepRing" />
+                </svg>
+                <div class="ring-center">
+                  <span id="sleepHoursValue" class="ring-value">0</span>
+                  <span class="ring-label">hrs asleep</span>
+                </div>
+              </div>
+              <div class="sleep-breakdown" id="sleepBreakdown">
+                <div class="sleep-phase-row"><span class="sleep-phase-dot awake"></span><span class="sleep-phase-name">Awake</span><span class="sleep-phase-value" id="sleepAwakeValue">0h</span></div>
+                <div class="sleep-phase-row"><span class="sleep-phase-dot rem"></span><span class="sleep-phase-name">REM</span><span class="sleep-phase-value" id="sleepRemValue">0h</span></div>
+                <div class="sleep-phase-row"><span class="sleep-phase-dot core"></span><span class="sleep-phase-name">Core</span><span class="sleep-phase-value" id="sleepCoreValue">0h</span></div>
+                <div class="sleep-phase-row"><span class="sleep-phase-dot deep"></span><span class="sleep-phase-name">Deep</span><span class="sleep-phase-value" id="sleepDeepValue">0h</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card-title">Log Sleep</h2>
+            <form class="modal-body" id="sleepForm">
+              <div class="custom-macro-grid">
+                <input type="number" id="sleepAwakeInput" placeholder="Awake (h)" min="0" step="0.1" />
+                <input type="number" id="sleepRemInput" placeholder="REM (h)" min="0" step="0.1" />
+                <input type="number" id="sleepCoreInput" placeholder="Core (h)" min="0" step="0.1" />
+                <input type="number" id="sleepDeepInput" placeholder="Deep (h)" min="0" step="0.1" />
+              </div>
+              <p class="form-error" id="sleepError"></p>
+              <div class="modal-actions">
+                <button type="submit" class="btn-primary">Log Sleep</button>
+              </div>
+            </form>
+            <ul class="weight-timeline" id="sleepTimeline"></ul>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ MORE TAB ============ -->
+      <section class="tab-view hidden" id="tab-more" data-tab-view="more">
+        <section class="card profile-header-card">
+          <div class="profile-header-row">
+            <div class="profile-header-stat">
+              <span class="profile-header-stat-value" id="moreStreakValue">0</span>
+              <span class="profile-header-stat-label">days</span>
+            </div>
+            <div class="profile-header-center">
+              <span class="profile-avatar" aria-hidden="true">👤</span>
+              <span class="profile-header-username" id="profileUsername">—</span>
+            </div>
+            <div class="profile-header-stat">
+              <span class="profile-header-stat-value" id="moreProgressValue">0 lbs</span>
+              <span class="profile-header-stat-label">lost</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card more-menu-card">
+          <ul class="more-menu-list" id="moreMenuList">
+            <li class="more-menu-item" data-menu-key="profile">
+              <span class="more-menu-icon" aria-hidden="true">👤</span>
+              <span class="more-menu-title">My Profile</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="goals">
+              <span class="more-menu-icon" aria-hidden="true">🎯</span>
+              <span class="more-menu-title">Goals</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="workouts">
+              <span class="more-menu-icon" aria-hidden="true">🏋️</span>
+              <span class="more-menu-title">Workout Routines</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="weight-measurements">
+              <span class="more-menu-icon" aria-hidden="true">📈</span>
+              <span class="more-menu-title">Weight &amp; Measurements</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="fasting">
+              <span class="more-menu-icon" aria-hidden="true">⏳</span>
+              <span class="more-menu-title">Intermittent Fasting</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="nutrition">
+              <span class="more-menu-icon" aria-hidden="true">🥧</span>
+              <span class="more-menu-title">Nutrition</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="my-meals">
+              <span class="more-menu-icon" aria-hidden="true">🍴</span>
+              <span class="more-menu-title">My Meals, Recipes &amp; Foods</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="steps">
+              <span class="more-menu-icon" aria-hidden="true">👣</span>
+              <span class="more-menu-title">Steps</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="sleep">
+              <span class="more-menu-icon" aria-hidden="true">🌙</span>
+              <span class="more-menu-title">Sleep</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="reminders">
+              <span class="more-menu-icon" aria-hidden="true">⏰</span>
+              <span class="more-menu-title">Reminders</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="recipe-discovery">
+              <span class="more-menu-icon" aria-hidden="true">📖</span>
+              <span class="more-menu-title">Recipe Discovery</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="apps-devices">
+              <span class="more-menu-icon" aria-hidden="true">🔲</span>
+              <span class="more-menu-title">Apps &amp; Devices</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="weekly-report">
+              <span class="more-menu-icon" aria-hidden="true">📊</span>
+              <span class="more-menu-title">My Weekly Report</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="community">
+              <span class="more-menu-icon" aria-hidden="true">💬</span>
+              <span class="more-menu-title">Community</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="learn">
+              <span class="more-menu-icon" aria-hidden="true">🎓</span>
+              <span class="more-menu-title">Learn</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="friends">
+              <span class="more-menu-icon" aria-hidden="true">👥</span>
+              <span class="more-menu-title">Friends</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="messages">
+              <span class="more-menu-icon" aria-hidden="true">✉️</span>
+              <span class="more-menu-title">Messages</span>
+              <span class="more-menu-badge">1</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="settings">
+              <span class="more-menu-icon" aria-hidden="true">⚙️</span>
+              <span class="more-menu-title">Settings</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="privacy">
+              <span class="more-menu-icon" aria-hidden="true">🛡️</span>
+              <span class="more-menu-title">Privacy</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="help">
+              <span class="more-menu-icon" aria-hidden="true">❓</span>
+              <span class="more-menu-title">Help</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+            <li class="more-menu-item" data-menu-key="sync">
+              <span class="more-menu-icon" aria-hidden="true">🔄</span>
+              <span class="more-menu-title">Sync</span>
+              <span class="more-menu-chevron" aria-hidden="true">›</span>
+            </li>
+          </ul>
+        </section>
+      </section>
+
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav">
+      <div class="bottom-nav-tabs">
+        <button type="button" class="bottom-nav-btn active" data-target="today" aria-label="Today">
+          <span class="bn-icon" aria-hidden="true">📆</span>
+          <span class="bn-label">Today</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" id="planNavBtn" data-target="plan" aria-label="Plan">
+          <span class="bn-icon" aria-hidden="true">📋</span>
+          <span class="bn-label">Plan</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-target="progress" aria-label="Progress">
+          <span class="bn-icon" aria-hidden="true">📈</span>
+          <span class="bn-label">Progress</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-target="more" aria-label="More">
+          <span class="bn-icon" aria-hidden="true">👤</span>
+          <span class="bn-label">More</span>
+        </button>
+      </div>
+
+      <button type="button" class="fab-log-btn" id="fabLogBtn" aria-label="Log food">
+        <span aria-hidden="true">+</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Global Food Logging Overlay -->
+  <div class="log-overlay" id="logOverlay">
+    <div class="log-overlay-sheet">
+      <div class="log-overlay-scroll">
+        <div class="log-overlay-header">
+          <button type="button" class="icon-btn log-close-btn" id="closeLogOverlay" aria-label="Close">✕</button>
+
+          <div class="log-meal-dropdown" id="logMealDropdownWrap">
+            <span class="log-meal-dropdown-text">Select a Meal</span>
+            <span class="log-meal-dropdown-chevron" aria-hidden="true">⌄</span>
+            <select id="logMealSelect" class="log-meal-dropdown-select" aria-label="Select a meal">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snacks</option>
+            </select>
+          </div>
+
+          <span class="log-overlay-header-spacer" aria-hidden="true"></span>
+        </div>
+
+        <div class="log-search-wrap">
+          <span class="log-search-icon" aria-hidden="true">🔎</span>
+          <input type="search" id="logSearchInput" class="log-search-input" placeholder="Search foods, brands, flavors…" autocomplete="off" />
+        </div>
+
+        <div class="log-subtabs" id="logSubtabs">
+          <button type="button" class="log-subtab-btn active" data-log-subtab="history">History</button>
+          <button type="button" class="log-subtab-btn" data-log-subtab="meals">My Meals</button>
+          <button type="button" class="log-subtab-btn" data-log-subtab="recipes">My Recipes</button>
+          <button type="button" class="log-subtab-btn" data-log-subtab="foods">My Foods</button>
+        </div>
+
+        <div class="log-feature-grid">
+          <button type="button" class="log-feature-card" id="logFeatureBarcode" data-log-feature="barcode">
+            <span class="log-feature-icon log-feature-icon--barcode" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </span>
+            <span class="log-feature-label">Barcode</span>
+          </button>
+          <button type="button" class="log-feature-card" id="logFeatureVoice" data-log-feature="voice">
+            <span class="log-feature-icon log-feature-icon--voice" aria-hidden="true">🎤</span>
+            <span class="log-feature-label">Voice</span>
+          </button>
+          <button type="button" class="log-feature-card" id="logFeatureMealScan" data-log-feature="mealscan">
+            <span class="log-feature-icon log-feature-icon--mealscan" aria-hidden="true">🥗</span>
+            <span class="log-feature-label">Meal Scan</span>
+          </button>
+          <button type="button" class="log-feature-card" id="logFeatureQuickAdd" data-log-feature="quickadd">
+            <span class="log-feature-icon log-feature-icon--quickadd" aria-hidden="true">+</span>
+            <span class="log-feature-label">Quick Add</span>
+          </button>
+        </div>
+
+        <input type="file" accept="image/*" capture="environment" class="scan-file-input" id="logMealScanFileInput" hidden />
+
+        <form class="log-quick-add hidden" id="logQuickAddForm">
+          <select class="f-food" id="logQuickAddFood" required>
+            <option value="" disabled selected>Select food…</option>
+          </select>
+          <input type="number" id="logQuickAddGrams" placeholder="Weight (grams)" min="1" step="1" required />
+          <button type="submit" class="btn-add-inline" aria-label="Add food">+</button>
+        </form>
+        <p class="form-error" id="logQuickAddError"></p>
+
+        <div class="log-subtab-panels">
+          <ul class="log-simple-list" data-log-panel="history" id="logPanelHistory"></ul>
+          <ul class="log-simple-list hidden" data-log-panel="meals" id="logPanelMeals"></ul>
+          <ul class="log-simple-list hidden" data-log-panel="recipes" id="logPanelRecipes"></ul>
+          <ul class="log-simple-list hidden" data-log-panel="foods" id="logPanelFoods"></ul>
+        </div>
+
+        <section class="log-list-section">
+          <div class="log-list-header">
+            <h3 class="log-list-title">Recently logged</h3>
+            <button type="button" class="log-filter-btn" id="logRecentFilterBtn" aria-label="Filter recently logged">
+              <span class="log-filter-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
+          </div>
+          <ul class="log-simple-list" id="logRecentList"></ul>
+        </section>
+        <section class="log-list-section">
+          <h3 class="log-list-title">Most popular</h3>
+          <ul class="log-simple-list" id="logPopularList"></ul>
+        </section>
+      </div>
+
+      <div class="log-utility-dock">
+        <button type="button" class="log-utility-btn" id="logDockWater" data-log-dock="water">
+          <span class="log-utility-icon log-utility-icon--water" aria-hidden="true">💧</span>
+          <span class="log-utility-label">Water</span>
+        </button>
+        <button type="button" class="log-utility-btn" id="logDockWeight" data-log-dock="weight">
+          <span class="log-utility-icon log-utility-icon--weight" aria-hidden="true">⚖️</span>
+          <span class="log-utility-label">Weight</span>
+        </button>
+        <button type="button" class="log-utility-btn" id="logDockExercise" data-log-dock="exercise">
+          <span class="log-utility-icon log-utility-icon--exercise" aria-hidden="true">🔥</span>
+          <span class="log-utility-label">Exercise</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Water screen (opened from the log overlay's utility dock) -->
+  <div class="utility-screen" id="addWaterScreen">
+    <div class="utility-screen-header">
+      <button type="button" class="icon-btn utility-screen-back" id="addWaterBackBtn" aria-label="Back">←</button>
+      <h2 class="utility-screen-title">Add Water</h2>
+      <button type="button" class="icon-btn utility-screen-save" id="addWaterSaveBtn" aria-label="Save water">✓</button>
+    </div>
+    <div class="utility-screen-body">
+      <div class="water-cup-graphic" aria-hidden="true">
+        <div class="water-cup-fill" id="addWaterCupFill"></div>
+      </div>
+      <div class="water-amount-field">
+        <input type="number" id="addWaterAmountInput" min="0" step="1" inputmode="numeric" value="0" aria-label="Water amount" />
+        <span class="water-amount-unit" id="addWaterUnitLabel">oz</span>
+      </div>
+      <div class="water-quickadd-row">
+        <button type="button" class="water-quickadd-btn" data-oz="8">+8 oz</button>
+        <button type="button" class="water-quickadd-btn" data-oz="17">+17 oz</button>
+        <button type="button" class="water-quickadd-btn" data-oz="24">+24 oz</button>
+      </div>
+      <button type="button" class="utility-settings-row" id="addWaterChangeUnitBtn">
+        <span class="utility-settings-row-icon" aria-hidden="true">⚙️</span>
+        <span>Change Unit</span>
+        <span class="utility-settings-row-value" id="addWaterUnitValue">oz</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Weight screen (opened from the log overlay's utility dock) -->
+  <div class="utility-screen" id="addWeightScreen">
+    <div class="utility-screen-header">
+      <button type="button" class="icon-btn utility-screen-back" id="addWeightBackBtn" aria-label="Back">←</button>
+      <h2 class="utility-screen-title">Add Weight</h2>
+      <button type="button" class="icon-btn utility-screen-save" id="addWeightSaveBtn" aria-label="Save weight">✓</button>
+    </div>
+    <div class="utility-screen-body">
+      <button type="button" class="utility-config-row" id="addWeightWeightRow">
+        <span class="utility-config-row-label">Weight</span>
+        <span class="utility-config-row-value" id="addWeightValueDisplay">—</span>
+        <span class="utility-config-row-chevron" aria-hidden="true">›</span>
+      </button>
+
+      <button type="button" class="utility-config-row" id="addWeightDateRow">
+        <span class="utility-config-row-label">Date</span>
+        <span class="utility-config-row-value" id="addWeightDateDisplay">—</span>
+        <span class="utility-config-row-chevron" aria-hidden="true">›</span>
+      </button>
+      <input type="date" id="addWeightDateInput" class="utility-hidden-date-input" aria-label="Pick a date" />
+
+      <button type="button" class="utility-config-row" id="addWeightPhotoRow">
+        <span class="utility-config-row-label">Progress Photo</span>
+        <span class="utility-config-row-value" id="addWeightPhotoValue">Add photo</span>
+        <span class="utility-config-row-chevron" aria-hidden="true">›</span>
+      </button>
+      <input type="file" accept="image/*" id="addWeightPhotoInput" hidden />
+      <img class="utility-photo-preview hidden" id="addWeightPhotoPreview" alt="Progress photo preview" />
+    </div>
+  </div>
+
+  <!-- Bottom Wheel Picker Sheet: Stones / Pounds / Decimal-Fraction (UK weight) -->
+  <div class="wheel-sheet" id="weightWheelSheet">
+    <div class="wheel-sheet-backdrop" id="weightWheelBackdrop"></div>
+    <div class="wheel-sheet-panel">
+      <div class="wheel-sheet-bar">
+        <button type="button" class="icon-btn" id="weightWheelCloseBtn" aria-label="Close">✕</button>
+        <span class="wheel-sheet-title">Weight</span>
+        <button type="button" class="icon-btn utility-screen-save" id="weightWheelSaveBtn" aria-label="Save">✓</button>
+      </div>
+      <div class="wheel-columns">
+        <div class="wheel-selection-indicator" aria-hidden="true"></div>
+        <div class="wheel-col" id="wheelColStones" data-wheel="stones"></div>
+        <span class="wheel-col-suffix">st</span>
+        <div class="wheel-col" id="wheelColPounds" data-wheel="pounds"></div>
+        <span class="wheel-col-suffix">lb</span>
+        <div class="wheel-col" id="wheelColFraction" data-wheel="fraction"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Exercise bottom sheet (opened from the log overlay's utility dock) -->
+  <div class="exercise-sheet" id="addExerciseSheet">
+    <div class="exercise-sheet-panel" id="addExerciseSheetPanel">
+      <div class="exercise-sheet-grabber" id="addExerciseGrabber" aria-hidden="true"></div>
+      <h2 class="exercise-sheet-header">Add Exercise</h2>
+      <div class="exercise-sheet-body">
+        <button type="button" class="exercise-block" data-exercise-type="cardio">
+          <span class="exercise-block-icon" aria-hidden="true">🏃</span>
+          <span class="exercise-block-text">
+            <span class="exercise-block-title">Cardio</span>
+            <span class="exercise-block-sub">Running, cycling, swimming…</span>
+          </span>
+          <span class="exercise-block-chevron" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="exercise-block" data-exercise-type="strength">
+          <span class="exercise-block-icon" aria-hidden="true">🏋️</span>
+          <span class="exercise-block-text">
+            <span class="exercise-block-title">Strength</span>
+            <span class="exercise-block-sub">Weights, bodyweight, CrossFit…</span>
+          </span>
+          <span class="exercise-block-chevron" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="exercise-block" data-exercise-type="routines">
+          <span class="exercise-block-icon" aria-hidden="true">📋</span>
+          <span class="exercise-block-text">
+            <span class="exercise-block-title">Workout Routines</span>
+            <span class="exercise-block-sub">Saved routines</span>
+          </span>
+          <span class="exercise-block-chevron" aria-hidden="true">›</span>
+        </button>
+
+        <form class="exercise-quick-form hidden" id="exerciseQuickForm">
+          <select id="exerciseNameSelect"></select>
+          <input type="number" id="exerciseMinutesInput" placeholder="Minutes" min="1" step="1" required />
+          <input type="number" id="exerciseCaloriesInput" placeholder="Calories burned" min="0" step="1" required />
+          <p class="form-error" id="exerciseFormError"></p>
+          <button type="submit" class="btn-primary">Log Exercise</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Fitness Coach Onboarding Wizard -->
+  <div class="onboarding-overlay" id="onboardingOverlay">
+    <div class="onboarding-panel">
+      <button type="button" class="icon-btn onboarding-close hidden" id="onboardingCloseBtn" aria-label="Close">✕</button>
+
+      <div class="onboarding-dots" id="onboardingDots">
+        <span class="onboarding-dot active"></span>
+        <span class="onboarding-dot"></span>
+        <span class="onboarding-dot"></span>
+      </div>
+
+      <!-- Step 1: personal stats -->
+      <div class="onboarding-step" data-onboarding-step="1">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">⚡</span>
+          <span class="brand-name" id="onboardingStep1Title">Let's Get Started</span>
+        </div>
+        <p class="auth-tagline">Tell us about yourself so your AI Coach can build your plan.</p>
+        <div class="modal-body" style="padding: 0;">
+          <label class="field">
+            <span>Height <span class="unit-hint" id="onboardingHeightUnitHint">(cm)</span></span>
+            <input type="number" id="onboardingHeightInput" min="1" step="0.1" placeholder="e.g. 175" />
+          </label>
+          <label class="field">
+            <span>Weight <span class="unit-hint" id="onboardingWeightUnitHint">(kg)</span></span>
+            <input type="number" id="onboardingWeightInput" min="1" step="0.1" placeholder="e.g. 70" />
+          </label>
+          <label class="field">
+            <span>Age</span>
+            <input type="number" id="onboardingAgeInput" min="13" max="120" step="1" placeholder="e.g. 28" />
+          </label>
+          <p class="form-error" id="onboardingStep1Error"></p>
+          <button type="button" class="btn-primary auth-submit" id="onboardingStep1Next">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 2: activity & goal -->
+      <div class="onboarding-step hidden" data-onboarding-step="2">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">🎯</span>
+          <span class="brand-name">Activity &amp; Goal</span>
+        </div>
+        <p class="auth-tagline">This shapes your daily calorie and macro targets.</p>
+        <div class="modal-body" style="padding: 0;">
+          <label class="field">
+            <span>Activity Level</span>
+            <select id="onboardingActivityLevel">
+              <option value="sedentary">Sedentary (little/no exercise)</option>
+              <option value="light">Lightly Active (1-3 days/week)</option>
+              <option value="moderate" selected>Moderately Active (3-5 days/week)</option>
+              <option value="very">Very Active (6-7 days/week)</option>
+              <option value="extreme">Extremely Active (athlete)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Target Goal</span>
+            <select id="onboardingFitnessGoal">
+              <option value="lose">Lose Weight</option>
+              <option value="maintain" selected>Maintain</option>
+              <option value="gain">Gain Muscle</option>
+            </select>
+          </label>
+          <p class="form-error" id="onboardingStep2Error"></p>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="onboardingStep2Back">Back</button>
+            <button type="button" class="btn-primary" id="onboardingGenerateBtn">Generate My Plan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: results -->
+      <div class="onboarding-step hidden" data-onboarding-step="3">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">✅</span>
+          <span class="brand-name" id="onboardingStep3Title">Your Plan Is Ready</span>
+        </div>
+        <p class="auth-tagline" id="onboardingStep3Tagline">Your AI Coach set these starting daily targets.</p>
+        <div class="coach-goals-grid">
+          <div class="stat-mini-card">
+            <span class="stat-mini-value" id="onboardingGoalCalories">0</span>
+            <span class="stat-mini-label">Calories</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-value" id="onboardingGoalProtein">0g</span>
+            <span class="stat-mini-label">Protein</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-value" id="onboardingGoalCarbs">0g</span>
+            <span class="stat-mini-label">Carbs</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-value" id="onboardingGoalFat">0g</span>
+            <span class="stat-mini-label">Fat</span>
+          </div>
+        </div>
+        <button type="button" class="btn-primary auth-submit" id="onboardingFinishBtn">Enter Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meal Planner 9-Step Onboarding Wizard (Plan tab) -->
+  <div class="pw-overlay" id="planWizardOverlay">
+    <div class="pw-panel">
+      <div class="pw-header">
+        <div class="pw-progress-track">
+          <div class="pw-progress-fill" id="pwProgressFill"></div>
+        </div>
+        <div class="pw-header-row">
+          <span class="pw-step-counter"><span id="pwStepNumber">1</span> / 9</span>
+          <button type="button" class="pw-skip-btn" id="pwSkipBtn">Skip for now</button>
+        </div>
+      </div>
+
+      <div class="pw-body" id="pwBody">
+
+        <!-- STEP 1 — GOALS -->
+        <div class="pw-step" data-pw-step="1">
+          <h2 class="pw-step-title">What brings you here?</h2>
+          <p class="pw-step-sub">Pick the goal that matters most right now.</p>
+          <div class="pw-option-list" id="pwGoalList" data-pw-field="goal" data-pw-select="single">
+            <button type="button" class="pw-option" data-value="lose-weight">Lose weight</button>
+            <button type="button" class="pw-option" data-value="hit-macros">Hit my macros</button>
+            <button type="button" class="pw-option" data-value="eat-healthy">Eat healthy</button>
+            <button type="button" class="pw-option" data-value="gain-weight">Gain weight</button>
+            <button type="button" class="pw-option" data-value="save-time">Save time</button>
+            <button type="button" class="pw-option" data-value="meal-prep">Weekly meal prepping</button>
+            <button type="button" class="pw-option" data-value="dine-out">Healthy dining out</button>
+            <button type="button" class="pw-option" data-value="learn-cook">Learn how to cook</button>
+            <button type="button" class="pw-option" data-value="spend-less">Spend less on food</button>
+            <button type="button" class="pw-option" data-value="try-new">Try something new</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 — METRICS -->
+        <div class="pw-step" data-pw-step="2">
+          <h2 class="pw-step-title">Tell us about you</h2>
+          <p class="pw-step-sub">Basic metrics to size your plan correctly.</p>
+          <label class="pw-field">
+            <span>Name</span>
+            <input type="text" id="pwNameInput" placeholder="e.g. Jordan" />
+          </label>
+          <div class="pw-field-grid">
+            <label class="pw-field">
+              <span>Weight (kg)</span>
+              <input type="number" id="pwWeightInput" min="1" step="0.1" placeholder="e.g. 78" />
+            </label>
+            <label class="pw-field">
+              <span>Goal Weight (kg)</span>
+              <input type="number" id="pwGoalWeightInput" min="1" step="0.1" placeholder="e.g. 72" />
+            </label>
+          </div>
+          <p class="pw-label">Activity Tracker</p>
+          <div class="pw-option-list pw-option-list--compact" id="pwActivityList" data-pw-field="activity" data-pw-select="single">
+            <button type="button" class="pw-option" data-value="sedentary">Sedentary</button>
+            <button type="button" class="pw-option" data-value="lightly-active">Lightly Active</button>
+            <button type="button" class="pw-option" data-value="active">Active</button>
+            <button type="button" class="pw-option" data-value="very-active">Very Active</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 — PSYCHOLOGY -->
+        <div class="pw-step" data-pw-step="3">
+          <h2 class="pw-step-title">What's your mindset?</h2>
+          <p class="pw-step-sub">This helps us pace your plan realistically.</p>
+          <p class="pw-label">Motivation</p>
+          <div class="pw-option-list pw-option-list--compact" id="pwMotivationList" data-pw-field="motivation" data-pw-select="single">
+            <button type="button" class="pw-option" data-value="exploring">Just exploring</button>
+            <button type="button" class="pw-option" data-value="moderately-ready">Moderately ready</button>
+            <button type="button" class="pw-option" data-value="completely-driven">Completely driven</button>
+          </div>
+          <p class="pw-label">Biggest challenges</p>
+          <div class="pw-option-list pw-option-list--compact" id="pwChallengeList" data-pw-field="challenges" data-pw-select="multi">
+            <button type="button" class="pw-option" data-value="portion-control">Portion control</button>
+            <button type="button" class="pw-option" data-value="snacking">Snacking</button>
+            <button type="button" class="pw-option" data-value="cravings">Intense cravings</button>
+            <button type="button" class="pw-option" data-value="stress-eating">Stress eating</button>
+            <button type="button" class="pw-option" data-value="eating-out">Eating out often</button>
+            <button type="button" class="pw-option" data-value="no-time">Not enough time</button>
+            <button type="button" class="pw-option pw-option--none" data-value="none">None</button>
+          </div>
+          <p class="pw-label">How much are you ready to change your routine?</p>
+          <div class="pw-tier-track" id="pwRoutineTrack" data-pw-field="routineChange">
+            <button type="button" class="pw-tier-notch" data-value="steady">
+              <span class="pw-tier-dot" aria-hidden="true"></span>
+              <span>Steady &amp; Sustainable</span>
+            </button>
+            <button type="button" class="pw-tier-notch" data-value="moderate">
+              <span class="pw-tier-dot" aria-hidden="true"></span>
+              <span>Moderately Focused</span>
+            </button>
+            <button type="button" class="pw-tier-notch" data-value="full">
+              <span class="pw-tier-dot" aria-hidden="true"></span>
+              <span>Fully Committed</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4 — PREFERENCES -->
+        <div class="pw-step" data-pw-step="4">
+          <h2 class="pw-step-title">Eating style</h2>
+          <p class="pw-step-sub">Choose the approach that fits you best.</p>
+          <div class="pw-diet-grid" id="pwDietGrid" data-pw-field="dietStyle" data-pw-select="single">
+            <button type="button" class="pw-diet-card" data-value="balanced"><span class="pw-diet-shape pw-diet-shape--balanced" aria-hidden="true"></span><span>Balanced</span></button>
+            <button type="button" class="pw-diet-card" data-value="high-protein"><span class="pw-diet-shape pw-diet-shape--protein" aria-hidden="true"></span><span>High-Protein</span></button>
+            <button type="button" class="pw-diet-card" data-value="low-carb"><span class="pw-diet-shape pw-diet-shape--lowcarb" aria-hidden="true"></span><span>Low-Carb</span></button>
+            <button type="button" class="pw-diet-card" data-value="keto"><span class="pw-diet-shape pw-diet-shape--keto" aria-hidden="true"></span><span>Keto</span></button>
+            <button type="button" class="pw-diet-card" data-value="mediterranean"><span class="pw-diet-shape pw-diet-shape--mediterranean" aria-hidden="true"></span><span>Mediterranean</span></button>
+            <button type="button" class="pw-diet-card" data-value="vegetarian"><span class="pw-diet-shape pw-diet-shape--vegetarian" aria-hidden="true"></span><span>Vegetarian</span></button>
+            <button type="button" class="pw-diet-card" data-value="vegan"><span class="pw-diet-shape pw-diet-shape--vegan" aria-hidden="true"></span><span>Vegan</span></button>
+            <button type="button" class="pw-diet-card" data-value="paleo"><span class="pw-diet-shape pw-diet-shape--paleo" aria-hidden="true"></span><span>Paleo</span></button>
+          </div>
+          <label class="pw-field">
+            <span>Weekly meal volume</span>
+            <select id="pwMealVolumeSelect">
+              <option value="3-meals">3 meals a day</option>
+              <option value="5-6-small">5-6 small meals a day</option>
+              <option value="meal-prep-week">Meal prep for the whole week</option>
+              <option value="flexible">Flexible / varies day to day</option>
+            </select>
+          </label>
+          <label class="pw-field">
+            <span>Preferred macro emphasis</span>
+            <select id="pwPreferredMacroSelect">
+              <option value="balanced">Balanced</option>
+              <option value="higher-protein">Higher protein</option>
+              <option value="higher-carb">Higher carb</option>
+              <option value="lower-fat">Lower fat</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- STEP 5 — RESTRICTIONS -->
+        <div class="pw-step" data-pw-step="5">
+          <h2 class="pw-step-title">Allergies &amp; preferences</h2>
+          <p class="pw-step-sub">We'll filter recipes to keep you safe and happy.</p>
+          <p class="pw-label">Allergies</p>
+          <div class="pw-checkbox-grid" id="pwAllergyGrid" data-pw-field="allergies" data-pw-select="multi">
+            <label class="pw-checkbox-row"><input type="checkbox" value="dairy-free" /><span>Dairy-Free</span></label>
+            <label class="pw-checkbox-row"><input type="checkbox" value="gluten-free" /><span>Gluten-Free</span></label>
+            <label class="pw-checkbox-row"><input type="checkbox" value="nut-free" /><span>Nut-Free</span></label>
+            <label class="pw-checkbox-row"><input type="checkbox" value="soy-free" /><span>Soy-Free</span></label>
+            <label class="pw-checkbox-row"><input type="checkbox" value="egg-free" /><span>Egg-Free</span></label>
+            <label class="pw-checkbox-row"><input type="checkbox" value="shellfish-free" /><span>Shellfish-Free</span></label>
+          </div>
+
+          <p class="pw-label">Food exclusions</p>
+          <div class="pw-search-wrap">
+            <span class="pw-search-icon" aria-hidden="true">🔎</span>
+            <input type="text" id="pwExclusionInput" placeholder="Type a food to exclude…" />
+            <button type="button" class="pw-search-add-btn" id="pwExclusionAddBtn">Add</button>
+          </div>
+          <div class="pw-chip-row" id="pwExclusionChips"></div>
+
+          <p class="pw-label">Cuisines</p>
+          <div class="pw-cuisine-list" id="pwCuisineList">
+            <div class="pw-cuisine-row" data-cuisine="italian">
+              <span>Italian</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Italian">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Italian">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="mexican">
+              <span>Mexican</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Mexican">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Mexican">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="asian">
+              <span>Asian</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Asian">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Asian">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="indian">
+              <span>Indian</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Indian">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Indian">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="mediterranean">
+              <span>Mediterranean</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Mediterranean">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Mediterranean">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="american">
+              <span>American</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love American">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike American">👎</button></div>
+            </div>
+            <div class="pw-cuisine-row" data-cuisine="middle-eastern">
+              <span>Middle Eastern</span>
+              <div class="pw-love-dislike"><button type="button" class="pw-ld-btn" data-mood="love" aria-label="Love Middle Eastern">👍</button><button type="button" class="pw-ld-btn" data-mood="dislike" aria-label="Dislike Middle Eastern">👎</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6 — KITCHEN & SKILL -->
+        <div class="pw-step" data-pw-step="6">
+          <h2 class="pw-step-title">Your kitchen</h2>
+          <p class="pw-step-sub">So recipes match what you actually have and can do.</p>
+          <p class="pw-label">Kitchen stock</p>
+          <div class="pw-desc-list" id="pwKitchenList" data-pw-field="kitchenStock" data-pw-select="single">
+            <button type="button" class="pw-desc-option" data-value="empty"><span class="pw-desc-title">Empty</span><span class="pw-desc-copy">Bare shelves, starting from scratch</span></button>
+            <button type="button" class="pw-desc-option" data-value="basic"><span class="pw-desc-title">Basic</span><span class="pw-desc-copy">Salt, oil, and a few staples</span></button>
+            <button type="button" class="pw-desc-option" data-value="average"><span class="pw-desc-title">Average</span><span class="pw-desc-copy">Solid pantry, missing specialty items</span></button>
+            <button type="button" class="pw-desc-option" data-value="well-stocked"><span class="pw-desc-title">Well-Stocked</span><span class="pw-desc-copy">Ready for almost anything</span></button>
+          </div>
+          <p class="pw-label">Cooking skill</p>
+          <div class="pw-desc-list" id="pwSkillList" data-pw-field="cookingSkill" data-pw-select="single">
+            <button type="button" class="pw-desc-option" data-value="novice"><span class="pw-desc-title">Novice</span><span class="pw-desc-copy">I mostly reheat and assemble</span></button>
+            <button type="button" class="pw-desc-option" data-value="basic"><span class="pw-desc-title">Basic</span><span class="pw-desc-copy">I can follow a simple recipe</span></button>
+            <button type="button" class="pw-desc-option" data-value="intermediate"><span class="pw-desc-title">Intermediate</span><span class="pw-desc-copy">Comfortable with most techniques</span></button>
+            <button type="button" class="pw-desc-option" data-value="advanced"><span class="pw-desc-title">Advanced</span><span class="pw-desc-copy">I improvise and build my own recipes</span></button>
+          </div>
+        </div>
+
+        <!-- STEP 7 — SOURCING -->
+        <div class="pw-step" data-pw-step="7">
+          <h2 class="pw-step-title">Groceries</h2>
+          <p class="pw-step-sub">Tell us how and what you shop for.</p>
+          <label class="pw-field">
+            <span>Grocery frequency</span>
+            <select id="pwGroceryFreqSelect">
+              <option value="weekly">Once a week</option>
+              <option value="twice-weekly">Twice a week</option>
+              <option value="few-times-week">A few times a week</option>
+              <option value="daily">Daily</option>
+            </select>
+          </label>
+          <p class="pw-label">Shopping style</p>
+          <div class="pw-option-list pw-option-list--compact" id="pwShoppingStyleList" data-pw-field="shoppingStyle" data-pw-select="single">
+            <button type="button" class="pw-option" data-value="in-store">In-store</button>
+            <button type="button" class="pw-option" data-value="delivery">Delivery</button>
+          </div>
+          <p class="pw-label">Cooked veggies you enjoy</p>
+          <div class="pw-chip-select" id="pwCookedVeggieList" data-pw-field="cookedVeggies" data-pw-select="multi">
+            <button type="button" class="pw-chip-option" data-value="broccoli">Broccoli</button>
+            <button type="button" class="pw-chip-option" data-value="asparagus">Asparagus</button>
+            <button type="button" class="pw-chip-option" data-value="spinach">Spinach</button>
+            <button type="button" class="pw-chip-option" data-value="brussels-sprouts">Brussels Sprouts</button>
+            <button type="button" class="pw-chip-option" data-value="carrots">Carrots</button>
+            <button type="button" class="pw-chip-option" data-value="cauliflower">Cauliflower</button>
+            <button type="button" class="pw-chip-option" data-value="green-beans">Green Beans</button>
+            <button type="button" class="pw-chip-option" data-value="sweet-potato">Sweet Potato</button>
+            <button type="button" class="pw-chip-option" data-value="zucchini">Zucchini</button>
+            <button type="button" class="pw-chip-option" data-value="kale">Kale</button>
+            <button type="button" class="pw-chip-option" data-value="mushrooms">Mushrooms</button>
+            <button type="button" class="pw-chip-option" data-value="bell-peppers">Bell Peppers</button>
+            <button type="button" class="pw-chip-option" data-value="eggplant">Eggplant</button>
+          </div>
+          <p class="pw-label">Raw veggies you enjoy</p>
+          <div class="pw-chip-select" id="pwRawVeggieList" data-pw-field="rawVeggies" data-pw-select="multi">
+            <button type="button" class="pw-chip-option" data-value="lettuce">Lettuce</button>
+            <button type="button" class="pw-chip-option" data-value="cucumber">Cucumber</button>
+            <button type="button" class="pw-chip-option" data-value="bell-peppers">Bell Peppers</button>
+            <button type="button" class="pw-chip-option" data-value="tomatoes">Tomatoes</button>
+            <button type="button" class="pw-chip-option" data-value="red-onion">Red Onion</button>
+            <button type="button" class="pw-chip-option" data-value="spinach">Spinach</button>
+            <button type="button" class="pw-chip-option" data-value="arugula">Arugula</button>
+            <button type="button" class="pw-chip-option" data-value="radishes">Radishes</button>
+            <button type="button" class="pw-chip-option" data-value="celery">Celery</button>
+            <button type="button" class="pw-chip-option" data-value="carrots">Carrots</button>
+            <button type="button" class="pw-chip-option" data-value="shredded-cabbage">Shredded Cabbage</button>
+            <button type="button" class="pw-chip-option" data-value="avocado">Avocado</button>
+          </div>
+          <p class="pw-label">Fruits you enjoy</p>
+          <div class="pw-chip-select" id="pwFruitList" data-pw-field="fruits" data-pw-select="multi">
+            <button type="button" class="pw-chip-option" data-value="strawberries">Strawberries</button>
+            <button type="button" class="pw-chip-option" data-value="apples">Apples</button>
+            <button type="button" class="pw-chip-option" data-value="bananas">Bananas</button>
+            <button type="button" class="pw-chip-option" data-value="blueberries">Blueberries</button>
+            <button type="button" class="pw-chip-option" data-value="avocados">Avocados</button>
+            <button type="button" class="pw-chip-option" data-value="raspberries">Raspberries</button>
+            <button type="button" class="pw-chip-option" data-value="blackberries">Blackberries</button>
+            <button type="button" class="pw-chip-option" data-value="oranges">Oranges</button>
+            <button type="button" class="pw-chip-option" data-value="kiwi">Kiwi</button>
+            <button type="button" class="pw-chip-option" data-value="pineapple">Pineapple</button>
+            <button type="button" class="pw-chip-option" data-value="mango">Mango</button>
+            <button type="button" class="pw-chip-option" data-value="grapefruit">Grapefruit</button>
+            <button type="button" class="pw-chip-option" data-value="watermelon">Watermelon</button>
+          </div>
+        </div>
+
+        <!-- STEP 8 — CALIBRATION -->
+        <div class="pw-step" data-pw-step="8">
+          <h2 class="pw-step-title">Quick taste check</h2>
+          <p class="pw-step-sub">Swipe right to like, left to pass — we'll calibrate your plan from your picks.</p>
+
+          <div class="pw-swipe-deck" id="pwSwipeDeck">
+            <p class="pw-swipe-empty hidden" id="pwSwipeEmpty">You've rated every sample — nice work!</p>
+
+            <div class="pw-swipe-card" data-recipe="grilled-chicken-quinoa">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🍗</span>
+              <h3 class="pw-swipe-name">Grilled Chicken &amp; Quinoa Bowl</h3>
+              <p class="pw-swipe-desc">Lean grilled chicken, fluffy quinoa, charred broccoli and a lemon-herb drizzle.</p>
+              <span class="pw-swipe-kcal">420 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="salmon-veggies">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🐟</span>
+              <h3 class="pw-swipe-name">Salmon with Roasted Veggies</h3>
+              <p class="pw-swipe-desc">Herb-crusted salmon fillet over a bed of roasted seasonal vegetables.</p>
+              <span class="pw-swipe-kcal">380 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="tofu-stirfry">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🥦</span>
+              <h3 class="pw-swipe-name">Veggie Stir-Fry with Tofu</h3>
+              <p class="pw-swipe-desc">Crispy pan-seared tofu tossed with garlic-ginger stir-fried vegetables.</p>
+              <span class="pw-swipe-kcal">340 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="turkey-sweet-potato">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🍠</span>
+              <h3 class="pw-swipe-name">Turkey &amp; Sweet Potato Skillet</h3>
+              <p class="pw-swipe-desc">Ground turkey, cubed sweet potato and bell peppers in one skillet.</p>
+              <span class="pw-swipe-kcal">410 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="beef-stirfry">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🥩</span>
+              <h3 class="pw-swipe-name">High-Protein Beef Stir-Fry</h3>
+              <p class="pw-swipe-desc">Seared beef strips with crunchy vegetables in a savory glaze.</p>
+              <span class="pw-swipe-kcal">460 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="cottage-cheese-eggs">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🍳</span>
+              <h3 class="pw-swipe-name">Cottage Cheese &amp; Egg White Scramble</h3>
+              <p class="pw-swipe-desc">Fluffy egg whites folded with creamy cottage cheese and fresh herbs.</p>
+              <span class="pw-swipe-kcal">320 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="greek-yogurt-parfait">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🍓</span>
+              <h3 class="pw-swipe-name">Greek Yogurt Protein Parfait</h3>
+              <p class="pw-swipe-desc">Layers of thick Greek yogurt, mixed berries and crunchy granola.</p>
+              <span class="pw-swipe-kcal">300 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="shrimp-avocado-salad">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🥑</span>
+              <h3 class="pw-swipe-name">Shrimp &amp; Avocado Salad</h3>
+              <p class="pw-swipe-desc">Chilled shrimp, creamy avocado and greens with a citrus vinaigrette.</p>
+              <span class="pw-swipe-kcal">350 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="black-bean-sweet-potato">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🌶️</span>
+              <h3 class="pw-swipe-name">Black Bean &amp; Sweet Potato Bowl</h3>
+              <p class="pw-swipe-desc">Smoky black beans, roasted sweet potato and a bright lime crema.</p>
+              <span class="pw-swipe-kcal">390 kcal</span>
+            </div>
+            <div class="pw-swipe-card" data-recipe="zucchini-turkey-meatballs">
+              <span class="pw-swipe-stamp pw-swipe-stamp-like">LIKE</span>
+              <span class="pw-swipe-stamp pw-swipe-stamp-nope">NOPE</span>
+              <span class="pw-swipe-emoji">🍝</span>
+              <h3 class="pw-swipe-name">Zucchini Noodles &amp; Turkey Meatballs</h3>
+              <p class="pw-swipe-desc">Spiralized zucchini noodles topped with lean turkey meatballs in marinara.</p>
+              <span class="pw-swipe-kcal">360 kcal</span>
+            </div>
+          </div>
+
+          <div class="pw-swipe-actions">
+            <button type="button" class="pw-swipe-action-btn pw-swipe-action-dislike" id="pwSwipeDislikeBtn" aria-label="Dislike this recipe">✕</button>
+            <button type="button" class="pw-swipe-action-btn pw-swipe-action-like" id="pwSwipeLikeBtn" aria-label="Like this recipe">♥</button>
+          </div>
+
+          <div class="pw-servings-card">
+            <span class="pw-servings-label">Dinner</span>
+            <div class="pw-servings-stepper">
+              <button type="button" class="pw-servings-btn" id="pwServingsMinus" aria-label="Decrease servings">−</button>
+              <span class="pw-servings-value" id="pwServingsValue">1</span>
+              <button type="button" class="pw-servings-btn" id="pwServingsPlus" aria-label="Increase servings">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 9 — PRIORITY WEIGHTING -->
+        <div class="pw-step" data-pw-step="9">
+          <h2 class="pw-step-title">What matters most?</h2>
+          <p class="pw-step-sub">Weight each priority to fine-tune your plan.</p>
+          <div class="pw-priority-list" id="pwPriorityList">
+            <div class="pw-priority-row" data-priority="weight-loss">
+              <span class="pw-priority-label">Weight loss</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="weight-loss" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+            <div class="pw-priority-row" data-priority="recipe-variety">
+              <span class="pw-priority-label">Recipe variety</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="recipe-variety" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+            <div class="pw-priority-row" data-priority="delicious-meals">
+              <span class="pw-priority-label">Delicious meals</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="delicious-meals" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+            <div class="pw-priority-row" data-priority="easy-prep">
+              <span class="pw-priority-label">Easy meal preparation</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="easy-prep" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+            <div class="pw-priority-row" data-priority="quick-recipes">
+              <span class="pw-priority-label">Quick recipes</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="quick-recipes" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+            <div class="pw-priority-row" data-priority="budget-friendly">
+              <span class="pw-priority-label">Budget-friendly choices</span>
+              <div class="pw-notch-slider">
+                <input type="range" min="0" max="2" step="1" value="1" data-priority-input="budget-friendly" />
+                <div class="pw-notch-labels"><span>Less Important</span><span>Important</span><span>Very Important</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="form-error pw-error" id="pwError"></p>
+      <div class="pw-footer">
+        <button type="button" class="btn-secondary pw-back-btn hidden" id="pwBackBtn">Back</button>
+        <button type="button" class="btn-primary pw-next-btn" id="pwNextBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Vision Scan Modal -->
+  <div class="modal-overlay" id="scanOverlay">
+    <div class="modal scan-modal">
+      <div class="modal-header">
+        <h3>AI Plate Scan</h3>
+        <button class="icon-btn" id="closeScan" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="scan-preview-wrap">
+          <img id="scanImagePreview" class="scan-image-preview" alt="Scanned plate" />
+        </div>
+        <div class="scan-result">
+          <p class="scan-detected-name" id="scanDetectedName">Analyzing…</p>
+          <p class="scan-confidence" id="scanConfidence"></p>
+        </div>
+        <label class="field">
+          <span>Estimated weight (g)</span>
+          <input type="number" id="scanGramsInput" min="1" step="1" />
+        </label>
+        <p class="form-error" id="scanError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelScan">Cancel</button>
+          <button type="button" class="btn-primary" id="confirmScan" disabled>Confirm &amp; Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weight & Measurements Modal -->
+  <div class="modal-overlay" id="weightMeasurementsOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Weight &amp; Measurements</h3>
+        <button class="icon-btn" id="closeWeightMeasurementsModal" aria-label="Close">✕</button>
+      </div>
+      <form id="profileForm" class="modal-body">
+        <div class="unit-toggle-field">
+          <span class="profile-label">Weight unit</span>
+          <div class="unit-toggle" id="weightUnitToggle">
+            <button type="button" class="unit-toggle-btn active" data-unit="kg">kg</button>
+            <button type="button" class="unit-toggle-btn" data-unit="lbs">lbs</button>
+          </div>
+        </div>
+
+        <div class="unit-toggle-field">
+          <span class="profile-label">Height unit</span>
+          <div class="unit-toggle" id="heightUnitToggle">
+            <button type="button" class="unit-toggle-btn active" data-unit="cm">cm</button>
+            <button type="button" class="unit-toggle-btn" data-unit="ftin">ft / in</button>
+          </div>
+        </div>
+
+        <label class="field" id="heightCmField">
+          <span>Height (cm)</span>
+          <input type="number" id="heightCmInput" placeholder="e.g. 175" min="50" max="272" step="0.1" />
+        </label>
+        <div class="field height-ftin-grid hidden" id="heightFtInField">
+          <span>Height (ft / in)</span>
+          <div class="field-grid">
+            <input type="number" id="heightFtInput" placeholder="ft" min="1" max="8" step="1" />
+            <input type="number" id="heightInInput" placeholder="in" min="0" max="11" step="0.1" />
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Target Weight <span class="unit-hint" id="targetWeightUnitHint">(kg)</span></span>
+          <input type="number" id="targetWeightInput" placeholder="e.g. 75" min="1" step="0.1" />
+        </label>
+
+        <p class="form-error" id="profileError"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Calorie & Macro Goal Sliders (opened from Goals -> Nutrition Goals) -->
+  <div class="modal-overlay" id="macroGoalsOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Calorie, Carbs, Protein and Fat Goals</h3>
+        <button class="icon-btn" id="closeMacroGoalsModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="macroGoalsForm">
+        <label class="field">
+          <span>Calories <span class="slider-value" id="macroGoalCaloriesValue">2,200</span></span>
+          <input type="range" id="macroGoalCaloriesSlider" min="1200" max="5000" step="10" value="2200" />
+        </label>
+        <label class="field">
+          <span>Carbs <span class="slider-value" id="macroGoalCarbsValue">250g</span></span>
+          <input type="range" id="macroGoalCarbsSlider" min="0" max="600" step="1" value="250" />
+        </label>
+        <label class="field">
+          <span>Protein <span class="slider-value" id="macroGoalProteinValue">150g</span></span>
+          <input type="range" id="macroGoalProteinSlider" min="0" max="400" step="1" value="150" />
+        </label>
+        <label class="field">
+          <span>Fat <span class="slider-value" id="macroGoalFatValue">70g</span></span>
+          <input type="range" id="macroGoalFatSlider" min="0" max="250" step="1" value="70" />
+        </label>
+        <p class="form-error" id="macroGoalsError"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="settingsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="settingsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Settings</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list" id="settingsMenuList">
+          <li class="more-menu-item" data-menu-key="profile">
+            <span class="more-menu-icon" aria-hidden="true">👤</span>
+            <span class="more-menu-title">Profile</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="app-appearance">
+            <span class="more-menu-icon" aria-hidden="true">🎨</span>
+            <span class="more-menu-title">App Appearance</span>
+            <button type="button" class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle light/dark theme">
+              <span class="theme-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item" data-menu-key="diary-settings">
+            <span class="more-menu-icon" aria-hidden="true">📔</span>
+            <span class="more-menu-title">Diary Settings</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="start-of-week">
+            <span class="more-menu-icon" aria-hidden="true">📅</span>
+            <span class="more-menu-title">Start of the Week</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="sharing-privacy">
+            <span class="more-menu-icon" aria-hidden="true">🛡️</span>
+            <span class="more-menu-title">Sharing &amp; Privacy</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="my-exercises">
+            <span class="more-menu-icon" aria-hidden="true">🏋️</span>
+            <span class="more-menu-title">My Exercises</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="push-notifications">
+            <span class="more-menu-icon" aria-hidden="true">🔔</span>
+            <span class="more-menu-title">Push Notifications</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item more-menu-item--logout" data-menu-key="logout">
+            <span class="more-menu-icon" aria-hidden="true">🚪</span>
+            <span class="more-menu-title">Logout</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card premium-promo-card">
+        <span class="premium-promo-badge" aria-hidden="true">⭐</span>
+        <h2 class="premium-promo-title">Go Premium, Get Results</h2>
+        <p class="premium-promo-copy">Unlock advanced insights, custom macro targets, and an ad-free experience.</p>
+        <button type="button" class="premium-promo-btn" id="goPremiumBtn">Go Premium</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- Goals Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="goalsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="goalsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Goals</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+
+    <div class="settings-view-body">
+      <section class="card">
+        <div class="profile-details">
+          <div class="profile-row">
+            <span class="profile-label">Starting Weight</span>
+            <span class="profile-value profile-value--cyan" id="goalsStartingWeight">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Current Weight</span>
+            <span class="profile-value profile-value--cyan" id="goalsCurrentWeight">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Goal Weight</span>
+            <span class="profile-value profile-value--cyan" id="goalsTargetWeight">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Weekly Goal</span>
+            <span class="profile-value profile-value--cyan" id="goalsWeeklyGoal">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Activity Level</span>
+            <span class="profile-value profile-value--cyan" id="goalsActivityLevel">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card more-menu-card">
+        <h2 class="card-title goals-section-title">Nutrition Goals</h2>
+        <ul class="more-menu-list" id="nutritionGoalsMenuList">
+          <li class="more-menu-item more-menu-item--stacked" data-menu-key="calorie-macro-goals">
+            <div class="more-menu-text">
+              <span class="more-menu-title">Calorie, Carbs, Protein and Fat Goals</span>
+              <span class="more-menu-desc">Customize your default or daily goals</span>
+            </div>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="additional-nutrient-goals">
+            <span class="more-menu-title">Additional Nutrient Goals</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title goals-section-title goals-section-title--flush">Fitness Goals</h2>
+        <div class="profile-details">
+          <div class="profile-row">
+            <span class="profile-label">Workouts/Week</span>
+            <span class="profile-value" id="goalsWorkoutsPerWeek">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Minutes/Workout</span>
+            <span class="profile-value" id="goalsMinutesPerWorkout">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card premium-promo-card">
+        <span class="premium-promo-badge" aria-hidden="true">⭐</span>
+        <h2 class="premium-promo-title">Go Premium, Get Results</h2>
+        <p class="premium-promo-copy">Unlock advanced insights, custom macro targets, and an ad-free experience.</p>
+        <button type="button" class="premium-promo-btn" id="goalsGoPremiumBtn">Go Premium</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- Additional Nutrient Goals Sub-View (full-screen, nested under the Goals sub-view) -->
+  <div class="settings-view" id="nutrientGoalsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="nutrientGoalsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Additional Nutrient Goals</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+
+    <div class="settings-view-body">
+      <section class="card">
+        <h2 class="card-title">Today's Totals <span class="field-hint">(vs. target)</span></h2>
+        <ul class="nutrient-list" id="nutrientGoalsList"></ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
