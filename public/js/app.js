@@ -4713,8 +4713,27 @@ async function loadPlanPreferences() {
 }
 
 // ---------- Shared sub-view scaffolding (More tab ecosystem) ----------
-function openSubView(view) { view.classList.add('open'); }
-function closeSubView(view) { view.classList.remove('open'); }
+// Tracks whichever view (a tab, or another sub-view) sits directly behind
+// the currently-open one and instantly display:none's it for the duration —
+// opacity/transform alone leave the covered view fully composited, which is
+// what let its text bleed through the sub-view above it on iOS Safari.
+const subViewStack = [];
+function currentBase() {
+  return subViewStack[subViewStack.length - 1] || document.querySelector('.tab-view:not(.hidden)');
+}
+function openSubView(view) {
+  const base = currentBase();
+  if (base) base.classList.add('subview-covered');
+  subViewStack.push(view);
+  view.classList.add('open');
+}
+function closeSubView(view) {
+  view.classList.remove('open');
+  const idx = subViewStack.indexOf(view);
+  if (idx !== -1) subViewStack.splice(idx, 1);
+  const base = currentBase();
+  if (base) base.classList.remove('subview-covered');
+}
 
 // Native iOS-style "swipe from the left edge to pop the screen" gesture for
 // every full-screen .settings-view sub-view (the More tab's 13 subpages plus

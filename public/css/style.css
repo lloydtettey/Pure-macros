@@ -68,6 +68,14 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Kills the browser-native gray tap-flash box and iOS's press-and-hold
+   callout menu on every element, for a native-app feel on touch. */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  user-select: none;
+}
+
 /* ---------- Global form-control width guard ---------- */
 /* Every select/input/textarea is capped to its container's width. Grid and
    flex children default to min-width:auto, which lets a <select> with long
@@ -102,6 +110,12 @@ select, input, textarea {
 }
 
 .hidden { display: none !important; }
+
+/* Applied by openSubView/closeSubView (app.js) to whichever tab or sub-view
+   sits directly behind the one currently on top, so it's fully removed from
+   compositing instead of just sitting at opacity:0 behind an opaque sheet —
+   the fix for text bleeding through stacked full-screen views on iOS Safari. */
+.subview-covered { display: none !important; }
 
 html, body { height: 100%; max-width: 100vw; overflow-x: hidden; }
 
@@ -1939,7 +1953,7 @@ body {
   width: 100%;
   z-index: 60;
   margin: 0;
-  padding: 10px max(14px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  padding: 10px max(14px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
   background: transparent;
 }
 
