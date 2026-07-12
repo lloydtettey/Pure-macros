@@ -45,6 +45,28 @@
         </label>
         <p class="form-error" id="registerError"></p>
         <button type="submit" class="btn-primary auth-submit">Create Account</button>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <div class="auth-oauth-group">
+          <button type="button" class="btn-oauth btn-oauth-google" id="oauthGoogleBtn">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.9 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.7 0-14.3 4.4-17.7 10.7z"/>
+              <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.8 14.3-4.9l-6.6-5.6C29.6 35.4 26.9 36 24 36c-5.3 0-9.8-3.4-11.4-8.1l-6.6 5.1C9.5 39.6 16.2 44 24 44z"/>
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3 5.4-5.6 7.1l6.6 5.6C39.9 38 44 32.5 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+            </svg>
+            <span>Sign in with Google</span>
+          </button>
+          <!--
+          <button type="button" class="btn-oauth btn-oauth-apple" id="oauthAppleBtn">
+            <svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">
+              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 80.6c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.3zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+            </svg>
+            <span>Sign in with Apple</span>
+          </button>
+          -->
+        </div>
       </form>
     </div>
   </div>
@@ -65,16 +87,55 @@
       <!-- ============ TODAY TAB ============ -->
       <section class="tab-view" id="tab-today" data-tab-view="today">
         <div class="today-header-row">
-          <div class="today-header-title">
-            <span>Today</span>
+          <button type="button" class="today-header-title" id="todayHeaderBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="calendarDropdown">
+            <span id="todayHeaderLabel">Today</span>
             <span class="today-header-chevron" aria-hidden="true">⌄</span>
-          </div>
+          </button>
           <div class="today-header-actions">
-            <span class="streak-chip" id="headerStreakChip">
+            <button type="button" class="streak-chip" id="headerStreakChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="streakPopover">
               <span id="headerStreakValue">0</span>
-              <span class="streak-chip-icon" aria-hidden="true">🔥</span>
-            </span>
+              <span class="streak-chip-icon" aria-hidden="true">⚡</span>
+            </button>
+            <div class="streak-popover" id="streakPopover" role="dialog" aria-label="Food logging streak" aria-hidden="true">
+              <div class="streak-popover-header">
+                <span class="streak-popover-title"><span aria-hidden="true">⚡</span> Food logging streak</span>
+                <button type="button" class="streak-popover-close" id="streakPopoverClose" aria-label="Close">✕</button>
+              </div>
+              <p class="streak-popover-subtitle">How many days in a row can you go?</p>
+              <button type="button" class="streak-popover-cta" id="streakPopoverLogBtn">Log a food</button>
+            </div>
           </div>
+          <div class="calendar-dropdown" id="calendarDropdown" role="dialog" aria-label="Select date" aria-hidden="true">
+            <div class="calendar-dropdown-header">
+              <button type="button" class="calendar-nav-btn" id="calPrevMonthBtn" aria-label="Previous month">‹</button>
+              <button type="button" class="calendar-month-year-btn" id="calendar-month-year-btn" aria-haspopup="true" aria-expanded="false" aria-controls="month-year-picker-view">
+                <span class="calendar-month-label" id="calMonthYearLabel">July 2026</span>
+                <span class="calendar-month-year-chevron" aria-hidden="true">⌄</span>
+              </button>
+              <button type="button" class="calendar-nav-btn" id="calNextMonthBtn" aria-label="Next month">›</button>
+            </div>
+            <div class="month-year-picker-view" id="month-year-picker-view" aria-hidden="true">
+              <div class="picker-selection-bar" aria-hidden="true"></div>
+              <div class="picker-col" id="pickerMonthCol" role="listbox" aria-label="Month"></div>
+              <div class="picker-col" id="pickerYearCol" role="listbox" aria-label="Year"></div>
+            </div>
+            <div class="calendar-weekdays" id="calendarWeekdays">
+              <span class="calendar-weekday">MON</span>
+              <span class="calendar-weekday">TUE</span>
+              <span class="calendar-weekday">WED</span>
+              <span class="calendar-weekday">THU</span>
+              <span class="calendar-weekday">FRI</span>
+              <span class="calendar-weekday">SAT</span>
+              <span class="calendar-weekday">SUN</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+        </div>
+
+        <div class="day-type-selector" id="dayTypeSelector" role="group" aria-label="Day type">
+          <button type="button" class="day-type-btn" data-day-type="rest">Rest Day</button>
+          <button type="button" class="day-type-btn" data-day-type="work">Work Day</button>
+          <button type="button" class="day-type-btn" data-day-type="gym">Gym Training</button>
         </div>
 
         <div class="week-ribbon" id="dateStrip"></div>
@@ -414,17 +475,11 @@
 
           <div class="cnm-panel hidden" data-cnm-panel="macros">
             <section class="card">
-              <h2 class="card-title">Macro History</h2>
-              <div class="macro-history-chart-wrap">
-                <div class="scaled-bar-chart-axis" id="macroHistoryAxis"></div>
-                <svg class="macro-history-svg" id="macroHistorySvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+              <h2 class="card-title">Macro Breakdown <span class="field-hint">(range total)</span></h2>
+              <div class="macro-pie-wrap">
+                <canvas id="macroPieChart" width="220" height="220"></canvas>
               </div>
-              <div class="macro-history-x-labels" id="macroHistoryXLabels"></div>
-              <div class="macro-history-legend">
-                <span class="macro-history-legend-item"><span class="macro-dot protein"></span>Protein</span>
-                <span class="macro-history-legend-item"><span class="macro-dot carbs"></span>Carbs</span>
-                <span class="macro-history-legend-item"><span class="macro-dot fat"></span>Fat</span>
-              </div>
+              <div class="macro-pie-compact-lines" id="macroPieCompactLines"></div>
             </section>
 
             <section class="card">
@@ -678,7 +733,7 @@
             <li class="more-menu-item" data-menu-key="messages">
               <span class="more-menu-icon" aria-hidden="true">✉️</span>
               <span class="more-menu-title">Messages</span>
-              <span class="more-menu-badge">1</span>
+              <span class="more-menu-badge" id="moreMessagesBadge">1</span>
               <span class="more-menu-chevron" aria-hidden="true">›</span>
             </li>
             <li class="more-menu-item" data-menu-key="settings">
@@ -832,6 +887,82 @@
         <button type="button" class="log-utility-btn" id="logDockExercise" data-log-dock="exercise">
           <span class="log-utility-icon log-utility-icon--exercise" aria-hidden="true">🔥</span>
           <span class="log-utility-label">Exercise</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add screen (opened from the log overlay's feature grid) -->
+  <div class="utility-screen" id="quickAddScreen">
+    <div class="utility-screen-header">
+      <button type="button" class="icon-btn utility-screen-back" id="quickAddBackBtn" aria-label="Back">←</button>
+      <h2 class="utility-screen-title">Quick Add</h2>
+      <button type="button" class="icon-btn utility-screen-save" id="quickAddSaveBtn" aria-label="Save quick add">✓</button>
+    </div>
+    <div class="utility-screen-body" id="quickAddForm">
+      <label class="field">
+        <span>Select a Meal</span>
+        <select id="quickAddMealSelect">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snack">Snacks</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Calories</span>
+        <input type="number" id="quickAddCaloriesInput" min="0" step="1" inputmode="numeric" placeholder="0" />
+      </label>
+      <label class="field">
+        <span>Total Fat (g)</span>
+        <input type="number" id="quickAddFatInput" min="0" step="0.1" inputmode="decimal" placeholder="0" />
+      </label>
+      <label class="field">
+        <span>Total Carbohydrates (g)</span>
+        <input type="number" id="quickAddCarbsInput" min="0" step="0.1" inputmode="decimal" placeholder="0" />
+      </label>
+      <label class="field">
+        <span>Protein (g)</span>
+        <input type="number" id="quickAddProteinInput" min="0" step="0.1" inputmode="decimal" placeholder="0" />
+      </label>
+      <label class="field">
+        <span>Time Stamp</span>
+        <input type="time" id="quickAddTimeInput" />
+      </label>
+      <p class="form-error" id="quickAddError"></p>
+    </div>
+  </div>
+
+  <!-- Barcode Scan modal (opened from the log overlay's feature grid) -->
+  <div class="modal-overlay" id="barcodeScanOverlay">
+    <div class="modal barcode-modal">
+      <div class="modal-header">
+        <h3>Scan Barcode</h3>
+        <button type="button" class="icon-btn" id="closeBarcodeScan" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="barcode-video-wrap">
+          <video id="barcodeVideo" class="barcode-video" autoplay playsinline muted></video>
+          <div class="barcode-video-frame" aria-hidden="true"></div>
+        </div>
+        <p class="barcode-hint" id="barcodeHint">Align a barcode inside the frame.</p>
+        <p class="form-error" id="barcodeError"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice Log bottom sheet (opened from the log overlay's feature grid) -->
+  <div class="exercise-sheet" id="voiceLogSheet">
+    <div class="exercise-sheet-panel" id="voiceLogSheetPanel">
+      <div class="exercise-sheet-grabber" id="voiceLogGrabber" aria-hidden="true"></div>
+      <h2 class="exercise-sheet-header">Voice Log</h2>
+      <div class="exercise-sheet-body">
+        <div class="voice-log-preview-card" id="voiceLogPreviewCard">
+          <p class="voice-log-preview-text" id="voiceLogPreviewText">Tap the mic and describe what you ate.</p>
+        </div>
+        <p class="form-error" id="voiceLogError"></p>
+        <button type="button" class="voice-log-mic-btn" id="voiceLogMicBtn" aria-label="Start voice log">
+          <span aria-hidden="true">🎤</span>
         </button>
       </div>
     </div>
@@ -1598,6 +1729,54 @@
           <input type="range" id="macroGoalFatSlider" min="0" max="250" step="1" value="70" />
         </label>
         <p class="form-error" id="macroGoalsError"></p>
+
+        <div class="target-profiles-divider"><span>Target Profiles</span></div>
+        <p class="field-hint target-profiles-hint">Customize the Rest, Work, and Gym Day targets used by the Today dashboard's day-type selector.</p>
+
+        <div class="target-profile-section" data-profile-key="rest">
+          <h4 class="target-profile-title">Rest Day</h4>
+          <label class="field">
+            <span>Profile Label</span>
+            <input type="text" maxlength="40" id="profileLabel_rest" />
+          </label>
+          <div class="target-profile-grid">
+            <label class="field"><span>Calories (kcal)</span><input type="number" min="0" step="1" id="profileCalories_rest" /></label>
+            <label class="field"><span>Protein (g)</span><input type="number" min="0" step="1" id="profileProtein_rest" /></label>
+            <label class="field"><span>Carbs (g)</span><input type="number" min="0" step="1" id="profileCarbs_rest" /></label>
+            <label class="field"><span>Fat (g)</span><input type="number" min="0" step="1" id="profileFat_rest" /></label>
+          </div>
+        </div>
+
+        <div class="target-profile-section" data-profile-key="work">
+          <h4 class="target-profile-title">Work Day</h4>
+          <label class="field">
+            <span>Profile Label</span>
+            <input type="text" maxlength="40" id="profileLabel_work" />
+          </label>
+          <div class="target-profile-grid">
+            <label class="field"><span>Calories (kcal)</span><input type="number" min="0" step="1" id="profileCalories_work" /></label>
+            <label class="field"><span>Protein (g)</span><input type="number" min="0" step="1" id="profileProtein_work" /></label>
+            <label class="field"><span>Carbs (g)</span><input type="number" min="0" step="1" id="profileCarbs_work" /></label>
+            <label class="field"><span>Fat (g)</span><input type="number" min="0" step="1" id="profileFat_work" /></label>
+          </div>
+        </div>
+
+        <div class="target-profile-section" data-profile-key="gym">
+          <h4 class="target-profile-title">Gym Day</h4>
+          <label class="field">
+            <span>Profile Label</span>
+            <input type="text" maxlength="40" id="profileLabel_gym" />
+          </label>
+          <div class="target-profile-grid">
+            <label class="field"><span>Calories (kcal)</span><input type="number" min="0" step="1" id="profileCalories_gym" /></label>
+            <label class="field"><span>Protein (g)</span><input type="number" min="0" step="1" id="profileProtein_gym" /></label>
+            <label class="field"><span>Carbs (g)</span><input type="number" min="0" step="1" id="profileCarbs_gym" /></label>
+            <label class="field"><span>Fat (g)</span><input type="number" min="0" step="1" id="profileFat_gym" /></label>
+          </div>
+        </div>
+
+        <p class="form-error" id="targetProfilesError"></p>
+        <button type="button" class="btn-primary target-profiles-save-btn" id="saveTargetProfilesBtn">Save Target Profiles</button>
       </div>
     </div>
   </div>
@@ -1613,17 +1792,15 @@
     <div class="settings-view-body">
       <section class="card more-menu-card">
         <ul class="more-menu-list" id="settingsMenuList">
-          <li class="more-menu-item" data-menu-key="profile">
+          <li class="more-menu-item" data-menu-key="profile-settings">
             <span class="more-menu-icon" aria-hidden="true">👤</span>
-            <span class="more-menu-title">Profile</span>
+            <span class="more-menu-title">Profile Settings</span>
             <span class="more-menu-chevron" aria-hidden="true">›</span>
           </li>
           <li class="more-menu-item" data-menu-key="app-appearance">
             <span class="more-menu-icon" aria-hidden="true">🎨</span>
             <span class="more-menu-title">App Appearance</span>
-            <button type="button" class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle light/dark theme">
-              <span class="theme-switch-thumb"></span>
-            </button>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
           </li>
           <li class="more-menu-item" data-menu-key="diary-settings">
             <span class="more-menu-icon" aria-hidden="true">📔</span>
@@ -1657,6 +1834,267 @@
         </ul>
       </section>
 
+    </div>
+  </div>
+
+  <!-- Profile Settings Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="profileSettingsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="profileSettingsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Profile Settings</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card">
+        <form id="profileSettingsForm">
+          <label class="field">
+            <span>Display Name</span>
+            <input type="text" id="profileSettingsDisplayName" maxlength="80" placeholder="e.g. Jordan Blake" />
+          </label>
+          <label class="field">
+            <span>Current Weight (kg)</span>
+            <input type="number" id="profileSettingsCurrentWeight" min="1" step="0.1" placeholder="e.g. 78" />
+          </label>
+          <label class="field">
+            <span>Target Weight (kg)</span>
+            <input type="number" id="profileSettingsTargetWeight" min="1" step="0.1" placeholder="e.g. 72" />
+          </label>
+          <label class="field">
+            <span>Height (cm)</span>
+            <input type="number" id="profileSettingsHeight" min="50" max="272" step="0.1" placeholder="e.g. 175" />
+          </label>
+
+          <h2 class="card-title goals-section-title">Custom Variable Daily Calorie Targets</h2>
+          <label class="field">
+            <span>Target Day 1 — Rest</span>
+            <input type="number" id="profileSettingsCalorieRest" min="1" step="10" placeholder="2000" />
+          </label>
+          <label class="field">
+            <span>Target Day 2 — Moderate</span>
+            <input type="number" id="profileSettingsCalorieModerate" min="1" step="10" placeholder="2200" />
+          </label>
+          <label class="field">
+            <span>Target Day 3 — Active</span>
+            <input type="number" id="profileSettingsCalorieActive" min="1" step="10" placeholder="2500" />
+          </label>
+
+          <p class="form-error" id="profileSettingsError"></p>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Save Profile</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <!-- App Appearance Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="appAppearanceView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="appAppearanceBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">App Appearance</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card">
+        <div class="appearance-card-grid" id="appearanceCardGrid">
+          <button type="button" class="appearance-card" data-theme-choice="light">
+            <span class="appearance-card-swatch appearance-card-swatch--light" aria-hidden="true"></span>
+            <span class="appearance-card-label">Light Mode</span>
+            <span class="appearance-card-check" aria-hidden="true">✓</span>
+          </button>
+          <button type="button" class="appearance-card" data-theme-choice="dark">
+            <span class="appearance-card-swatch appearance-card-swatch--dark" aria-hidden="true"></span>
+            <span class="appearance-card-label">Dark Mode</span>
+            <span class="appearance-card-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Diary Settings Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="diarySettingsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="diarySettingsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Diary Settings</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list" id="diarySettingsList">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Show Decimal Macronutrients</span>
+            <button type="button" class="toggle-switch" data-diary-toggle="showDecimalMacros" role="switch" aria-checked="false" aria-label="Toggle show decimal macronutrients">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Enable Quick-Add Calorie Button</span>
+            <button type="button" class="toggle-switch" data-diary-toggle="quickAddEnabled" role="switch" aria-checked="false" aria-label="Toggle quick-add calorie button">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Show Multi-Add Food Option by Default</span>
+            <button type="button" class="toggle-switch" data-diary-toggle="multiAddDefault" role="switch" aria-checked="false" aria-label="Toggle multi-add food option by default">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Start of the Week Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="startOfWeekView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="startOfWeekBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Start of the Week</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-title">First day of the tracker calendar</span>
+            <select id="startOfWeekSelect" class="privacy-select">
+              <option value="monday">Monday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Sharing & Privacy Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="sharingPrivacyView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="sharingPrivacyBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Sharing &amp; Privacy</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">📔</span>
+            <span class="more-menu-title">Diary Sharing</span>
+            <select id="sharingDiarySelect" class="privacy-select">
+              <option value="private">Private</option>
+              <option value="friends">Friends</option>
+              <option value="public">Public</option>
+            </select>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">🔎</span>
+            <span class="more-menu-title">Profile Searchability</span>
+            <button type="button" class="toggle-switch" id="sharingProfileSearchableSwitch" role="switch" aria-checked="false" aria-label="Toggle profile searchability">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- My Exercises Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="myExercisesView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="myExercisesBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">My Exercises</h1>
+      <button type="button" class="icon-btn" id="addCustomExerciseBtn" aria-label="Add Custom Exercise">+</button>
+    </header>
+    <div class="settings-view-body">
+      <section class="card">
+        <ul class="weight-timeline my-exercises-list" id="myExercisesList" style="max-height: none;"></ul>
+        <p class="empty-state hidden" id="myExercisesEmpty">No custom exercises yet. Tap + to add one.</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- Add Custom Exercise Modal -->
+  <div class="modal-overlay" id="addCustomExerciseOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Custom Exercise</h3>
+        <button class="icon-btn" id="closeAddCustomExerciseModal" aria-label="Close">✕</button>
+      </div>
+      <form id="addCustomExerciseForm" class="modal-body">
+        <label class="field">
+          <span>Exercise Name</span>
+          <input type="text" id="customExerciseNameInput" placeholder="e.g. Rowing Machine" required />
+        </label>
+        <label class="field">
+          <span>Calories Burned per Minute</span>
+          <input type="number" id="customExerciseCaloriesInput" min="0.1" step="0.1" placeholder="e.g. 8" required />
+        </label>
+        <p class="form-error" id="customExerciseError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelAddCustomExercise">Cancel</button>
+          <button type="submit" class="btn-primary">Add Exercise</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Push Notifications Sub-View (full-screen, nested under Settings) -->
+  <div class="settings-view" id="pushNotificationsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="pushNotificationsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Push Notifications</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <p class="notif-disabled-banner" id="notifDisabledBanner" hidden>Notifications are currently disabled. To receive notifications, go to Settings.</p>
+
+      <h2 class="notif-section-header">Send me a push notification when</h2>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-title">I receive a new message</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="newMessage" aria-label="Toggle notifications when I receive a new message" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">I receive a new friend request</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="newFriendRequest" aria-label="Toggle notifications when I receive a new friend request" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">One of my friends logs a workout</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="friendWorkoutLog" aria-label="Toggle notifications when a friend logs a workout" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">One of my friends hits a login streak</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="friendLoginStreak" aria-label="Toggle notifications when a friend hits a login streak" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">I reach my step goal</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="stepGoalReached" aria-label="Toggle notifications when I reach my step goal" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Do not notify me between</span>
+            <input type="checkbox" class="notif-toggle-circle" data-notif-key="quietHours" aria-label="Toggle quiet hours" />
+          </li>
+        </ul>
+      </section>
+      <p class="notif-footer-note">Notifications may be delayed while your device is locked or Low Power Mode is enabled, and can always be managed from your device's system settings.</p>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutConfirmOverlay">
+    <div class="modal logout-confirm-modal">
+      <div class="modal-header">
+        <h3>Log Out</h3>
+        <button class="icon-btn" id="closeLogoutConfirmModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="logout-confirm-text">Are you sure you want to log out? You'll need your username and password to sign back in.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelLogoutConfirm">Cancel</button>
+          <button type="button" class="btn-danger" id="confirmLogoutBtn">Log Out</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2155,8 +2593,253 @@
     </div>
   </div>
 
+  <!-- Community Forum Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="communityView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="communityBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Community</h1>
+      <button type="button" class="icon-btn" id="communityCreatePostBtn" aria-label="Create Post">+</button>
+    </header>
+    <div class="settings-view-body">
+      <div class="progress-subnav" id="communityFeedTabs">
+        <button type="button" class="progress-subnav-btn active" data-feed="all">All Discussions</button>
+        <button type="button" class="progress-subnav-btn" data-feed="groups">My Groups</button>
+      </div>
+      <div class="community-composer">
+        <span class="profile-avatar community-composer-avatar" aria-hidden="true">👤</span>
+        <input type="text" id="communityComposerInput" class="community-composer-input" placeholder="Share an update…" maxlength="240" />
+        <button type="button" class="icon-btn community-composer-send" id="communityComposerSendBtn" aria-label="Post update">➤</button>
+      </div>
+      <div class="community-feed" id="communityFeed"></div>
+    </div>
+  </div>
+
+  <!-- Learn Content Hub Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="learnView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="learnBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Learn</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="progress-subnav" id="learnChipsRow">
+        <button type="button" class="progress-subnav-btn active" data-category="all">All</button>
+        <button type="button" class="progress-subnav-btn" data-category="nutrition">Nutrition</button>
+        <button type="button" class="progress-subnav-btn" data-category="training">Training</button>
+        <button type="button" class="progress-subnav-btn" data-category="success-stories">Success Stories</button>
+        <button type="button" class="progress-subnav-btn" data-category="app-101">App 101</button>
+      </div>
+      <div class="learn-grid" id="learnGrid"></div>
+    </div>
+  </div>
+
+  <!-- Friends Network Directory Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="friendsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="friendsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Friends</h1>
+      <button type="button" class="icon-btn" id="friendsAddBtn" aria-label="Add Friend">+</button>
+    </header>
+    <div class="settings-view-body">
+      <div class="stat-mini-grid">
+        <div class="stat-mini-card">
+          <span class="stat-mini-value" id="friendsTotalCount">0</span>
+          <span class="stat-mini-label">Total Friends</span>
+        </div>
+        <div class="stat-mini-card">
+          <span class="stat-mini-value" id="friendsActiveTodayCount">0</span>
+          <span class="stat-mini-label">Active Today</span>
+        </div>
+      </div>
+      <div class="friends-list" id="friendsList"></div>
+    </div>
+  </div>
+
+  <!-- Messages Inbox Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="messagesView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="messagesBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Messages</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="log-search-wrap">
+        <span class="log-search-icon" aria-hidden="true">🔎</span>
+        <input type="search" id="messagesSearchInput" class="log-search-input" placeholder="Search conversations…" autocomplete="off" />
+      </div>
+      <div class="message-thread-list" id="messageThreadList"></div>
+    </div>
+  </div>
+
+  <!-- Message Thread Overlay (full-screen, nested under the Messages sub-view) -->
+  <div class="settings-view" id="messageThreadView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="messageThreadBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title" id="messageThreadTitle">—</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="chat-bubbles" id="chatBubbles"></div>
+    <form class="chat-input-bar" id="chatInputForm">
+      <input type="text" id="chatInput" class="chat-input" placeholder="Message…" maxlength="500" autocomplete="off" />
+      <button type="submit" class="icon-btn chat-send-btn" aria-label="Send message">➤</button>
+    </form>
+  </div>
+
+  <!-- Privacy Center Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="privacyView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="privacyBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Privacy</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">👁️</span>
+            <span class="more-menu-title">Profile Visibility</span>
+            <button type="button" class="toggle-switch" id="privacyProfileVisibilitySwitch" role="switch" aria-checked="true" aria-label="Toggle profile visibility">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">📔</span>
+            <span class="more-menu-title">Diary Sharing</span>
+            <select id="privacyDiarySharingSelect" class="privacy-select">
+              <option value="private">Private</option>
+              <option value="friends">Friends</option>
+              <option value="public">Public</option>
+            </select>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">✉️</span>
+            <span class="more-menu-title">Direct Messaging</span>
+            <button type="button" class="toggle-switch" id="privacyDirectMessagingSwitch" role="switch" aria-checked="true" aria-label="Toggle direct messaging">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">🐞</span>
+            <span class="more-menu-title">Anonymous Crash Reports</span>
+            <button type="button" class="toggle-switch" id="privacyCrashReportsSwitch" role="switch" aria-checked="true" aria-label="Toggle anonymous crash reports">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card privacy-actions">
+        <button type="button" class="btn-secondary privacy-export-btn" id="privacyExportBtn">Export Data History (CSV)</button>
+        <button type="button" class="privacy-danger-row" id="privacyDeleteAccountBtn">Permanently Delete Account</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- Help & Support Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="helpView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="helpBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Help &amp; Support</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="log-search-wrap help-search-wrap">
+        <span class="log-search-icon" aria-hidden="true">🔎</span>
+        <input type="search" id="helpSearchInput" class="log-search-input" placeholder="How can we help you today?" autocomplete="off" />
+      </div>
+      <div class="help-grid" id="helpGrid">
+        <button type="button" class="help-card" data-topic="account">
+          <span class="help-card-icon" aria-hidden="true">👤</span>
+          <span class="help-card-title">Account</span>
+        </button>
+        <button type="button" class="help-card" data-topic="database">
+          <span class="help-card-icon" aria-hidden="true">🗄️</span>
+          <span class="help-card-title">Database</span>
+        </button>
+        <button type="button" class="help-card" data-topic="syncing">
+          <span class="help-card-icon" aria-hidden="true">🔄</span>
+          <span class="help-card-title">Syncing</span>
+        </button>
+        <button type="button" class="help-card" data-topic="features">
+          <span class="help-card-icon" aria-hidden="true">✨</span>
+          <span class="help-card-title">Features</span>
+        </button>
+      </div>
+      <section class="card hidden" id="helpFaqPanel">
+        <h2 class="card-title" id="helpFaqTitle">—</h2>
+        <ul class="help-faq-list" id="helpFaqList"></ul>
+      </section>
+
+      <section class="card hidden" id="helpContactForm">
+        <h2 class="card-title">Contact Support Team</h2>
+        <label class="field">
+          <span>Subject</span>
+          <input type="text" id="helpContactSubject" placeholder="What do you need help with?" />
+        </label>
+        <label class="field">
+          <span>Message</span>
+          <textarea id="helpContactMessage" rows="4" placeholder="Describe the issue…"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="helpContactCancelBtn">Cancel</button>
+          <button type="button" class="btn-primary" id="helpContactSubmitBtn">Submit Ticket</button>
+        </div>
+      </section>
+
+      <button type="button" class="btn-primary help-contact-toggle-btn" id="helpContactToggleBtn">Contact Support Team</button>
+    </div>
+  </div>
+
+  <!-- Sync Status Sub-View (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="syncView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="syncBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Sync Status</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card sync-wheel-card">
+        <div class="sync-wheel-wrap" id="syncWheelWrap">
+          <svg viewBox="0 0 160 160" class="ring sync-wheel">
+            <circle cx="80" cy="80" r="70" class="ring-track" />
+            <circle cx="80" cy="80" r="70" class="ring-progress sync-wheel-progress" id="syncWheelProgress" />
+          </svg>
+          <div class="ring-center">
+            <span class="sync-wheel-icon" aria-hidden="true">🔄</span>
+          </div>
+        </div>
+        <p class="sync-timestamp" id="syncTimestamp">Last Successful Cloud Sync: —</p>
+        <button type="button" class="btn-primary sync-force-btn" id="syncForceBtn">Force Cloud Database Sync</button>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">System Status</h2>
+        <ul class="sync-checklist" id="syncChecklist">
+          <li class="sync-check-row" data-check="cache">
+            <span class="sync-check-icon" aria-hidden="true">✅</span>
+            <span class="sync-check-label">Cache</span>
+            <span class="sync-check-status">Up to date</span>
+          </li>
+          <li class="sync-check-row" data-check="express">
+            <span class="sync-check-icon" aria-hidden="true">✅</span>
+            <span class="sync-check-label">Express Server REST</span>
+            <span class="sync-check-status">Connected</span>
+          </li>
+          <li class="sync-check-row" data-check="hardware">
+            <span class="sync-check-icon" aria-hidden="true">✅</span>
+            <span class="sync-check-label">Hardware Sync</span>
+            <span class="sync-check-status" id="syncHardwareStatus">No devices</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
+  <script src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

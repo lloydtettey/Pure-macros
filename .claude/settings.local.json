@@ -48,7 +48,18 @@
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object -ExpandProperty OwningProcess\" 2>/dev/null)",
       "Bash(npx --version)",
       "Bash(command -v chromium-cli)",
-      "Bash(npx --yes -p playwright node verify_settings.js)"
+      "Bash(npx --yes -p playwright node verify_settings.js)",
+      "Bash(git check-ignore *)",
+      "PowerShell(npm root *)",
+      "PowerShell(Get-Command *)",
+      "Bash(npm root *)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path\")",
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id\" 2>/dev/null)",
+      "Bash(command -v npx)",
+      "Bash(awk 'NR==164,NR==2000' server/data/db.json)",
+      "Bash(npx --no-install playwright install chromium --dry-run)",
+      "Bash(export NODE_PATH=\"/c/Users/lloyd/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules\")"
     ]
   }
 }

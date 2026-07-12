@@ -22,6 +22,7 @@ const state = {
   foods: [],
   water: 0,
   waterOz: 0,
+  streak: 0,
   weights: [],
   exercise: [],
   steps: [],
@@ -36,7 +37,8 @@ const state = {
   savedMeals: [],
   savedRecipes: [],
   savedFoods: [],
-  discoverCatalog: null
+  discoverCatalog: null,
+  customExercises: []
 };
 
 function todayStr() {
@@ -67,11 +69,27 @@ let stepsLoaded = false;
 let sleepLoaded = false;
 let cnmRangeInitialized = false;
 let macroCardMode = 'percent'; // toggled by the Macros card swap icon; 'percent' | 'grams'
-let cachedStreakDays = null; // last 60 days from /history, cached for the header streak chip
 
 const dateStripEl = document.getElementById('dateStrip');
+const todayHeaderBtn = document.getElementById('todayHeaderBtn');
+const todayHeaderLabelEl = document.getElementById('todayHeaderLabel');
+const calendarDropdownEl = document.getElementById('calendarDropdown');
+const calMonthYearLabelEl = document.getElementById('calMonthYearLabel');
+const calPrevMonthBtn = document.getElementById('calPrevMonthBtn');
+const calNextMonthBtn = document.getElementById('calNextMonthBtn');
+const calendarGridEl = document.getElementById('calendarGrid');
+const calendarWeekdaysEl = document.getElementById('calendarWeekdays');
+const calendarMonthYearBtn = document.getElementById('calendar-month-year-btn');
+const monthYearPickerViewEl = document.getElementById('month-year-picker-view');
+const pickerMonthColEl = document.getElementById('pickerMonthCol');
+const pickerYearColEl = document.getElementById('pickerYearCol');
+const headerStreakChipEl = document.getElementById('headerStreakChip');
 const headerStreakValueEl = document.getElementById('headerStreakValue');
+const streakPopoverEl = document.getElementById('streakPopover');
+const streakPopoverCloseBtn = document.getElementById('streakPopoverClose');
+const streakPopoverLogBtn = document.getElementById('streakPopoverLogBtn');
 const macrosSwapBtn = document.getElementById('macrosSwapBtn');
+const dayTypeSelectorEl = document.getElementById('dayTypeSelector');
 
 const onboardingOverlay = document.getElementById('onboardingOverlay');
 const onboardingPanel = document.querySelector('.onboarding-panel');
@@ -142,7 +160,57 @@ const moreMenuListEl = document.getElementById('moreMenuList');
 const settingsView = document.getElementById('settingsView');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const settingsMenuListEl = document.getElementById('settingsMenuList');
-const themeSwitch = document.getElementById('themeSwitch');
+
+const profileSettingsView = document.getElementById('profileSettingsView');
+const profileSettingsBackBtn = document.getElementById('profileSettingsBackBtn');
+const profileSettingsForm = document.getElementById('profileSettingsForm');
+const profileSettingsError = document.getElementById('profileSettingsError');
+const profileSettingsDisplayName = document.getElementById('profileSettingsDisplayName');
+const profileSettingsCurrentWeight = document.getElementById('profileSettingsCurrentWeight');
+const profileSettingsTargetWeight = document.getElementById('profileSettingsTargetWeight');
+const profileSettingsHeight = document.getElementById('profileSettingsHeight');
+const profileSettingsCalorieRest = document.getElementById('profileSettingsCalorieRest');
+const profileSettingsCalorieModerate = document.getElementById('profileSettingsCalorieModerate');
+const profileSettingsCalorieActive = document.getElementById('profileSettingsCalorieActive');
+
+const appAppearanceView = document.getElementById('appAppearanceView');
+const appAppearanceBackBtn = document.getElementById('appAppearanceBackBtn');
+const appearanceCardGridEl = document.getElementById('appearanceCardGrid');
+
+const diarySettingsView = document.getElementById('diarySettingsView');
+const diarySettingsBackBtn = document.getElementById('diarySettingsBackBtn');
+const diarySettingsListEl = document.getElementById('diarySettingsList');
+
+const startOfWeekView = document.getElementById('startOfWeekView');
+const startOfWeekBackBtn = document.getElementById('startOfWeekBackBtn');
+const startOfWeekSelect = document.getElementById('startOfWeekSelect');
+
+const sharingPrivacyView = document.getElementById('sharingPrivacyView');
+const sharingPrivacyBackBtn = document.getElementById('sharingPrivacyBackBtn');
+const sharingDiarySelect = document.getElementById('sharingDiarySelect');
+const sharingProfileSearchableSwitch = document.getElementById('sharingProfileSearchableSwitch');
+
+const myExercisesView = document.getElementById('myExercisesView');
+const myExercisesBackBtn = document.getElementById('myExercisesBackBtn');
+const myExercisesListEl = document.getElementById('myExercisesList');
+const myExercisesEmptyEl = document.getElementById('myExercisesEmpty');
+const addCustomExerciseBtn = document.getElementById('addCustomExerciseBtn');
+const addCustomExerciseOverlay = document.getElementById('addCustomExerciseOverlay');
+const closeAddCustomExerciseModal = document.getElementById('closeAddCustomExerciseModal');
+const cancelAddCustomExercise = document.getElementById('cancelAddCustomExercise');
+const addCustomExerciseForm = document.getElementById('addCustomExerciseForm');
+const customExerciseNameInput = document.getElementById('customExerciseNameInput');
+const customExerciseCaloriesInput = document.getElementById('customExerciseCaloriesInput');
+const customExerciseError = document.getElementById('customExerciseError');
+
+const pushNotificationsView = document.getElementById('pushNotificationsView');
+const pushNotificationsBackBtn = document.getElementById('pushNotificationsBackBtn');
+const notifDisabledBanner = document.getElementById('notifDisabledBanner');
+
+const logoutConfirmOverlay = document.getElementById('logoutConfirmOverlay');
+const closeLogoutConfirmModal = document.getElementById('closeLogoutConfirmModal');
+const cancelLogoutConfirm = document.getElementById('cancelLogoutConfirm');
+const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
 
 const goalsView = document.getElementById('goalsView');
 const goalsBackBtn = document.getElementById('goalsBackBtn');
@@ -243,6 +311,20 @@ const macroGoalCarbsValueEl = document.getElementById('macroGoalCarbsValue');
 const macroGoalProteinValueEl = document.getElementById('macroGoalProteinValue');
 const macroGoalFatValueEl = document.getElementById('macroGoalFatValue');
 
+const DAY_TYPE_DEFAULT_LABELS = { rest: 'Rest Day', work: 'Work Day', gym: 'Gym Training' };
+const targetProfilesError = document.getElementById('targetProfilesError');
+const saveTargetProfilesBtn = document.getElementById('saveTargetProfilesBtn');
+const targetProfileInputs = {};
+for (const dayType of ['rest', 'work', 'gym']) {
+  targetProfileInputs[dayType] = {
+    label: document.getElementById(`profileLabel_${dayType}`),
+    calories: document.getElementById(`profileCalories_${dayType}`),
+    protein: document.getElementById(`profileProtein_${dayType}`),
+    carbs: document.getElementById(`profileCarbs_${dayType}`),
+    fat: document.getElementById(`profileFat_${dayType}`)
+  };
+}
+
 const scanOverlay = document.getElementById('scanOverlay');
 const scanImagePreview = document.getElementById('scanImagePreview');
 const scanDetectedName = document.getElementById('scanDetectedName');
@@ -307,6 +389,34 @@ const EXERCISE_PRESETS = {
   strength: ['Weightlifting', 'Bodyweight', 'CrossFit', 'Other Strength']
 };
 let activeExerciseType = null;
+
+const quickAddScreen = document.getElementById('quickAddScreen');
+const quickAddBackBtn = document.getElementById('quickAddBackBtn');
+const quickAddSaveBtn = document.getElementById('quickAddSaveBtn');
+const quickAddMealSelect = document.getElementById('quickAddMealSelect');
+const quickAddCaloriesInput = document.getElementById('quickAddCaloriesInput');
+const quickAddFatInput = document.getElementById('quickAddFatInput');
+const quickAddCarbsInput = document.getElementById('quickAddCarbsInput');
+const quickAddProteinInput = document.getElementById('quickAddProteinInput');
+const quickAddTimeInput = document.getElementById('quickAddTimeInput');
+const quickAddError = document.getElementById('quickAddError');
+
+const barcodeScanOverlay = document.getElementById('barcodeScanOverlay');
+const barcodeVideo = document.getElementById('barcodeVideo');
+const closeBarcodeScanBtn = document.getElementById('closeBarcodeScan');
+const barcodeHint = document.getElementById('barcodeHint');
+const barcodeError = document.getElementById('barcodeError');
+let barcodeMediaStream = null;
+
+const voiceLogSheet = document.getElementById('voiceLogSheet');
+const voiceLogSheetPanel = document.getElementById('voiceLogSheetPanel');
+const voiceLogGrabber = document.getElementById('voiceLogGrabber');
+const voiceLogPreviewText = document.getElementById('voiceLogPreviewText');
+const voiceLogError = document.getElementById('voiceLogError');
+const voiceLogMicBtn = document.getElementById('voiceLogMicBtn');
+let voiceLogRecognition = null;
+let voiceLogListening = false;
+let voiceLogFinalTranscript = '';
 
 // ---------- Auth ----------
 function getToken() {
@@ -388,6 +498,88 @@ document.querySelectorAll('.auth-tab').forEach((tab) => {
   tab.addEventListener('click', () => switchAuthTab(tab));
 });
 
+// ---------- OAuth (Google / Apple) sign-in ----------
+// Client IDs aren't secret (they're sent to Google/Apple on every request
+// regardless), so they're fetched from the server rather than hardcoded here
+// — that lets .env configuration turn each button on/off without touching
+// this file.
+let googleCodeClient = null;
+let appleAuthReady = false;
+
+async function initOAuthProviders() {
+  try {
+    const res = await fetch(`${API}/oauth/config`);
+    const config = await res.json();
+
+    if (config.googleClientId && window.google?.accounts?.oauth2) {
+      googleCodeClient = google.accounts.oauth2.initCodeClient({
+        client_id: config.googleClientId,
+        scope: 'openid email profile',
+        ux_mode: 'popup',
+        callback: handleGoogleAuthResponse
+      });
+    }
+
+    if (config.appleClientId && window.AppleID) {
+      AppleID.auth.init({
+        clientId: config.appleClientId,
+        scope: 'name email',
+        redirectURI: window.location.origin,
+        usePopup: true
+      });
+      appleAuthReady = true;
+    }
+  } catch {
+    // OAuth is optional — username/password sign-in still works if this fails.
+  }
+}
+initOAuthProviders();
+
+async function completeOAuthSignIn(endpoint, body) {
+  const res = await fetch(`${API}/auth/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Sign-in failed');
+  setToken(data.token);
+  revealApp();
+  initApp();
+  checkOnboarding();
+}
+
+async function handleGoogleAuthResponse(response) {
+  if (response.error) return; // user closed the popup — no error to surface
+  try {
+    await completeOAuthSignIn('google', { code: response.code });
+  } catch (err) {
+    registerError.textContent = err.message;
+  }
+}
+
+document.getElementById('oauthGoogleBtn')?.addEventListener('click', () => {
+  if (!googleCodeClient) {
+    showToast('Google sign-in is not configured', true);
+    return;
+  }
+  googleCodeClient.requestCode();
+});
+
+document.getElementById('oauthAppleBtn')?.addEventListener('click', async () => {
+  if (!appleAuthReady) {
+    showToast('Apple sign-in is not configured', true);
+    return;
+  }
+  try {
+    const result = await AppleID.auth.signIn();
+    await completeOAuthSignIn('apple', { identityToken: result.authorization.id_token, user: result.user });
+  } catch (err) {
+    if (err?.error === 'popup_closed_by_user') return;
+    registerError.textContent = err.message || 'Apple sign-in failed';
+  }
+});
+
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';
@@ -445,8 +637,10 @@ function getStoredTheme() {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  const isLight = theme === 'light';
-  themeSwitch.setAttribute('aria-checked', String(isLight));
+  document.body.classList.toggle('dark-theme', theme === 'dark');
+  appearanceCardGridEl.querySelectorAll('.appearance-card').forEach((card) => {
+    card.classList.toggle('appearance-card--active', card.dataset.themeChoice === theme);
+  });
 }
 
 function setTheme(theme) {
@@ -456,9 +650,12 @@ function setTheme(theme) {
 
 applyTheme(getStoredTheme());
 
-themeSwitch.addEventListener('click', () => {
-  setTheme(getStoredTheme() === 'light' ? 'dark' : 'light');
+appearanceCardGridEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.appearance-card');
+  if (!card) return;
+  setTheme(card.dataset.themeChoice);
 });
+appAppearanceBackBtn.addEventListener('click', () => closeSubView(appAppearanceView));
 
 // ---------- Unit conversion (Weight kg/lbs, Height cm/ft-in) ----------
 function getWeightUnit() {
@@ -627,6 +824,40 @@ macrosSwapBtn.addEventListener('click', () => {
   renderMacros();
 });
 
+// ---------- Day Type Selector (Rest / Work / Gym capsule) ----------
+dayTypeSelectorEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.day-type-btn');
+  if (!btn || !state.settings) return;
+  const dayType = btn.dataset.dayType;
+  if (state.settings.activeDayType === dayType) return;
+
+  const previousDayType = state.settings.activeDayType;
+  state.settings.activeDayType = dayType;
+  renderDayTypeSelector();
+  renderCalorieBar();
+  renderMacros();
+
+  try {
+    const res = await authFetch(`${API}/settings/active-day-type`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dayType })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update day type');
+    state.settings = data;
+    renderDayTypeSelector();
+    renderCalorieBar();
+    renderMacros();
+  } catch (err) {
+    state.settings.activeDayType = previousDayType;
+    renderDayTypeSelector();
+    renderCalorieBar();
+    renderMacros();
+    showToast(err.message, true);
+  }
+});
+
 profileForm.addEventListener('submit', handleProfileSubmit);
 
 document.getElementById('weightSubmitBtn').addEventListener('click', handleWeightSubmit);
@@ -657,6 +888,28 @@ mealCards.forEach((card) => {
   const gramsInput = card.querySelector('.f-grams');
   const customFields = card.querySelector('[data-role="custom-food-fields"]');
   const stateToggle = card.querySelector('[data-role="state-toggle"]');
+  const customNameInput = card.querySelector('.f-custom-name');
+  const customKcalInput = card.querySelector('.f-custom-kcal');
+  const customProteinInput = card.querySelector('.f-custom-protein');
+  const customCarbsInput = card.querySelector('.f-custom-carbs');
+  const customFatInput = card.querySelector('.f-custom-fat');
+
+  // The custom-food kcal/protein/carbs/fat fields are all "per 100g" density
+  // values (see readCustomFood/updateFoodPreview), so the estimate always
+  // runs on a fixed 100g mass basis — the Weight field only gates *when*
+  // the estimate fires, matching the "Name + Calories + Weight all filled"
+  // trigger, without corrupting the density math with the logged quantity.
+  function runAutoMacroEstimate() {
+    const name = customNameInput.value.trim();
+    const estimate = autoEstimateMacros(name, customKcalInput.value, 100);
+    if (!estimate || !gramsInput.value) return;
+    customProteinInput.value = estimate.protein;
+    customCarbsInput.value = estimate.carbs;
+    customFatInput.value = estimate.fat;
+    updateFoodPreview(card);
+  }
+  customNameInput.addEventListener('input', runAutoMacroEstimate);
+  customKcalInput.addEventListener('input', runAutoMacroEstimate);
 
   foodSelect.addEventListener('change', () => {
     const isCustom = foodSelect.value === CUSTOM_FOOD_ID;
@@ -689,7 +942,10 @@ mealCards.forEach((card) => {
     updateFoodPreview(card);
   });
 
-  gramsInput.addEventListener('input', () => updateFoodPreview(card));
+  gramsInput.addEventListener('input', () => {
+    updateFoodPreview(card);
+    runAutoMacroEstimate();
+  });
   customFields.querySelectorAll('input').forEach((input) => {
     input.addEventListener('input', () => updateFoodPreview(card));
   });
@@ -768,6 +1024,63 @@ async function persistMacroGoals() {
   }
 }
 
+function populateTargetProfilesForm() {
+  targetProfilesError.textContent = '';
+  const dayTypeTargets = state.settings?.dayTypeTargets || {};
+  for (const dayType of ['rest', 'work', 'gym']) {
+    const profile = dayTypeTargets[dayType] || {};
+    const inputs = targetProfileInputs[dayType];
+    inputs.label.value = profile.label ?? DAY_TYPE_DEFAULT_LABELS[dayType];
+    inputs.calories.value = profile.calories ?? '';
+    inputs.protein.value = profile.protein ?? '';
+    inputs.carbs.value = profile.carbs ?? '';
+    inputs.fat.value = profile.fat ?? '';
+  }
+}
+
+async function saveTargetProfiles() {
+  targetProfilesError.textContent = '';
+  const profiles = [];
+  for (const dayType of ['rest', 'work', 'gym']) {
+    const inputs = targetProfileInputs[dayType];
+    const label = inputs.label.value.trim();
+    const calories = Number(inputs.calories.value);
+    const protein = Number(inputs.protein.value);
+    const carbs = Number(inputs.carbs.value);
+    const fat = Number(inputs.fat.value);
+    if (!label) {
+      targetProfilesError.textContent = 'Every profile needs a label.';
+      return;
+    }
+    if ([calories, protein, carbs, fat].some((n) => Number.isNaN(n) || n <= 0)) {
+      targetProfilesError.textContent = 'Calories, protein, carbs, and fat must all be positive numbers.';
+      return;
+    }
+    profiles.push({ key: dayType, label, calories, protein, carbs, fat });
+  }
+
+  saveTargetProfilesBtn.disabled = true;
+  try {
+    const res = await authFetch(`${API}/settings/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profiles })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save target profiles');
+    state.settings = data;
+    closeMacroGoalsModal();
+    render();
+    showToast('Target profiles saved');
+  } catch (err) {
+    targetProfilesError.textContent = err.message;
+  } finally {
+    saveTargetProfilesBtn.disabled = false;
+  }
+}
+
+saveTargetProfilesBtn.addEventListener('click', saveTargetProfiles);
+
 function openMacroGoalsModal() {
   macroGoalsError.textContent = '';
   const settings = state.settings || {};
@@ -776,6 +1089,7 @@ function openMacroGoalsModal() {
   macroGoalCarbsSlider.value = settings.macroGoals?.carbs ?? 250;
   macroGoalFatSlider.value = settings.macroGoals?.fat ?? 70;
   updateMacroGoalSliderLabels();
+  populateTargetProfilesForm();
   macroGoalsOverlay.classList.add('open');
 }
 
@@ -806,21 +1120,322 @@ function closeSettingsView() {
 settingsBackBtn.addEventListener('click', closeSettingsView);
 
 const SETTINGS_MENU_ACTIONS = {
-  logout: () => handleLogout()
+  'profile-settings': () => openProfileSettingsView(),
+  'app-appearance': () => openSubView(appAppearanceView),
+  'diary-settings': () => openDiarySettingsView(),
+  'start-of-week': () => openStartOfWeekView(),
+  'sharing-privacy': () => openSharingPrivacyView(),
+  'my-exercises': () => openMyExercisesView(),
+  'push-notifications': () => openPushNotificationsView(),
+  logout: () => openLogoutConfirmModal()
 };
 
 settingsMenuListEl.addEventListener('click', (e) => {
-  if (e.target.closest('.theme-switch')) return;
   const item = e.target.closest('.more-menu-item');
   if (!item) return;
-  if (item.dataset.menuKey === 'app-appearance') {
-    themeSwitch.click();
-    return;
-  }
   const action = SETTINGS_MENU_ACTIONS[item.dataset.menuKey];
   if (action) action();
   else showToast('Coming soon');
 });
+
+// ---------- Profile Settings sub-view (Settings > Profile Settings) ----------
+function openProfileSettingsView() {
+  profileSettingsError.textContent = '';
+  const s = state.settings || {};
+  profileSettingsDisplayName.value = s.displayName || '';
+  profileSettingsCurrentWeight.value = s.currentWeightKg ?? '';
+  profileSettingsTargetWeight.value = s.targetWeightKg ?? '';
+  profileSettingsHeight.value = s.heightCm ?? '';
+  const targets = s.customCalorieTargets || { rest: 2000, moderate: 2200, active: 2500 };
+  profileSettingsCalorieRest.value = targets.rest ?? 2000;
+  profileSettingsCalorieModerate.value = targets.moderate ?? 2200;
+  profileSettingsCalorieActive.value = targets.active ?? 2500;
+  openSubView(profileSettingsView);
+}
+profileSettingsBackBtn.addEventListener('click', () => closeSubView(profileSettingsView));
+
+profileSettingsForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  profileSettingsError.textContent = '';
+
+  const payload = { displayName: profileSettingsDisplayName.value.trim() };
+  const currentWeightKg = parseFloat(profileSettingsCurrentWeight.value);
+  const targetWeightKg = parseFloat(profileSettingsTargetWeight.value);
+  const heightCm = parseFloat(profileSettingsHeight.value);
+  const rest = parseFloat(profileSettingsCalorieRest.value);
+  const moderate = parseFloat(profileSettingsCalorieModerate.value);
+  const active = parseFloat(profileSettingsCalorieActive.value);
+  if (!Number.isNaN(currentWeightKg)) payload.currentWeightKg = currentWeightKg;
+  if (!Number.isNaN(targetWeightKg)) payload.targetWeightKg = targetWeightKg;
+  if (!Number.isNaN(heightCm)) payload.heightCm = heightCm;
+  if (!Number.isNaN(rest) && !Number.isNaN(moderate) && !Number.isNaN(active)) {
+    payload.customCalorieTargets = { rest, moderate, active };
+  }
+
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save profile');
+    state.settings = data;
+    showToast('Profile saved');
+    closeSubView(profileSettingsView);
+  } catch (err) {
+    profileSettingsError.textContent = err.message;
+  }
+});
+
+// ---------- Diary Settings sub-view (Settings > Diary Settings) ----------
+function renderDiarySettings() {
+  const diary = state.settings?.diary || {};
+  diarySettingsListEl.querySelectorAll('[data-diary-toggle]').forEach((btn) => {
+    btn.setAttribute('aria-checked', String(Boolean(diary[btn.dataset.diaryToggle])));
+  });
+}
+
+function openDiarySettingsView() {
+  renderDiarySettings();
+  openSubView(diarySettingsView);
+}
+diarySettingsBackBtn.addEventListener('click', () => closeSubView(diarySettingsView));
+
+diarySettingsListEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-diary-toggle]');
+  if (!btn) return;
+  const key = btn.dataset.diaryToggle;
+  const next = btn.getAttribute('aria-checked') !== 'true';
+  btn.setAttribute('aria-checked', String(next));
+  const diary = { ...(state.settings.diary || {}), [key]: next };
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diary })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update diary setting');
+    state.settings = data;
+    if (key === 'showDecimalMacros') renderMeals();
+  } catch (err) {
+    btn.setAttribute('aria-checked', String(!next));
+    showToast(err.message, true);
+  }
+});
+
+// ---------- Start of the Week sub-view (Settings > Start of the Week) ----------
+function openStartOfWeekView() {
+  startOfWeekSelect.value = state.settings?.weekStart || 'monday';
+  openSubView(startOfWeekView);
+}
+startOfWeekBackBtn.addEventListener('click', () => closeSubView(startOfWeekView));
+
+startOfWeekSelect.addEventListener('change', async () => {
+  const weekStart = startOfWeekSelect.value;
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekStart })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update start of week');
+    state.settings = data;
+    dateStripWeekStart = state.settings.weekStart;
+    buildDateStrip();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+// ---------- Sharing & Privacy sub-view (Settings > Sharing & Privacy) ----------
+function renderSharingPrivacy() {
+  const sharing = state.settings?.sharing || {};
+  sharingDiarySelect.value = sharing.diarySharing || 'private';
+  sharingProfileSearchableSwitch.setAttribute('aria-checked', String(Boolean(sharing.profileSearchable)));
+}
+
+function openSharingPrivacyView() {
+  renderSharingPrivacy();
+  openSubView(sharingPrivacyView);
+}
+sharingPrivacyBackBtn.addEventListener('click', () => closeSubView(sharingPrivacyView));
+
+async function persistSharing(sharing) {
+  const res = await authFetch(`${API}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sharing })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update sharing settings');
+  state.settings = data;
+}
+
+sharingDiarySelect.addEventListener('change', async () => {
+  const sharing = { ...(state.settings.sharing || {}), diarySharing: sharingDiarySelect.value };
+  try {
+    await persistSharing(sharing);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+sharingProfileSearchableSwitch.addEventListener('click', async () => {
+  const next = sharingProfileSearchableSwitch.getAttribute('aria-checked') !== 'true';
+  sharingProfileSearchableSwitch.setAttribute('aria-checked', String(next));
+  const sharing = { ...(state.settings.sharing || {}), profileSearchable: next };
+  try {
+    await persistSharing(sharing);
+  } catch (err) {
+    sharingProfileSearchableSwitch.setAttribute('aria-checked', String(!next));
+    showToast(err.message, true);
+  }
+});
+
+// ---------- My Exercises sub-view (Settings > My Exercises) ----------
+async function loadCustomExercises() {
+  try {
+    const res = await authFetch(`${API}/custom-exercises`);
+    if (!res.ok) throw new Error('Failed to load custom exercises');
+    state.customExercises = await res.json();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function renderCustomExercises() {
+  myExercisesListEl.innerHTML = '';
+  const list = state.customExercises || [];
+  myExercisesEmptyEl.classList.toggle('hidden', list.length > 0);
+  for (const ex of list) {
+    const li = document.createElement('li');
+    li.className = 'weight-entry';
+    li.innerHTML = `
+      <span class="weight-date">${escapeHtml(ex.name)}</span>
+      <span class="weight-value">${ex.caloriesPerMinute} kcal/min</span>
+      <button type="button" class="icon-btn" data-delete-exercise="${ex.id}" aria-label="Delete ${escapeHtml(ex.name)}">✕</button>
+    `;
+    myExercisesListEl.appendChild(li);
+  }
+}
+
+async function openMyExercisesView() {
+  await loadCustomExercises();
+  renderCustomExercises();
+  openSubView(myExercisesView);
+}
+myExercisesBackBtn.addEventListener('click', () => closeSubView(myExercisesView));
+
+myExercisesListEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-delete-exercise]');
+  if (!btn) return;
+  const id = btn.dataset.deleteExercise;
+  try {
+    const res = await authFetch(`${API}/custom-exercises/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete exercise');
+    state.customExercises = state.customExercises.filter((ex) => ex.id !== id);
+    renderCustomExercises();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+function openAddCustomExerciseModal() {
+  customExerciseError.textContent = '';
+  addCustomExerciseForm.reset();
+  addCustomExerciseOverlay.classList.add('open');
+}
+function closeAddCustomExerciseModalFn() {
+  addCustomExerciseOverlay.classList.remove('open');
+}
+addCustomExerciseBtn.addEventListener('click', openAddCustomExerciseModal);
+closeAddCustomExerciseModal.addEventListener('click', closeAddCustomExerciseModalFn);
+cancelAddCustomExercise.addEventListener('click', closeAddCustomExerciseModalFn);
+addCustomExerciseOverlay.addEventListener('click', (e) => { if (e.target === addCustomExerciseOverlay) closeAddCustomExerciseModalFn(); });
+
+addCustomExerciseForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  customExerciseError.textContent = '';
+  const name = customExerciseNameInput.value.trim();
+  const caloriesPerMinute = parseFloat(customExerciseCaloriesInput.value);
+  if (!name || Number.isNaN(caloriesPerMinute) || caloriesPerMinute <= 0) {
+    customExerciseError.textContent = 'Enter a name and a positive calories/minute value';
+    return;
+  }
+  try {
+    const res = await authFetch(`${API}/custom-exercises`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, caloriesPerMinute })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add exercise');
+    state.customExercises = [...(state.customExercises || []), data];
+    renderCustomExercises();
+    closeAddCustomExerciseModalFn();
+  } catch (err) {
+    customExerciseError.textContent = err.message;
+  }
+});
+
+// ---------- Push Notifications sub-view (Settings > Push Notifications) ----------
+function renderPushNotifications() {
+  const notifications = state.settings?.notifications || {};
+  pushNotificationsView.querySelectorAll('[data-notif-key]').forEach((box) => {
+    box.checked = Boolean(notifications[box.dataset.notifKey]);
+  });
+  // Mirrors MyFitnessPal: surface the OS/browser notification permission state
+  // so the user knows toggles below won't fire until it's granted.
+  const permission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
+  notifDisabledBanner.hidden = permission === 'granted';
+}
+
+async function openPushNotificationsView() {
+  try {
+    const res = await authFetch(`${API}/settings`);
+    const data = await res.json();
+    if (res.ok) state.settings = data;
+  } catch {
+    // Fall back to whatever settings are already cached in state.
+  }
+  renderPushNotifications();
+  openSubView(pushNotificationsView);
+}
+pushNotificationsBackBtn.addEventListener('click', () => closeSubView(pushNotificationsView));
+
+pushNotificationsView.addEventListener('change', async (e) => {
+  const box = e.target.closest('[data-notif-key]');
+  if (!box) return;
+  const key = box.dataset.notifKey;
+  try {
+    const res = await authFetch(`${API}/settings/notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: box.checked })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update notification setting');
+    state.settings = data;
+  } catch (err) {
+    box.checked = !box.checked;
+    showToast(err.message, true);
+  }
+});
+
+// ---------- Logout confirmation modal (Settings > Logout) ----------
+function openLogoutConfirmModal() {
+  logoutConfirmOverlay.classList.add('open');
+}
+function closeLogoutConfirmModalFn() {
+  logoutConfirmOverlay.classList.remove('open');
+}
+closeLogoutConfirmModal.addEventListener('click', closeLogoutConfirmModalFn);
+cancelLogoutConfirm.addEventListener('click', closeLogoutConfirmModalFn);
+logoutConfirmOverlay.addEventListener('click', (e) => { if (e.target === logoutConfirmOverlay) closeLogoutConfirmModalFn(); });
+confirmLogoutBtn.addEventListener('click', () => handleLogout());
 
 // ---------- Goals sub-view (nested full-screen view opened from the More tab) ----------
 const ACTIVITY_LEVEL_LABELS = {
@@ -940,6 +1555,8 @@ function openLogOverlay() {
   logSearchInput.value = '';
   switchLogSubtab('history');
   refreshLogOverlayLists();
+  // Diary Settings > "Enable Quick-Add Calorie Button"
+  document.getElementById('logFeatureQuickAdd').classList.toggle('hidden', !state.settings?.diary?.quickAddEnabled);
   logOverlay.classList.add('open');
 }
 
@@ -1146,13 +1763,197 @@ function refreshLogOverlayLists() {
 
 // ---------- Feature module grid (Barcode / Voice / Meal Scan / Quick Add) ----------
 document.getElementById('logFeatureBarcode').addEventListener('click', () => {
-  showToast('Barcode scanning is coming soon');
+  openBarcodeScanModal();
 });
 document.getElementById('logFeatureVoice').addEventListener('click', () => {
-  showToast('Voice logging is coming soon');
+  openVoiceLogSheet();
 });
 document.getElementById('logFeatureMealScan').addEventListener('click', () => {
   logMealScanFileInput.click();
+});
+
+// ---------- Barcode Scan modal ----------
+async function openBarcodeScanModal() {
+  barcodeError.textContent = '';
+  barcodeHint.classList.remove('hidden');
+  barcodeScanOverlay.classList.add('open');
+  try {
+    barcodeMediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+      audio: false
+    });
+    barcodeVideo.srcObject = barcodeMediaStream;
+  } catch (err) {
+    barcodeError.textContent =
+      err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+        ? 'Camera access was denied. Allow camera permission to scan a barcode.'
+        : 'Could not start the camera on this device.';
+  }
+}
+function closeBarcodeScanModal() {
+  barcodeScanOverlay.classList.remove('open');
+  if (barcodeMediaStream) {
+    barcodeMediaStream.getTracks().forEach((track) => track.stop());
+    barcodeMediaStream = null;
+  }
+  barcodeVideo.srcObject = null;
+}
+closeBarcodeScanBtn.addEventListener('click', closeBarcodeScanModal);
+barcodeScanOverlay.addEventListener('click', (e) => {
+  if (e.target === barcodeScanOverlay) closeBarcodeScanModal();
+});
+
+// ---------- Voice Log bottom sheet ----------
+const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function openVoiceLogSheet() {
+  voiceLogError.textContent = '';
+  voiceLogFinalTranscript = '';
+  voiceLogPreviewText.textContent = 'Tap the mic and describe what you ate.';
+  voiceLogSheet.classList.add('open');
+}
+function closeVoiceLogSheet() {
+  stopVoiceLogListening();
+  voiceLogSheet.classList.remove('open');
+}
+function stopVoiceLogListening() {
+  voiceLogListening = false;
+  voiceLogMicBtn.classList.remove('listening');
+  if (voiceLogRecognition) voiceLogRecognition.stop();
+}
+
+function startVoiceLogListening() {
+  if (!SpeechRecognitionCtor) {
+    voiceLogError.textContent = 'Voice recognition is not supported in this browser.';
+    return;
+  }
+  voiceLogError.textContent = '';
+  voiceLogFinalTranscript = '';
+  voiceLogRecognition = new SpeechRecognitionCtor();
+  voiceLogRecognition.continuous = true;
+  voiceLogRecognition.interimResults = true;
+  voiceLogRecognition.lang = 'en-US';
+
+  voiceLogRecognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) voiceLogFinalTranscript += `${transcript} `;
+      else interim += transcript;
+    }
+    voiceLogPreviewText.textContent = (voiceLogFinalTranscript + interim).trim() || 'Listening…';
+  };
+  voiceLogRecognition.onerror = (event) => {
+    voiceLogError.textContent =
+      event.error === 'not-allowed' || event.error === 'permission-denied'
+        ? 'Microphone access was denied. Allow microphone permission to use voice log.'
+        : 'Voice recognition ran into an error.';
+    stopVoiceLogListening();
+  };
+  voiceLogRecognition.onend = () => {
+    voiceLogListening = false;
+    voiceLogMicBtn.classList.remove('listening');
+  };
+
+  voiceLogListening = true;
+  voiceLogMicBtn.classList.add('listening');
+  voiceLogRecognition.start();
+}
+
+voiceLogMicBtn.addEventListener('click', () => {
+  if (voiceLogListening) stopVoiceLogListening();
+  else startVoiceLogListening();
+});
+voiceLogSheet.addEventListener('click', (e) => {
+  if (e.target === voiceLogSheet) closeVoiceLogSheet();
+});
+
+// Pull-down-to-dismiss, mirroring the Add Exercise sheet's swipe gesture.
+(function setupVoiceLogSheetSwipe() {
+  let startY = null;
+  let currentDy = 0;
+
+  function onStart(e) {
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    voiceLogSheetPanel.classList.add('dragging');
+  }
+  function onMove(e) {
+    if (startY === null) return;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    currentDy = Math.max(0, y - startY);
+    voiceLogSheetPanel.style.transform = `translateY(${currentDy}px)`;
+  }
+  function onEnd() {
+    if (startY === null) return;
+    voiceLogSheetPanel.classList.remove('dragging');
+    voiceLogSheetPanel.style.transform = '';
+    if (currentDy > 80) closeVoiceLogSheet();
+    startY = null;
+    currentDy = 0;
+  }
+
+  voiceLogGrabber.addEventListener('touchstart', onStart, { passive: true });
+  voiceLogGrabber.addEventListener('touchmove', onMove, { passive: true });
+  voiceLogGrabber.addEventListener('touchend', onEnd);
+  voiceLogGrabber.addEventListener('mousedown', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+})();
+
+// ---------- Quick Add full screen ----------
+function openQuickAddScreen() {
+  quickAddError.textContent = '';
+  quickAddCaloriesInput.value = '';
+  quickAddFatInput.value = '';
+  quickAddCarbsInput.value = '';
+  quickAddProteinInput.value = '';
+  quickAddMealSelect.value = logMealSelect.value || 'breakfast';
+  const now = new Date();
+  quickAddTimeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  quickAddScreen.classList.add('open');
+}
+function closeQuickAddScreen() {
+  quickAddScreen.classList.remove('open');
+}
+quickAddBackBtn.addEventListener('click', closeQuickAddScreen);
+
+quickAddSaveBtn.addEventListener('click', async () => {
+  quickAddError.textContent = '';
+  const kcal = Number(quickAddCaloriesInput.value);
+  const fat = Number(quickAddFatInput.value) || 0;
+  const carbs = Number(quickAddCarbsInput.value) || 0;
+  const protein = Number(quickAddProteinInput.value) || 0;
+  if (!kcal || kcal <= 0) {
+    quickAddError.textContent = 'Enter a calorie amount';
+    return;
+  }
+  try {
+    // Quick Add logs a one-off entry with no food-database lookup, so the
+    // typed macros are sent as a custom food's per-100g baseline with
+    // grams pinned to 100 — the grams/100 multiplier becomes a no-op and
+    // the server stores the totals exactly as entered.
+    const res = await authFetch(`${API}/entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: state.date,
+        meal: quickAddMealSelect.value,
+        foodId: CUSTOM_FOOD_ID,
+        grams: 100,
+        customFood: { name: 'Quick Add', kcal, protein, carbs, fat }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add food');
+    state.entries.push(data);
+    render();
+    refreshStreak();
+    closeQuickAddScreen();
+    closeLogOverlay();
+    showToast(`Added ${data.name}`);
+  } catch (err) {
+    quickAddError.textContent = err.message;
+  }
 });
 
 // ---------- Bottom utility dock (Water / Weight / Exercise) ----------
@@ -1174,7 +1975,7 @@ logMealScanFileInput.addEventListener('change', () => {
   closeLogOverlay();
 });
 document.getElementById('logFeatureQuickAdd').addEventListener('click', () => {
-  logQuickAddForm.classList.toggle('hidden');
+  openQuickAddScreen();
 });
 
 logQuickAddFood.addEventListener('change', () => {
@@ -1212,6 +2013,7 @@ logQuickAddForm.addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error(data.error || 'Failed to add food');
     state.entries.push(data);
     render();
+    refreshStreak();
     logQuickAddForm.reset();
     logQuickAddForm.classList.add('hidden');
     showToast(`Added ${data.name}`);
@@ -1227,7 +2029,7 @@ function initApp() {
   loadDay();
   loadWeights();
   loadProfile();
-  loadStreak();
+  refreshStreak();
   loadPlanPreferences();
 }
 
@@ -1340,6 +2142,52 @@ function renderStateToggle(toggleEl, group, activeState) {
   });
 }
 
+// Keyword matrices used by autoEstimateMacros() to guess a plausible macro
+// split for custom foods the user names but doesn't have full nutrition data
+// for. First matching profile wins; unmatched names fall back to Balanced.
+const MACRO_ESTIMATE_PROFILES = [
+  { keywords: ['chicken', 'beef', 'steak', 'turkey', 'pork', 'meat', 'fish', 'salmon', 'tuna', 'egg', 'whey', 'protein', 'shaki', 'goat'], protein: 0.5, carbs: 0.2, fat: 0.3 },
+  { keywords: ['rice', 'bread', 'oats', 'pasta', 'potato', 'flour', 'sugar', 'banana', 'apple', 'fruit', 'juice', 'yam', 'cassava'], protein: 0.15, carbs: 0.7, fat: 0.15 },
+  { keywords: ['oil', 'butter', 'avocado', 'nuts', 'almond', 'peanut', 'cheese', 'mayo', 'dressing', 'lard'], protein: 0.15, carbs: 0.15, fat: 0.7 }
+];
+const MACRO_ESTIMATE_BALANCED = { protein: 0.3, carbs: 0.4, fat: 0.3 };
+
+function classifyFoodMacroProfile(name) {
+  const lower = name.toLowerCase();
+  for (const profile of MACRO_ESTIMATE_PROFILES) {
+    if (profile.keywords.some((kw) => lower.includes(kw))) return profile;
+  }
+  return MACRO_ESTIMATE_BALANCED;
+}
+
+// Converts a kcal figure into protein/carbs/fat grams via the matched macro
+// split (4/4/9 kcal-per-gram), then scales the trio down if it would ever
+// exceed the physical mass it's derived from.
+function autoEstimateMacros(name, kcal, grams) {
+  const kcalNum = Number(kcal);
+  const gramsNum = Number(grams);
+  if (!name || !kcalNum || kcalNum <= 0 || !gramsNum || gramsNum <= 0) return null;
+
+  const profile = classifyFoodMacroProfile(name);
+  let proteinG = (kcalNum * profile.protein) / 4;
+  let carbsG = (kcalNum * profile.carbs) / 4;
+  let fatG = (kcalNum * profile.fat) / 9;
+
+  const totalG = proteinG + carbsG + fatG;
+  if (totalG > gramsNum) {
+    const scale = gramsNum / totalG;
+    proteinG *= scale;
+    carbsG *= scale;
+    fatG *= scale;
+  }
+
+  return {
+    protein: Math.round(proteinG * 10) / 10,
+    carbs: Math.round(carbsG * 10) / 10,
+    fat: Math.round(fatG * 10) / 10
+  };
+}
+
 function readCustomFood(card) {
   return {
     name: card.querySelector('.f-custom-name').value.trim(),
@@ -1372,6 +2220,8 @@ function updateFoodPreview(card) {
   preview.textContent = `≈ ${kcal} kcal · P ${protein}g · C ${carbs}g · F ${fat}g`;
 }
 
+let dateStripWeekStart = null; // tracks which weekStart the rendered date strip reflects
+
 async function loadDay() {
   try {
     const res = await authFetch(`${API}/day?date=${state.date}`);
@@ -1379,6 +2229,11 @@ async function loadDay() {
     const data = await res.json();
     state.settings = data.settings;
     state.entries = data.entries;
+    if (dateStripWeekStart !== state.settings.weekStart) {
+      dateStripWeekStart = state.settings.weekStart;
+      buildDateStrip();
+    }
+    updateTodayHeaderLabel();
     render();
   } catch (err) {
     showToast(err.message, true);
@@ -1401,15 +2256,17 @@ async function loadProfile() {
 function buildDateStrip() {
   dateStripEl.innerHTML = '';
   const today = new Date(todayStr() + 'T00:00:00');
-  // getDay() is 0 (Sun) - 6 (Sat); convert to a Monday-first offset so the
-  // ribbon always spans Mon..Sun of the current week, matching the M T W T F S S layout.
-  const mondayOffset = (today.getDay() + 6) % 7;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - mondayOffset);
+  // getDay() is 0 (Sun) - 6 (Sat); convert to a first-day-of-week offset so the
+  // ribbon always spans a full week starting on the Settings > Start of the
+  // Week choice (defaults to Monday, matching the M T W T F S S layout).
+  const weekStartsOnSunday = state.settings?.weekStart === 'sunday';
+  const weekStartOffset = weekStartsOnSunday ? today.getDay() : (today.getDay() + 6) % 7;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - weekStartOffset);
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
     const dateStr = d.toLocaleDateString('en-CA');
 
     const btn = document.createElement('button');
@@ -1449,6 +2306,230 @@ function selectDate(dateStr) {
   refreshDateStripSelection();
   loadDay();
 }
+
+// ---------- Interactive calendar dropdown (Today header) ----------
+// calendarViewYear/Month track which month the dropdown grid is currently
+// showing, independent of state.date (the selected/active tracking day) —
+// browsing to a different month shouldn't change what's loaded until a day
+// cell is actually clicked.
+let calendarViewYear = null;
+let calendarViewMonth = null;
+
+function updateTodayHeaderLabel() {
+  if (state.date === todayStr()) {
+    todayHeaderLabelEl.textContent = 'Today';
+  } else if (state.date === addDaysToDateStr(todayStr(), -1)) {
+    todayHeaderLabelEl.textContent = 'Yesterday';
+  } else {
+    todayHeaderLabelEl.textContent = formatDateLabel(state.date);
+  }
+}
+
+function openCalendarDropdown() {
+  const active = new Date(state.date + 'T00:00:00');
+  calendarViewYear = active.getFullYear();
+  calendarViewMonth = active.getMonth();
+  closeMonthYearPicker();
+  renderCalendarDropdown();
+  calendarDropdownEl.classList.add('open');
+  calendarDropdownEl.setAttribute('aria-hidden', 'false');
+  todayHeaderBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeCalendarDropdown() {
+  calendarDropdownEl.classList.remove('open');
+  calendarDropdownEl.setAttribute('aria-hidden', 'true');
+  todayHeaderBtn.setAttribute('aria-expanded', 'false');
+  closeMonthYearPicker();
+}
+
+function renderCalendarDropdown() {
+  const monthLabel = new Date(calendarViewYear, calendarViewMonth, 1)
+    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  calMonthYearLabelEl.textContent = monthLabel;
+
+  calendarGridEl.innerHTML = '';
+  const firstOfMonth = new Date(calendarViewYear, calendarViewMonth, 1);
+  // getDay() is 0 (Sun) - 6 (Sat); shift so the grid always starts on Monday
+  // to match the MON..SUN weekday row.
+  const leadingBlanks = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(calendarViewYear, calendarViewMonth + 1, 0).getDate();
+  const today = todayStr();
+
+  for (let i = 0; i < leadingBlanks; i++) {
+    const blank = document.createElement('span');
+    blank.className = 'calendar-day-cell is-empty';
+    calendarGridEl.appendChild(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(calendarViewYear, calendarViewMonth, day);
+    const dateStr = d.toLocaleDateString('en-CA');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'calendar-day-cell';
+    btn.textContent = String(day);
+    btn.dataset.date = dateStr;
+    if (dateStr > today) btn.classList.add('is-future');
+    if (dateStr === today) btn.classList.add('is-today');
+    if (dateStr === state.date) btn.classList.add('selected');
+    btn.setAttribute('aria-label', d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
+    btn.addEventListener('click', () => {
+      selectDate(dateStr);
+      closeCalendarDropdown();
+    });
+    calendarGridEl.appendChild(btn);
+  }
+}
+
+// ---------- Month/Year scroll-selector picker overlay ----------
+// Lets the user jump the calendar dropdown straight to a distant month/year
+// via two scrollable wheel-style columns, instead of clicking the prev/next
+// arrows one step at a time. Purely a faster way to move calendarViewYear/
+// calendarViewMonth — the existing arrow-click logic above is untouched.
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const pickerScrollActive = { month: false, year: false };
+const pickerScrollTimers = { month: null, year: null };
+
+function renderMonthYearPicker() {
+  pickerMonthColEl.innerHTML = '';
+  MONTH_NAMES.forEach((name, idx) => {
+    const item = document.createElement('div');
+    item.className = 'picker-item';
+    item.setAttribute('role', 'option');
+    item.textContent = name;
+    if (idx === calendarViewMonth) item.classList.add('is-focused');
+    item.addEventListener('click', () => commitMonthYearSelection('month', idx));
+    pickerMonthColEl.appendChild(item);
+  });
+
+  pickerYearColEl.innerHTML = '';
+  const startYear = calendarViewYear - 6;
+  const endYear = calendarViewYear + 6;
+  for (let year = startYear; year <= endYear; year++) {
+    const item = document.createElement('div');
+    item.className = 'picker-item';
+    item.setAttribute('role', 'option');
+    item.textContent = String(year);
+    if (year === calendarViewYear) item.classList.add('is-focused');
+    item.addEventListener('click', () => commitMonthYearSelection('year', year));
+    pickerYearColEl.appendChild(item);
+  }
+
+  centerFocusedPickerItem(pickerMonthColEl);
+  centerFocusedPickerItem(pickerYearColEl);
+}
+
+function centerFocusedPickerItem(col) {
+  const focused = col.querySelector('.picker-item.is-focused');
+  if (!focused) return;
+  col.scrollTop = focused.offsetTop - (col.clientHeight / 2 - focused.offsetHeight / 2);
+}
+
+// While scrolling, continuously highlight whichever item sits under the
+// center selection bar so the user can see what they'll land on.
+function updatePickerFocusFromScroll(col) {
+  const items = col.querySelectorAll('.picker-item');
+  const centerY = col.scrollTop + col.clientHeight / 2;
+  let closest = null;
+  let closestDist = Infinity;
+  items.forEach((item) => {
+    const dist = Math.abs((item.offsetTop + item.offsetHeight / 2) - centerY);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closest = item;
+    }
+  });
+  items.forEach((item) => item.classList.toggle('is-focused', item === closest));
+  return closest;
+}
+
+function commitMonthYearSelection(kind, value) {
+  if (kind === 'month') calendarViewMonth = value;
+  else calendarViewYear = value;
+  renderCalendarDropdown();
+  closeMonthYearPicker();
+}
+
+function attachPickerScrollHandling(col, kind) {
+  // Only auto-commit on scrolls the user actually drove (wheel/touch), so the
+  // initial programmatic centering above never closes the picker on its own.
+  col.addEventListener('wheel', () => { pickerScrollActive[kind] = true; }, { passive: true });
+  col.addEventListener('touchstart', () => { pickerScrollActive[kind] = true; }, { passive: true });
+  col.addEventListener('scroll', () => {
+    const focused = updatePickerFocusFromScroll(col);
+    if (!pickerScrollActive[kind] || !focused) return;
+    clearTimeout(pickerScrollTimers[kind]);
+    pickerScrollTimers[kind] = setTimeout(() => {
+      const value = kind === 'month'
+        ? Array.from(pickerMonthColEl.children).indexOf(focused)
+        : Number(focused.textContent);
+      commitMonthYearSelection(kind, value);
+    }, 180);
+  });
+}
+attachPickerScrollHandling(pickerMonthColEl, 'month');
+attachPickerScrollHandling(pickerYearColEl, 'year');
+
+function openMonthYearPicker() {
+  monthYearPickerViewEl.classList.add('open');
+  monthYearPickerViewEl.setAttribute('aria-hidden', 'false');
+  calendarWeekdaysEl.style.display = 'none';
+  calendarGridEl.style.display = 'none';
+  calendarMonthYearBtn.setAttribute('aria-expanded', 'true');
+  // Build/center only after the view is actually visible — centering reads
+  // layout metrics (offsetTop/clientHeight) that are meaningless while the
+  // container is still display:none.
+  renderMonthYearPicker();
+}
+
+function closeMonthYearPicker() {
+  monthYearPickerViewEl.classList.remove('open');
+  monthYearPickerViewEl.setAttribute('aria-hidden', 'true');
+  calendarWeekdaysEl.style.display = '';
+  calendarGridEl.style.display = '';
+  calendarMonthYearBtn.setAttribute('aria-expanded', 'false');
+  pickerScrollActive.month = false;
+  pickerScrollActive.year = false;
+}
+
+calendarMonthYearBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (monthYearPickerViewEl.classList.contains('open')) closeMonthYearPicker();
+  else openMonthYearPicker();
+});
+
+function changeCalendarViewMonth(delta) {
+  calendarViewMonth += delta;
+  if (calendarViewMonth < 0) {
+    calendarViewMonth = 11;
+    calendarViewYear -= 1;
+  } else if (calendarViewMonth > 11) {
+    calendarViewMonth = 0;
+    calendarViewYear += 1;
+  }
+  renderCalendarDropdown();
+}
+
+todayHeaderBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (calendarDropdownEl.classList.contains('open')) closeCalendarDropdown();
+  else openCalendarDropdown();
+});
+calPrevMonthBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  changeCalendarViewMonth(-1);
+});
+calNextMonthBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  changeCalendarViewMonth(1);
+});
+document.addEventListener('click', (e) => {
+  if (!calendarDropdownEl.classList.contains('open')) return;
+  if (calendarDropdownEl.contains(e.target) || todayHeaderBtn.contains(e.target)) return;
+  closeCalendarDropdown();
+});
 
 // ---------- Water ----------
 function buildWaterCups() {
@@ -2179,7 +3260,7 @@ async function loadCnmHistory() {
   renderCaloriesHistoryChart(history);
   renderNutrientsList(history.averages);
   renderMacroRings(history.averages);
-  renderMacroHistoryChart(history);
+  renderMacroBreakdownChart(history);
 }
 
 async function openCalNutMacSubtab() {
@@ -2206,68 +3287,88 @@ function renderNutrientsList(averages) {
   }
 }
 
-// Combined Protein/Carbs/Fat history as one hand-rolled SVG line chart: days
-// along the bottom, grams along a left-side axis column (mirrors the
-// .scaled-bar-chart-axis pattern already used for the Steps monthly chart).
-function renderMacroHistoryChart(history) {
+// Combined Protein/Carbs/Fat breakdown for the selected range, as one
+// interactive Chart.js doughnut chart: each slice is that macro's share of
+// cumulative macro-calories across `history.days`, colored with the app's
+// neon accents (Carbs=cyan, Fat=violet, Protein=green). Compact gram+percent
+// lines render underneath from the same totals.
+let macroPieChartInstance = null;
+
+function renderMacroBreakdownChart(history) {
   const days = history.days || [];
-  const axisEl = document.getElementById('macroHistoryAxis');
-  const svgEl = document.getElementById('macroHistorySvg');
-  const xLabelsEl = document.getElementById('macroHistoryXLabels');
+  const canvas = document.getElementById('macroPieChart');
+  const linesEl = document.getElementById('macroPieCompactLines');
+  linesEl.innerHTML = '';
 
-  axisEl.innerHTML = '';
-  xLabelsEl.innerHTML = '';
-  svgEl.innerHTML = '';
-  if (days.length === 0) return;
+  const totals = days.reduce(
+    (acc, d) => {
+      acc.protein += d.protein || 0;
+      acc.carbs += d.carbs || 0;
+      acc.fat += d.fat || 0;
+      return acc;
+    },
+    { protein: 0, carbs: 0, fat: 0 }
+  );
 
-  const maxVal = Math.max(1, ...days.flatMap((d) => [d.protein, d.carbs, d.fat]));
-  const ceiling = niceCeil(maxVal);
+  const proteinCals = totals.protein * 4;
+  const carbsCals = totals.carbs * 4;
+  const fatCals = totals.fat * 9;
+  const calTotal = proteinCals + carbsCals + fatCals;
+  const pctOf = (cals) => (calTotal > 0 ? Math.round((cals / calTotal) * 100) : 0);
 
-  for (let i = 4; i >= 0; i--) {
-    const span = document.createElement('span');
-    span.textContent = Math.round((ceiling / 4) * i);
-    axisEl.appendChild(span);
+  const style = getComputedStyle(document.documentElement);
+  const macros = [
+    { key: 'protein', label: 'Protein', grams: totals.protein, pct: pctOf(proteinCals), color: style.getPropertyValue('--neon-green').trim() },
+    { key: 'carbs', label: 'Carbs', grams: totals.carbs, pct: pctOf(carbsCals), color: style.getPropertyValue('--neon-cyan').trim() },
+    { key: 'fat', label: 'Fat', grams: totals.fat, pct: pctOf(fatCals), color: style.getPropertyValue('--neon-violet').trim() }
+  ];
+
+  if (macroPieChartInstance) {
+    macroPieChartInstance.destroy();
+    macroPieChartInstance = null;
   }
 
-  const width = 300;
-  const height = 140;
-  const padY = 6;
-  const plotHeight = height - padY * 2;
-  const stepX = days.length > 1 ? width / (days.length - 1) : 0;
-
-  const toPoints = (key) =>
-    days
-      .map((d, i) => {
-        const x = days.length > 1 ? i * stepX : width / 2;
-        const y = padY + plotHeight - (Math.min(d[key], ceiling) / ceiling) * plotHeight;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-
-  const gridLines = [0, 1, 2, 3, 4]
-    .map((i) => {
-      const y = (padY + (plotHeight / 4) * i).toFixed(1);
-      return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
-    })
-    .join('');
-
-  svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  svgEl.innerHTML = `
-    ${gridLines}
-    <polyline class="macro-history-line protein" points="${toPoints('protein')}" />
-    <polyline class="macro-history-line carbs" points="${toPoints('carbs')}" />
-    <polyline class="macro-history-line fat" points="${toPoints('fat')}" />
-  `;
-
-  const labelCount = Math.min(5, days.length);
-  const labelIndices = new Set();
-  for (let i = 0; i < labelCount; i++) {
-    labelIndices.add(Math.round((i * (days.length - 1)) / Math.max(labelCount - 1, 1)));
+  if (canvas && calTotal > 0) {
+    macroPieChartInstance = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: macros.map((m) => m.label),
+        datasets: [{
+          data: macros.map((m) => m.pct),
+          backgroundColor: macros.map((m) => m.color),
+          borderColor: 'rgba(0,0,0,0.35)',
+          borderWidth: 2,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '62%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const m = macros[ctx.dataIndex];
+                return `${m.label}: ${Math.round(m.grams)}g (${m.pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
-  for (const idx of [...labelIndices].sort((a, b) => a - b)) {
-    const span = document.createElement('span');
-    span.textContent = formatChartLabel(days[idx].date, days.length);
-    xLabelsEl.appendChild(span);
+
+  for (const m of macros) {
+    const row = document.createElement('div');
+    row.className = 'macro-pie-row';
+    row.innerHTML = `
+      <span class="macro-pie-dot ${m.key}"></span>
+      <span class="macro-pie-name">${m.label}</span>
+      <span class="macro-pie-stats"><strong>${Math.round(m.grams)}g</strong> &middot; ${m.pct}%</span>
+    `;
+    linesEl.appendChild(row);
   }
 }
 
@@ -2655,15 +3756,37 @@ async function deleteSleepEntry(id) {
 
 // ---------- Rendering (Today tab) ----------
 function render() {
+  renderDayTypeSelector();
   renderCalorieBar();
   renderMacros();
   renderMeals();
   refreshLogOverlayLists();
 }
 
+// Rest/Work/Gym day-type target lookup — falls back to the base
+// calorieGoal/macroGoals plan when no day type is active, so every other
+// screen (Overview charts, Macro Goals editor, onboarding) keeps reading
+// state.settings.calorieGoal/macroGoals untouched.
+function getActiveDayTypeTarget() {
+  const s = state.settings || {};
+  const active = s.activeDayType;
+  return (active && s.dayTypeTargets && s.dayTypeTargets[active]) || null;
+}
+
+function renderDayTypeSelector() {
+  const active = state.settings?.activeDayType;
+  const dayTypeTargets = state.settings?.dayTypeTargets || {};
+  dayTypeSelectorEl.querySelectorAll('.day-type-btn').forEach((btn) => {
+    const dayType = btn.dataset.dayType;
+    btn.classList.toggle('active', dayType === active);
+    btn.textContent = dayTypeTargets[dayType]?.label || DAY_TYPE_DEFAULT_LABELS[dayType];
+  });
+}
+
 function renderCalorieBar() {
   const totals = computeTotals(state.entries);
-  const goal = state.settings.calorieGoal;
+  const dayTarget = getActiveDayTypeTarget();
+  const goal = dayTarget ? dayTarget.calories : state.settings.calorieGoal;
   const consumed = Math.round(totals.calories);
   const burned = (state.exercise || []).reduce((sum, e) => sum + e.caloriesBurned, 0);
   const remaining = goal - consumed + burned;
@@ -2690,7 +3813,8 @@ function renderCalorieBar() {
 
 function renderMacros() {
   const totals = computeTotals(state.entries);
-  const { protein, carbs, fat } = state.settings.macroGoals;
+  const dayTarget = getActiveDayTypeTarget();
+  const { protein, carbs, fat } = dayTarget || state.settings.macroGoals;
   renderMacroPercentageCard(totals);
   setMacroGoalPanel('protein', totals.protein, protein);
   setMacroGoalPanel('carbs', totals.carbs, carbs);
@@ -2733,27 +3857,53 @@ function setMacroGoalPanel(key, value, goal) {
   document.getElementById(`macrosPanel${label}Bar`).style.width = `${pct}%`;
 }
 
-// Fetched once per session (or session-restore) since a logging streak only
-// ever changes at most once per day; refreshed live below without refetching
-// by substituting today's cached day with the current in-memory totals.
-async function loadStreak() {
-  const history = await loadHistory({ days: 60 });
-  cachedStreakDays = history ? history.days : null;
-  updateHeaderStreak();
+// The header badge's currentStreak is computed and persisted server-side
+// (Case A/B/C dynamic streak engine — see applyStreakUpdate() in server.js),
+// so refreshing it is just a cheap GET, called on load and after every food
+// log rather than re-derived client-side.
+async function refreshStreak() {
+  try {
+    const res = await authFetch(`${API}/streak`);
+    if (!res.ok) return;
+    const data = await res.json();
+    state.streak = data.currentStreak;
+    updateHeaderStreak();
+  } catch {
+    // Non-critical — badge just keeps its last known value.
+  }
 }
 
 function updateHeaderStreak() {
-  if (!cachedStreakDays || !state.settings) return;
-  const days = [...cachedStreakDays];
-  const last = days[days.length - 1];
-  // Only substitute the live in-memory totals when today is the day actually
-  // being viewed — state.entries holds whichever day the user is browsing,
-  // and the streak must always reflect *today's* logging, not that day's.
-  if (last && last.date === todayStr() && state.date === todayStr()) {
-    days[days.length - 1] = { ...last, calories: computeTotals(state.entries).calories };
-  }
-  headerStreakValueEl.textContent = String(computeLoggingStreak(days));
+  headerStreakValueEl.textContent = String(state.streak || 0);
 }
+
+function openStreakPopover() {
+  streakPopoverEl.classList.add('open');
+  streakPopoverEl.setAttribute('aria-hidden', 'false');
+  headerStreakChipEl.setAttribute('aria-expanded', 'true');
+}
+
+function closeStreakPopover() {
+  streakPopoverEl.classList.remove('open');
+  streakPopoverEl.setAttribute('aria-hidden', 'true');
+  headerStreakChipEl.setAttribute('aria-expanded', 'false');
+}
+
+headerStreakChipEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (streakPopoverEl.classList.contains('open')) closeStreakPopover();
+  else openStreakPopover();
+});
+streakPopoverCloseBtn.addEventListener('click', closeStreakPopover);
+streakPopoverLogBtn.addEventListener('click', () => {
+  closeStreakPopover();
+  openLogOverlay();
+});
+document.addEventListener('click', (e) => {
+  if (!streakPopoverEl.classList.contains('open')) return;
+  if (streakPopoverEl.contains(e.target) || headerStreakChipEl.contains(e.target)) return;
+  closeStreakPopover();
+});
 
 function renderMeals() {
   mealCards.forEach((card) => {
@@ -2778,6 +3928,12 @@ function renderMeals() {
   });
 }
 
+// Diary Settings > "Show Decimal Macronutrients" — off (default) rounds to
+// whole grams for a cleaner diary list; on shows the server's 1-decimal precision.
+function formatMacroGrams(value) {
+  return state.settings?.diary?.showDecimalMacros ? value : Math.round(value);
+}
+
 function buildFoodItem(item) {
   const li = document.createElement('li');
   li.className = 'food-item';
@@ -2789,7 +3945,7 @@ function buildFoodItem(item) {
     <div class="food-info">
       <span class="food-name">${escapeHtml(item.name)}</span>
       ${gramsLine}
-      <span class="food-macros"><span class="m-protein">P ${item.protein}g</span> · <span class="m-carbs">C ${item.carbs}g</span> · <span class="m-fat">F ${item.fat}g</span></span>
+      <span class="food-macros"><span class="m-protein">P ${formatMacroGrams(item.protein)}g</span> · <span class="m-carbs">C ${formatMacroGrams(item.carbs)}g</span> · <span class="m-fat">F ${formatMacroGrams(item.fat)}g</span></span>
     </div>
     <div class="food-right">
       <span class="food-kcal">${item.calories} kcal</span>
@@ -2867,6 +4023,7 @@ async function handleInlineAddSubmit(e, card) {
     if (!res.ok) throw new Error(data.error || 'Failed to add food');
     state.entries.push(data);
     render();
+    refreshStreak();
     card.querySelector('.inline-add-form').reset();
     card.querySelector('[data-role="custom-food-fields"]').classList.add('hidden');
     card.querySelector('[data-role="food-preview"]').textContent = '';
@@ -2938,6 +4095,7 @@ async function handleConfirmScan() {
     if (!res.ok) throw new Error(data.error || 'Failed to log scanned food');
     state.entries.push(data);
     render();
+    refreshStreak();
     showToast(`Logged ${data.name} from scan`);
     closeScanModal();
   } catch (err) {
@@ -4469,6 +5627,597 @@ async function openWeeklyReportView() {
 }
 weeklyReportBackBtn.addEventListener('click', () => closeSubView(weeklyReportView));
 
+// ---------- Community Forum ----------
+const communityView = document.getElementById('communityView');
+const communityBackBtn = document.getElementById('communityBackBtn');
+const communityCreatePostBtn = document.getElementById('communityCreatePostBtn');
+const communityFeedTabsEl = document.getElementById('communityFeedTabs');
+const communityComposerInput = document.getElementById('communityComposerInput');
+const communityComposerSendBtn = document.getElementById('communityComposerSendBtn');
+const communityFeedEl = document.getElementById('communityFeed');
+
+// Client-side mock feed — there is no community/social backend, so posts and
+// likes live only for the current session (kept out of `state` since they're
+// not tied to the logged-in user's persisted data).
+const COMMUNITY_POSTS = [
+  { id: 1, group: false, author: 'Jamie Rivera', avatar: '🧑', time: '2h ago', text: 'Hit a new PR on deadlifts this morning and stayed under my calorie goal. Small wins add up! #strengthgains', likes: 24, comments: 5, liked: false },
+  { id: 2, group: true, author: 'Priya Natarajan', avatar: '👩', time: '4h ago', text: 'Meal prepped 5 days of high-protein lunches in under an hour. Recipe is in the Learn hub if anyone wants it. #mealprep', likes: 41, comments: 12, liked: false },
+  { id: 3, group: false, author: 'Marcus Cole', avatar: '🧔', time: '6h ago', text: 'Anyone else find that logging water actually helps you stop snacking at night? Total game changer for me. #hydration', likes: 17, comments: 3, liked: false },
+  { id: 4, group: true, author: 'Sofia Alvarez', avatar: '👩', time: 'Yesterday', text: 'Week 6 of the Push Group challenge done. Down 2.4 lbs and feeling stronger every session. #pushgroup #progress', likes: 63, comments: 21, liked: false },
+  { id: 5, group: false, author: 'Devon Park', avatar: '🧑', time: 'Yesterday', text: 'Swapped my afternoon soda for sparkling water with lime. Saved about 150 calories a day without even trying. #smallwins', likes: 29, comments: 8, liked: false }
+];
+let communityActiveFeed = 'all';
+let communityPostSeq = COMMUNITY_POSTS.length;
+
+function renderCommunityFeed() {
+  const posts = communityActiveFeed === 'groups' ? COMMUNITY_POSTS.filter((p) => p.group) : COMMUNITY_POSTS;
+  communityFeedEl.innerHTML = posts
+    .map((p) => {
+      const textHtml = escapeHtml(p.text).replace(/#(\w+)/g, '<span class="community-post-hashtag">#$1</span>');
+      return `
+        <div class="community-post" data-post-id="${p.id}">
+          <div class="community-post-head">
+            <span class="community-post-avatar" aria-hidden="true">${p.avatar}</span>
+            <div class="community-post-identity">
+              <span class="community-post-name">${escapeHtml(p.author)}</span>
+              <span class="community-post-time">${p.time}</span>
+            </div>
+            ${p.group ? '<span class="community-post-group-badge">Group</span>' : ''}
+          </div>
+          <p class="community-post-text">${textHtml}</p>
+          <div class="community-post-actions">
+            <button type="button" class="community-post-action ${p.liked ? 'liked' : ''}" data-action="like">
+              <span class="community-post-action-icon" aria-hidden="true">${p.liked ? '❤️' : '🤍'}</span> ${p.likes}
+            </button>
+            <button type="button" class="community-post-action" data-action="comment">
+              <span aria-hidden="true">💬</span> ${p.comments}
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+communityFeedTabsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  communityActiveFeed = btn.dataset.feed;
+  communityFeedTabsEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderCommunityFeed();
+});
+
+communityFeedEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.community-post-action');
+  if (!btn) return;
+  const postEl = btn.closest('.community-post');
+  const post = COMMUNITY_POSTS.find((p) => p.id === Number(postEl.dataset.postId));
+  if (!post) return;
+  if (btn.dataset.action === 'like') {
+    post.liked = !post.liked;
+    post.likes += post.liked ? 1 : -1;
+    renderCommunityFeed();
+  } else {
+    showToast('Comments coming soon');
+  }
+});
+
+function submitCommunityPost() {
+  const text = communityComposerInput.value.trim();
+  if (!text) return;
+  communityPostSeq += 1;
+  COMMUNITY_POSTS.unshift({
+    id: communityPostSeq,
+    group: communityActiveFeed === 'groups',
+    author: state.user?.username || 'You',
+    avatar: '👤',
+    time: 'Just now',
+    text,
+    likes: 0,
+    comments: 0,
+    liked: false
+  });
+  communityComposerInput.value = '';
+  renderCommunityFeed();
+  showToast('Posted');
+}
+
+communityComposerSendBtn.addEventListener('click', submitCommunityPost);
+communityComposerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitCommunityPost();
+  }
+});
+communityCreatePostBtn.addEventListener('click', () => communityComposerInput.focus());
+
+function openCommunityView() {
+  renderCommunityFeed();
+  openSubView(communityView);
+}
+communityBackBtn.addEventListener('click', () => closeSubView(communityView));
+
+// ---------- Learn Content Hub ----------
+const learnView = document.getElementById('learnView');
+const learnBackBtn = document.getElementById('learnBackBtn');
+const learnChipsRowEl = document.getElementById('learnChipsRow');
+const learnGridEl = document.getElementById('learnGrid');
+
+const LEARN_ARTICLES = [
+  { id: 1, category: 'nutrition', title: 'Protein Timing: Does It Really Matter?', desc: 'What the research says about pre- and post-workout protein windows.', banner: '🥗', color: 'rgba(57, 255, 20, 0.18)', rd: true },
+  { id: 2, category: 'nutrition', title: 'Reading Nutrition Labels Like a Pro', desc: 'Spot hidden sugars and serving-size tricks in under a minute.', banner: '🏷️', color: 'rgba(0, 229, 255, 0.18)', rd: true },
+  { id: 3, category: 'training', title: 'Progressive Overload for Beginners', desc: 'The one principle that drives almost all strength gains.', banner: '🏋️', color: 'rgba(157, 59, 255, 0.18)', rd: false },
+  { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', banner: '🏃', color: 'rgba(255, 46, 159, 0.18)', rd: false },
+  { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', banner: '🎉', color: 'rgba(255, 176, 32, 0.18)', rd: false },
+  { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', banner: '📲', color: 'rgba(0, 229, 255, 0.18)', rd: false },
+  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'rgba(57, 255, 20, 0.18)', rd: false }
+];
+let learnActiveCategory = 'all';
+
+function renderLearnGrid() {
+  const filtered = learnActiveCategory === 'all' ? LEARN_ARTICLES : LEARN_ARTICLES.filter((a) => a.category === learnActiveCategory);
+  learnGridEl.innerHTML = filtered
+    .map(
+      (a) => `
+        <div class="learn-card" data-article-id="${a.id}">
+          <div class="learn-card-banner" style="background:${a.color}">${a.banner}</div>
+          ${a.rd ? '<span class="learn-card-tag">✅ RD Approved</span>' : ''}
+          <h3 class="learn-card-title">${escapeHtml(a.title)}</h3>
+          <p class="learn-card-desc">${escapeHtml(a.desc)}</p>
+          <div class="learn-card-footer">
+            <button type="button" class="learn-card-cta" data-article-id="${a.id}">Read Article →</button>
+          </div>
+        </div>
+      `
+    )
+    .join('');
+}
+
+learnChipsRowEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  learnActiveCategory = btn.dataset.category;
+  learnChipsRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderLearnGrid();
+});
+
+learnGridEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.learn-card-cta');
+  if (!btn) return;
+  showToast('Article coming soon');
+});
+
+function openLearnView() {
+  renderLearnGrid();
+  openSubView(learnView);
+}
+learnBackBtn.addEventListener('click', () => closeSubView(learnView));
+
+// ---------- Friends Network Directory ----------
+const friendsView = document.getElementById('friendsView');
+const friendsBackBtn = document.getElementById('friendsBackBtn');
+const friendsAddBtn = document.getElementById('friendsAddBtn');
+const friendsTotalCountEl = document.getElementById('friendsTotalCount');
+const friendsActiveTodayCountEl = document.getElementById('friendsActiveTodayCount');
+const friendsListEl = document.getElementById('friendsList');
+
+const FRIENDS = [
+  { id: 1, name: 'Jamie Rivera', avatar: '🧑', active: true, streak: 14 },
+  { id: 2, name: 'Priya Natarajan', avatar: '👩', active: true, streak: 32 },
+  { id: 3, name: 'Marcus Cole', avatar: '🧔', active: false, streak: 6 },
+  { id: 4, name: 'Sofia Alvarez', avatar: '👩', active: true, streak: 58 },
+  { id: 5, name: 'Devon Park', avatar: '🧑', active: false, streak: 3 }
+];
+
+function renderFriendsList() {
+  friendsTotalCountEl.textContent = String(FRIENDS.length);
+  friendsActiveTodayCountEl.textContent = String(FRIENDS.filter((f) => f.active).length);
+  friendsListEl.innerHTML = FRIENDS.map(
+    (f) => `
+      <div class="friend-row" data-friend-id="${f.id}">
+        <span class="friend-avatar-wrap">
+          <span class="friend-avatar" aria-hidden="true">${f.avatar}</span>
+          <span class="friend-active-dot ${f.active ? 'active' : ''}"></span>
+        </span>
+        <div class="friend-identity">
+          <span class="friend-name">${escapeHtml(f.name)}</span>
+          <span class="friend-streak">🔥 ${f.streak}-Day Streak</span>
+        </div>
+        <div class="friend-actions">
+          <button type="button" class="icon-btn friend-action-btn" data-action="dm" aria-label="Message ${escapeHtml(f.name)}">✉️</button>
+          <button type="button" class="icon-btn friend-action-btn" data-action="diary" aria-label="View ${escapeHtml(f.name)}'s diary">📖</button>
+        </div>
+      </div>
+    `
+  ).join('');
+}
+
+friendsListEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.friend-action-btn');
+  if (!btn) return;
+  const row = btn.closest('.friend-row');
+  const friend = FRIENDS.find((f) => f.id === Number(row.dataset.friendId));
+  if (!friend) return;
+  if (btn.dataset.action === 'dm') {
+    openMessageThreadWithFriend(friend);
+  } else {
+    showToast(`${friend.name}'s diary is private`);
+  }
+});
+
+friendsAddBtn.addEventListener('click', () => showToast('Friend request sent'));
+
+function openFriendsView() {
+  renderFriendsList();
+  openSubView(friendsView);
+}
+friendsBackBtn.addEventListener('click', () => closeSubView(friendsView));
+
+// ---------- Messages Inbox ----------
+const messagesView = document.getElementById('messagesView');
+const messagesBackBtn = document.getElementById('messagesBackBtn');
+const messagesSearchInput = document.getElementById('messagesSearchInput');
+const messageThreadListEl = document.getElementById('messageThreadList');
+const messageThreadView = document.getElementById('messageThreadView');
+const messageThreadBackBtn = document.getElementById('messageThreadBackBtn');
+const messageThreadTitleEl = document.getElementById('messageThreadTitle');
+const chatBubblesEl = document.getElementById('chatBubbles');
+const chatInputForm = document.getElementById('chatInputForm');
+const chatInput = document.getElementById('chatInput');
+const moreMessagesBadgeEl = document.getElementById('moreMessagesBadge');
+
+const MESSAGE_THREADS = [
+  {
+    id: 1, name: 'Jamie Rivera', avatar: '🧑', unread: 1,
+    messages: [
+      { from: 'them', text: 'Hey! Saw your deadlift PR, huge congrats', time: '9:12 AM' },
+      { from: 'me', text: 'Thanks! Been chasing that number for weeks', time: '9:14 AM' },
+      { from: 'them', text: 'What program are you running right now?', time: '9:15 AM' }
+    ]
+  },
+  {
+    id: 2, name: 'Priya Natarajan', avatar: '👩', unread: 0,
+    messages: [
+      { from: 'them', text: 'Sending you my meal prep recipe doc', time: 'Yesterday' },
+      { from: 'me', text: 'Perfect, thank you!', time: 'Yesterday' }
+    ]
+  },
+  {
+    id: 3, name: 'Marcus Cole', avatar: '🧔', unread: 0,
+    messages: [{ from: 'me', text: 'Water logging tip really worked, thanks!', time: 'Mon' }]
+  },
+  {
+    id: 4, name: 'Sofia Alvarez', avatar: '👩', unread: 2,
+    messages: [
+      { from: 'them', text: 'Push group check-in is tomorrow', time: 'Sun' },
+      { from: 'them', text: 'Bring your updated numbers!', time: 'Sun' }
+    ]
+  }
+];
+let activeThreadId = null;
+
+function updateMessagesBadge() {
+  const totalUnread = MESSAGE_THREADS.reduce((sum, t) => sum + t.unread, 0);
+  moreMessagesBadgeEl.textContent = String(totalUnread);
+  moreMessagesBadgeEl.classList.toggle('hidden', totalUnread === 0);
+}
+
+function renderMessageThreadList() {
+  const query = messagesSearchInput.value.trim().toLowerCase();
+  const filtered = query ? MESSAGE_THREADS.filter((t) => t.name.toLowerCase().includes(query)) : MESSAGE_THREADS;
+  messageThreadListEl.innerHTML = filtered
+    .map((t) => {
+      const last = t.messages[t.messages.length - 1];
+      return `
+        <div class="message-thread-row" data-thread-id="${t.id}">
+          <span class="message-thread-avatar" aria-hidden="true">${t.avatar}</span>
+          <div class="message-thread-meta">
+            <div class="message-thread-top-line">
+              <span class="message-thread-name">${escapeHtml(t.name)}</span>
+              <span class="message-thread-time">${last ? last.time : ''}</span>
+            </div>
+            <div class="message-thread-snippet-row">
+              <span class="message-thread-snippet ${t.unread > 0 ? 'unread' : ''}">${last ? escapeHtml(last.text) : ''}</span>
+              ${t.unread > 0 ? `<span class="message-thread-badge">${t.unread}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+messagesSearchInput.addEventListener('input', renderMessageThreadList);
+
+messageThreadListEl.addEventListener('click', (e) => {
+  const row = e.target.closest('.message-thread-row');
+  if (!row) return;
+  const thread = MESSAGE_THREADS.find((t) => t.id === Number(row.dataset.threadId));
+  if (thread) openMessageThread(thread);
+});
+
+function renderChatBubbles(thread) {
+  chatBubblesEl.innerHTML = thread.messages
+    .map(
+      (m) => `
+        <div class="chat-bubble ${m.from === 'me' ? 'outgoing' : 'incoming'}">
+          ${escapeHtml(m.text)}
+          <span class="chat-bubble-time">${m.time}</span>
+        </div>
+      `
+    )
+    .join('');
+  chatBubblesEl.scrollTop = chatBubblesEl.scrollHeight;
+}
+
+function openMessageThread(thread) {
+  activeThreadId = thread.id;
+  thread.unread = 0;
+  messageThreadTitleEl.textContent = thread.name;
+  renderChatBubbles(thread);
+  renderMessageThreadList();
+  updateMessagesBadge();
+  openSubView(messageThreadView);
+}
+
+function openMessageThreadWithFriend(friend) {
+  let thread = MESSAGE_THREADS.find((t) => t.name === friend.name);
+  if (!thread) {
+    thread = { id: MESSAGE_THREADS.length + 1000 + Math.floor(Math.random() * 1000), name: friend.name, avatar: friend.avatar, unread: 0, messages: [] };
+    MESSAGE_THREADS.unshift(thread);
+  }
+  openMessageThread(thread);
+}
+
+chatInputForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = chatInput.value.trim();
+  if (!text || activeThreadId == null) return;
+  const thread = MESSAGE_THREADS.find((t) => t.id === activeThreadId);
+  if (!thread) return;
+  thread.messages.push({ from: 'me', text, time: 'Just now' });
+  chatInput.value = '';
+  renderChatBubbles(thread);
+});
+
+function openMessagesView() {
+  renderMessageThreadList();
+  openSubView(messagesView);
+}
+messagesBackBtn.addEventListener('click', () => closeSubView(messagesView));
+messageThreadBackBtn.addEventListener('click', () => closeSubView(messageThreadView));
+updateMessagesBadge();
+
+// ---------- Privacy Center ----------
+const privacyView = document.getElementById('privacyView');
+const privacyBackBtn = document.getElementById('privacyBackBtn');
+const privacyProfileVisibilitySwitch = document.getElementById('privacyProfileVisibilitySwitch');
+const privacyDirectMessagingSwitch = document.getElementById('privacyDirectMessagingSwitch');
+const privacyCrashReportsSwitch = document.getElementById('privacyCrashReportsSwitch');
+const privacyDiarySharingSelect = document.getElementById('privacyDiarySharingSelect');
+const privacyExportBtn = document.getElementById('privacyExportBtn');
+const privacyDeleteAccountBtn = document.getElementById('privacyDeleteAccountBtn');
+
+// Client-only preferences — there is no privacy-settings endpoint on the
+// server, so these hold for the current session rather than persisting.
+const privacyPrefs = { profileVisibility: true, directMessaging: true, crashReports: true, diarySharing: 'friends' };
+
+function bindToggleSwitch(el, key) {
+  el.addEventListener('click', () => {
+    privacyPrefs[key] = !privacyPrefs[key];
+    el.setAttribute('aria-checked', String(privacyPrefs[key]));
+  });
+}
+bindToggleSwitch(privacyProfileVisibilitySwitch, 'profileVisibility');
+bindToggleSwitch(privacyDirectMessagingSwitch, 'directMessaging');
+bindToggleSwitch(privacyCrashReportsSwitch, 'crashReports');
+
+privacyDiarySharingSelect.addEventListener('change', () => {
+  privacyPrefs.diarySharing = privacyDiarySharingSelect.value;
+});
+
+function csvEscape(value) {
+  const str = String(value);
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+async function exportDataHistoryCsv() {
+  privacyExportBtn.disabled = true;
+  privacyExportBtn.textContent = 'Preparing export…';
+  try {
+    const history = await loadHistory({ days: 90 });
+    const rows = [['Date', 'Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)']];
+    for (const d of history?.days || []) {
+      rows.push([d.date, Math.round(d.calories), Math.round(d.protein), Math.round(d.carbs), Math.round(d.fat)]);
+    }
+    rows.push([]);
+    rows.push(['Weight Log']);
+    rows.push(['Date', 'Weight (kg)']);
+    for (const w of [...state.weights].sort((a, b) => a.date.localeCompare(b.date))) {
+      rows.push([w.date, w.weight]);
+    }
+    const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `data-export-${todayStr()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export ready');
+  } catch (err) {
+    showToast('Failed to export data', true);
+  } finally {
+    privacyExportBtn.disabled = false;
+    privacyExportBtn.textContent = 'Export Data History (CSV)';
+  }
+}
+privacyExportBtn.addEventListener('click', exportDataHistoryCsv);
+
+privacyDeleteAccountBtn.addEventListener('click', () => {
+  const confirmed = window.confirm('This will permanently delete your account and all data. This cannot be undone. Continue?');
+  if (!confirmed) return;
+  showToast('Deletion request received — check your email to confirm');
+});
+
+function openPrivacyView() {
+  openSubView(privacyView);
+}
+privacyBackBtn.addEventListener('click', () => closeSubView(privacyView));
+
+// ---------- Help & Support ----------
+const helpView = document.getElementById('helpView');
+const helpBackBtn = document.getElementById('helpBackBtn');
+const helpSearchInput = document.getElementById('helpSearchInput');
+const helpGridEl = document.getElementById('helpGrid');
+const helpFaqPanel = document.getElementById('helpFaqPanel');
+const helpFaqTitleEl = document.getElementById('helpFaqTitle');
+const helpFaqListEl = document.getElementById('helpFaqList');
+const helpContactToggleBtn = document.getElementById('helpContactToggleBtn');
+const helpContactForm = document.getElementById('helpContactForm');
+const helpContactCancelBtn = document.getElementById('helpContactCancelBtn');
+const helpContactSubmitBtn = document.getElementById('helpContactSubmitBtn');
+const helpContactSubject = document.getElementById('helpContactSubject');
+const helpContactMessage = document.getElementById('helpContactMessage');
+
+const HELP_FAQS = {
+  account: {
+    title: 'Account',
+    items: [
+      { q: 'How do I change my email or password?', a: 'Go to More › My Profile to update your account details.' },
+      { q: 'Can I use the app on multiple devices?', a: 'Yes — log in with the same account and your data syncs automatically.' }
+    ]
+  },
+  database: {
+    title: 'Database',
+    items: [
+      { q: 'Why is a food missing from search?', a: 'Our food database grows weekly — you can log a custom food in the meantime.' },
+      { q: 'How accurate is the nutrition data?', a: 'Values are sourced from verified label data and reviewed regularly.' }
+    ]
+  },
+  syncing: {
+    title: 'Syncing',
+    items: [
+      { q: 'My steps aren’t showing up.', a: 'Check More › Apps & Devices to confirm your tracker is connected, then force a sync from More › Sync.' },
+      { q: 'How often does data sync?', a: 'Automatically in the background, or instantly with Force Cloud Database Sync.' }
+    ]
+  },
+  features: {
+    title: 'Features',
+    items: [
+      { q: 'How do I set a custom macro split?', a: 'Head to More › Goals › Calorie, Carbs, Protein and Fat Goals.' },
+      { q: 'Can I track intermittent fasting?', a: 'Yes, use More › Intermittent Fasting to start and end fasting windows.' }
+    ]
+  }
+};
+
+function renderHelpFaq(topic) {
+  const data = HELP_FAQS[topic];
+  if (!data) return;
+  helpFaqTitleEl.textContent = data.title;
+  helpFaqListEl.innerHTML = data.items
+    .map((f) => `<li class="help-faq-item"><p class="help-faq-q">${escapeHtml(f.q)}</p><p class="help-faq-a">${escapeHtml(f.a)}</p></li>`)
+    .join('');
+  helpFaqPanel.classList.remove('hidden');
+  helpGridEl.querySelectorAll('.help-card').forEach((c) => c.classList.toggle('active', c.dataset.topic === topic));
+}
+
+helpGridEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.help-card');
+  if (!card) return;
+  renderHelpFaq(card.dataset.topic);
+});
+
+helpSearchInput.addEventListener('input', () => {
+  const query = helpSearchInput.value.trim().toLowerCase();
+  for (const [topic, data] of Object.entries(HELP_FAQS)) {
+    const match = !query || data.title.toLowerCase().includes(query) || data.items.some((f) => f.q.toLowerCase().includes(query));
+    const card = helpGridEl.querySelector(`.help-card[data-topic="${topic}"]`);
+    if (card) card.classList.toggle('hidden', !match);
+  }
+});
+
+helpContactToggleBtn.addEventListener('click', () => {
+  helpContactForm.classList.remove('hidden');
+  helpContactToggleBtn.classList.add('hidden');
+});
+helpContactCancelBtn.addEventListener('click', () => {
+  helpContactForm.classList.add('hidden');
+  helpContactToggleBtn.classList.remove('hidden');
+});
+helpContactSubmitBtn.addEventListener('click', () => {
+  if (!helpContactSubject.value.trim() || !helpContactMessage.value.trim()) {
+    showToast('Please fill in both fields', true);
+    return;
+  }
+  helpContactSubject.value = '';
+  helpContactMessage.value = '';
+  helpContactForm.classList.add('hidden');
+  helpContactToggleBtn.classList.remove('hidden');
+  showToast('Support ticket submitted');
+});
+
+function openHelpView() {
+  helpSearchInput.value = '';
+  helpFaqPanel.classList.add('hidden');
+  helpContactForm.classList.add('hidden');
+  helpContactToggleBtn.classList.remove('hidden');
+  helpGridEl.querySelectorAll('.help-card').forEach((c) => {
+    c.classList.remove('active');
+    c.classList.remove('hidden');
+  });
+  openSubView(helpView);
+}
+helpBackBtn.addEventListener('click', () => closeSubView(helpView));
+
+// ---------- Sync Status ----------
+const syncView = document.getElementById('syncView');
+const syncBackBtn = document.getElementById('syncBackBtn');
+const syncWheelWrapEl = document.getElementById('syncWheelWrap');
+const syncTimestampEl = document.getElementById('syncTimestamp');
+const syncForceBtn = document.getElementById('syncForceBtn');
+const syncHardwareStatusEl = document.getElementById('syncHardwareStatus');
+
+function formatSyncTimestamp(date) {
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const isToday = date.toDateString() === new Date().toDateString();
+  return `Last Successful Cloud Sync: ${isToday ? 'Today' : date.toLocaleDateString()} at ${time}`;
+}
+
+function updateSyncHardwareStatus() {
+  const connectedCount = state.devices ? Object.values(state.devices).filter(Boolean).length : 0;
+  syncHardwareStatusEl.textContent = connectedCount > 0 ? `${connectedCount} device${connectedCount > 1 ? 's' : ''} connected` : 'No devices';
+}
+
+async function openSyncView() {
+  if (!state.lastSyncAt) state.lastSyncAt = new Date();
+  syncTimestampEl.textContent = formatSyncTimestamp(state.lastSyncAt);
+  openSubView(syncView);
+  await loadDevices();
+  updateSyncHardwareStatus();
+}
+
+syncForceBtn.addEventListener('click', async () => {
+  syncWheelWrapEl.classList.add('syncing');
+  syncForceBtn.disabled = true;
+  try {
+    await Promise.all([loadDay(), loadWeights(), loadProfile(), loadDevices()]);
+    state.lastSyncAt = new Date();
+    syncTimestampEl.textContent = formatSyncTimestamp(state.lastSyncAt);
+    updateSyncHardwareStatus();
+    showToast('Synced');
+  } catch (err) {
+    showToast('Sync failed', true);
+  } finally {
+    syncWheelWrapEl.classList.remove('syncing');
+    syncForceBtn.disabled = false;
+  }
+});
+
+syncBackBtn.addEventListener('click', () => closeSubView(syncView));
+
 // ---------- More tab (profile header, menu, body metrics, theme, logout) ----------
 // Logging streak = consecutive days with logged calories, counted backward
 // from the most recent day in a 60-day history window.
@@ -4515,11 +6264,14 @@ const MORE_MENU_ACTIONS = {
   'recipe-discovery': () => openDiscoveryView(),
   'apps-devices': () => openAppsDevicesView(),
   'weekly-report': () => openWeeklyReportView(),
+  community: () => openCommunityView(),
+  learn: () => openLearnView(),
+  friends: () => openFriendsView(),
+  messages: () => openMessagesView(),
   settings: () => openSettingsView(),
-  sync: async () => {
-    await Promise.all([loadDay(), loadWeights(), loadProfile()]);
-    showToast('Synced');
-  }
+  privacy: () => openPrivacyView(),
+  help: () => openHelpView(),
+  sync: () => openSyncView()
 };
 
 moreMenuListEl.addEventListener('click', (e) => {

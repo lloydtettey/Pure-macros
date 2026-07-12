@@ -1,10 +1,42 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
+const jwt = require('jsonwebtoken');
+const jwksClient = require('jwks-rsa');
 const { readDb, writeDb } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ---------- OAuth (Google / Apple) ----------
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID || '';
+
+// 'postmessage' is Google's special redirect_uri value for the JS popup code
+// flow (google.accounts.oauth2.initCodeClient) — there's no real redirect
+// endpoint to register, so no per-environment redirect URI setup is needed.
+const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, 'postmessage');
+
+const appleJwks = jwksClient({ jwksUri: 'https://appleid.apple.com/auth/keys', cache: true, cacheMaxAge: 3600 * 1000 });
+function getAppleSigningKey(header, callback) {
+  appleJwks.getSigningKey(header.kid, (err, key) => {
+    if (err) return callback(err);
+    callback(null, key.getPublicKey());
+  });
+}
+function verifyAppleIdentityToken(identityToken) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      identityToken,
+      getAppleSigningKey,
+      { algorithms: ['RS256'], audience: APPLE_CLIENT_ID, issuer: 'https://appleid.apple.com' },
+      (err, decoded) => (err ? reject(err) : resolve(decoded))
+    );
+  });
+}
 
 app.use(express.json({ limit: '12mb' })); // raised limit — scanned plate photos arrive as base64 JSON
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -16,6 +48,14 @@ const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'very', 'extreme'];
 const FITNESS_GOALS = ['lose', 'maintain', 'gain'];
 const FASTING_PROTOCOLS = ['16:8', '18:6', 'custom'];
 const DEVICE_KEYS = ['appleHealth', 'googleFit', 'manualEntry', 'garmin', 'fitbit', 'strava', 'myFitnessPal'];
+const WEEK_START_OPTIONS = ['monday', 'sunday'];
+const DIARY_SHARING_OPTIONS = ['private', 'friends', 'public'];
+const DAY_TYPES = ['rest', 'work', 'gym'];
+const DEFAULT_DAY_TYPE_TARGETS = {
+  rest: { label: 'Rest Day', calories: 2000, protein: 130, carbs: 220, fat: 65 },
+  work: { label: 'Work Day', calories: 2250, protein: 145, carbs: 250, fat: 75 },
+  gym: { label: 'Gym Training', calories: 2500, protein: 160, carbs: 275, fat: 85 }
+};
 
 const DEFAULT_REMINDERS = [
   { key: 'breakfast', label: 'Log Breakfast', time: '08:00' },
@@ -62,6 +102,18 @@ function computeCoachPlan({ weightKg, heightCm, ageYears, activityLevel, fitness
   return { calorieGoal, macroGoals: { protein: proteinG, carbs: carbG, fat: fatG } };
 }
 const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+
+// ---------- Dynamic food-logging streak engine ----------
+// Case A (already logged today): no-op, streak stands. Case B (last log was
+// exactly yesterday): the streak continues, +1. Case C (broken — a gap of 2+
+// days — or a first-ever log): the streak restarts at 1. lastLoggedDate is
+// always stamped to today afterward so the next call can tell which case it's in.
+function applyStreakUpdate(data, today) {
+  if (data.lastLoggedDate === today) return; // Case A
+  const yesterday = addDaysToDateStr(today, -1);
+  data.currentStreak = data.lastLoggedDate === yesterday ? (data.currentStreak || 0) + 1 : 1; // B : C
+  data.lastLoggedDate = today;
+}
 
 // Micronutrient fields tracked per 100g alongside kcal/protein/carbs/fat.
 // Custom foods (logged via the "custom food" form) never supply these, so
@@ -241,7 +293,33 @@ function defaultUserData() {
       workoutsPerWeek: 3,
       minutesPerWorkout: 45,
       bio: '',
-      location: ''
+      location: '',
+      // Profile Settings sub-view
+      displayName: '',
+      currentWeightKg: null,
+      customCalorieTargets: { rest: 2000, moderate: 2200, active: 2500 },
+      // Dynamic Day Type Selector & Calorie Target Engine (Today dashboard capsule)
+      dayTypeTargets: {
+        rest: { ...DEFAULT_DAY_TYPE_TARGETS.rest },
+        work: { ...DEFAULT_DAY_TYPE_TARGETS.work },
+        gym: { ...DEFAULT_DAY_TYPE_TARGETS.gym }
+      },
+      activeDayType: null,
+      // Diary Settings sub-view
+      diary: { showDecimalMacros: false, quickAddEnabled: false, multiAddDefault: false },
+      // Start of the Week sub-view
+      weekStart: 'monday',
+      // Sharing & Privacy sub-view
+      sharing: { diarySharing: 'private', profileSearchable: false },
+      // Push Notifications sub-view — MyFitnessPal-style social/activity toggles
+      notifications: {
+        newMessage: true,
+        newFriendRequest: true,
+        friendWorkoutLog: true,
+        friendLoginStreak: true,
+        stepGoalReached: true,
+        quietHours: false
+      }
     },
     entries: [],
     water: {},
@@ -250,6 +328,7 @@ function defaultUserData() {
     sleepLogs: [],
     exerciseLogs: [],
     routines: [],
+    customExercises: [],
     fasting: { protocol: '16:8', activeSession: null },
     reminders: DEFAULT_REMINDERS.map((r) => ({ id: r.key, ...r, enabled: true })),
     devices: {
@@ -264,6 +343,9 @@ function defaultUserData() {
     savedMeals: [],
     savedRecipes: [],
     savedFoods: [],
+    // Dynamic food-logging streak engine — see applyStreakUpdate() below.
+    currentStreak: 0,
+    lastLoggedDate: null,
     // Fresh accounts must complete the first-launch AI Coach onboarding
     // wizard before the dashboard is considered fully set up.
     onboarded: false,
@@ -319,6 +401,60 @@ async function requireAuth(req, res, next) {
   next();
 }
 
+function createSession(db, userId) {
+  const token = crypto.randomUUID();
+  db.sessions[token] = userId;
+  return token;
+}
+
+function slugifyUsernameBase(base) {
+  return (base || 'user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 20) || 'user';
+}
+
+function generateUniqueUsername(db, base) {
+  const cleaned = slugifyUsernameBase(base);
+  const taken = (name) => db.users.some((u) => u.username.toLowerCase() === name.toLowerCase());
+  if (!taken(cleaned)) return cleaned;
+  let suffix = 1;
+  while (taken(`${cleaned}${suffix}`)) suffix += 1;
+  return `${cleaned}${suffix}`;
+}
+
+// Resolves a verified OAuth identity (Google/Apple) to a user record: an
+// existing account already linked to that provider id, an existing
+// username/password (or other-provider) account sharing the same verified
+// email (so one person doesn't end up with two separate accounts), or a
+// freshly created account.
+function findOrCreateOAuthUser(db, { provider, providerId, email, name }) {
+  const idField = provider === 'google' ? 'googleId' : 'appleId';
+
+  let user = db.users.find((u) => u[idField] === providerId);
+  if (user) return user;
+
+  if (email) {
+    user = db.users.find((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
+    if (user) {
+      user[idField] = providerId;
+      return user;
+    }
+  }
+
+  const username = generateUniqueUsername(db, name || (email ? email.split('@')[0] : provider));
+  user = {
+    id: crypto.randomUUID(),
+    username,
+    salt: null,
+    hash: null,
+    email: email || null,
+    [idField]: providerId,
+    createdAt: new Date().toISOString()
+  };
+  db.users.push(user);
+  db.userdata[user.id] = defaultUserData();
+  if (db.users.length === 1) claimLegacyData(db, user.id);
+  return user;
+}
+
 app.post('/api/auth/register', async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== 'string' || username.trim().length < 3) {
@@ -341,8 +477,7 @@ app.post('/api/auth/register', async (req, res) => {
   db.userdata[user.id] = defaultUserData();
   if (db.users.length === 1) claimLegacyData(db, user.id);
 
-  const token = crypto.randomUUID();
-  db.sessions[token] = user.id;
+  const token = createSession(db, user.id);
   await writeDb(db);
   res.status(201).json({ token, username: user.username });
 });
@@ -354,13 +489,73 @@ app.post('/api/auth/login', async (req, res) => {
   }
   const db = await readDb();
   const user = db.users.find((u) => u.username.toLowerCase() === username.trim().toLowerCase());
-  if (!user || !verifyPassword(password, user.salt, user.hash)) {
+  if (!user || !user.hash || !verifyPassword(password, user.salt, user.hash)) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
-  const token = crypto.randomUUID();
-  db.sessions[token] = user.id;
+  const token = createSession(db, user.id);
   await writeDb(db);
   res.json({ token, username: user.username });
+});
+
+// POST /api/auth/google — body: { code } (an authorization code from
+// google.accounts.oauth2.initCodeClient's popup flow). Exchanges it for
+// tokens with Google (proving this server, not just the browser, is the
+// party talking to Google) and verifies the returned ID token's signature.
+app.post('/api/auth/google', async (req, res) => {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return res.status(500).json({ error: 'Google sign-in is not configured on this server' });
+  }
+  const { code } = req.body || {};
+  if (typeof code !== 'string' || !code) {
+    return res.status(400).json({ error: 'code is required' });
+  }
+  try {
+    const { tokens } = await googleOAuthClient.getToken({ code, redirect_uri: 'postmessage' });
+    const ticket = await googleOAuthClient.verifyIdToken({ idToken: tokens.id_token, audience: GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    if (!payload.email_verified) {
+      return res.status(401).json({ error: 'Google account email is not verified' });
+    }
+
+    const db = await readDb();
+    const user = findOrCreateOAuthUser(db, { provider: 'google', providerId: payload.sub, email: payload.email, name: payload.name });
+    const token = createSession(db, user.id);
+    await writeDb(db);
+    res.json({ token, username: user.username });
+  } catch (err) {
+    res.status(401).json({ error: 'Google sign-in failed' });
+  }
+});
+
+// POST /api/auth/apple — body: { identityToken, user? } (identityToken and
+// the one-time user name payload both come from AppleID.auth.signIn()'s JS
+// popup flow). Verifies the identity token's signature against Apple's
+// published public keys (https://appleid.apple.com/auth/keys) — this is
+// Apple's documented way to authenticate a sign-in from the JS SDK.
+app.post('/api/auth/apple', async (req, res) => {
+  if (!APPLE_CLIENT_ID) {
+    return res.status(500).json({ error: 'Apple sign-in is not configured on this server' });
+  }
+  const { identityToken, user: appleUserPayload } = req.body || {};
+  if (typeof identityToken !== 'string' || !identityToken) {
+    return res.status(400).json({ error: 'identityToken is required' });
+  }
+  try {
+    const decoded = await verifyAppleIdentityToken(identityToken);
+    // Apple only ever includes the user's name in this one-time client
+    // payload on their very first sign-in — never in the token, never again.
+    const name = appleUserPayload?.name
+      ? [appleUserPayload.name.firstName, appleUserPayload.name.lastName].filter(Boolean).join(' ')
+      : null;
+
+    const db = await readDb();
+    const user = findOrCreateOAuthUser(db, { provider: 'apple', providerId: decoded.sub, email: decoded.email, name });
+    const token = createSession(db, user.id);
+    await writeDb(db);
+    res.json({ token, username: user.username });
+  } catch (err) {
+    res.status(401).json({ error: 'Apple sign-in failed' });
+  }
 });
 
 app.post('/api/auth/logout', requireAuth, async (req, res) => {
@@ -379,6 +574,16 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 // user data involved, and the login screen doesn't need it anyway)
 app.get('/api/foods', (req, res) => {
   res.json(FOOD_DB);
+});
+
+// GET /api/oauth/config — client IDs are not secret (they're embedded in
+// every OAuth request the browser makes anyway); the login screen needs them
+// to initialize the Google/Apple JS SDKs before a user has a session.
+app.get('/api/oauth/config', (req, res) => {
+  res.json({
+    googleClientId: GOOGLE_CLIENT_ID || null,
+    appleClientId: APPLE_CLIENT_ID || null
+  });
 });
 
 // ---------- Universal food search (Open Food Facts) ----------
@@ -484,62 +689,186 @@ app.post('/api/vision/scan', requireAuth, (req, res) => {
   });
 });
 
+// ---------- Settings Generic Engine ----------
+// PUT /api/settings accepts any subset of recognized fields — user
+// preferences, toggle options, and calorie targets — and merges them onto
+// the existing settings object. Every field is optional and independently
+// validated only when present, so each settings sub-view (Profile, Diary,
+// Sharing & Privacy, ...) can PUT just the slice it owns without needing to
+// resend the rest of the settings object. Push Notifications has its own
+// dedicated POST /api/settings/notifications route below instead.
+const SETTINGS_VALIDATORS = {
+  calorieGoal: (v) => typeof v === 'number' && !Number.isNaN(v) && v > 0,
+  macroGoals: (v) =>
+    v && typeof v === 'object' &&
+    ['protein', 'carbs', 'fat'].every((k) => typeof v[k] === 'number' && !Number.isNaN(v[k]) && v[k] >= 0),
+  heightCm: (v) => v === null || (typeof v === 'number' && !Number.isNaN(v) && v > 0),
+  targetWeightKg: (v) => v === null || (typeof v === 'number' && !Number.isNaN(v) && v > 0),
+  currentWeightKg: (v) => v === null || (typeof v === 'number' && !Number.isNaN(v) && v > 0),
+  activityLevel: (v) => ACTIVITY_LEVELS.includes(v),
+  fitnessGoal: (v) => FITNESS_GOALS.includes(v),
+  bio: (v) => typeof v === 'string',
+  location: (v) => typeof v === 'string',
+  displayName: (v) => typeof v === 'string',
+  weekStart: (v) => WEEK_START_OPTIONS.includes(v),
+  customCalorieTargets: (v) =>
+    v && typeof v === 'object' &&
+    ['rest', 'moderate', 'active'].every((k) => typeof v[k] === 'number' && !Number.isNaN(v[k]) && v[k] > 0),
+  activeDayType: (v) => v === null || DAY_TYPES.includes(v),
+  dayTypeTargets: (v) =>
+    v && typeof v === 'object' &&
+    DAY_TYPES.every((dayType) =>
+      v[dayType] && typeof v[dayType] === 'object' &&
+      (v[dayType].label === undefined || typeof v[dayType].label === 'string') &&
+      ['calories', 'protein', 'carbs', 'fat'].every((k) => typeof v[dayType][k] === 'number' && !Number.isNaN(v[dayType][k]) && v[dayType][k] > 0)
+    ),
+  diary: (v) =>
+    v && typeof v === 'object' &&
+    ['showDecimalMacros', 'quickAddEnabled', 'multiAddDefault'].every((k) => typeof v[k] === 'boolean'),
+  sharing: (v) =>
+    v && typeof v === 'object' &&
+    DIARY_SHARING_OPTIONS.includes(v.diarySharing) && typeof v.profileSearchable === 'boolean'
+};
+
+// Push Notifications sub-view (Settings > Push Notifications) — 6 independent
+// social/activity notification toggles, matching the MyFitnessPal checklist.
+const NOTIFICATION_KEYS = [
+  'newMessage',
+  'newFriendRequest',
+  'friendWorkoutLog',
+  'friendLoginStreak',
+  'stepGoalReached',
+  'quietHours'
+];
+
+// bio/location/displayName are free text — clamp length instead of rejecting.
+const SETTINGS_TEXT_LIMITS = { bio: 500, location: 120, displayName: 80 };
+
 // GET /api/settings
 app.get('/api/settings', requireAuth, async (req, res) => {
   res.json(req.db.userdata[req.userId].settings);
 });
 
-// PUT /api/settings
+// PUT /api/settings — body: a partial object of any SETTINGS_VALIDATORS keys, merged in
 app.put('/api/settings', requireAuth, async (req, res) => {
-  const { calorieGoal, macroGoals, heightCm, targetWeightKg, activityLevel, fitnessGoal, bio, location } = req.body || {};
-  if (typeof calorieGoal !== 'number' || calorieGoal <= 0) {
-    return res.status(400).json({ error: 'calorieGoal must be a positive number' });
+  const updates = req.body || {};
+  const keys = Object.keys(updates);
+  if (keys.length === 0) {
+    return res.status(400).json({ error: 'body must contain at least one settings field' });
   }
-  if (
-    !macroGoals ||
-    typeof macroGoals.protein !== 'number' ||
-    typeof macroGoals.carbs !== 'number' ||
-    typeof macroGoals.fat !== 'number' ||
-    macroGoals.protein < 0 ||
-    macroGoals.carbs < 0 ||
-    macroGoals.fat < 0
-  ) {
-    return res.status(400).json({ error: 'macroGoals.{protein,carbs,fat} must be non-negative numbers' });
+
+  const errors = [];
+  for (const key of keys) {
+    const validator = SETTINGS_VALIDATORS[key];
+    if (!validator) {
+      errors.push(`unrecognized settings field: ${key}`);
+      continue;
+    }
+    if (!validator(updates[key])) {
+      errors.push(`invalid value for ${key}`);
+    }
   }
-  if (heightCm !== undefined && heightCm !== null && (typeof heightCm !== 'number' || Number.isNaN(heightCm) || heightCm <= 0)) {
-    return res.status(400).json({ error: 'heightCm must be a positive number or null' });
-  }
-  if (targetWeightKg !== undefined && targetWeightKg !== null && (typeof targetWeightKg !== 'number' || Number.isNaN(targetWeightKg) || targetWeightKg <= 0)) {
-    return res.status(400).json({ error: 'targetWeightKg must be a positive number or null' });
-  }
-  if (activityLevel !== undefined && !ACTIVITY_LEVELS.includes(activityLevel)) {
-    return res.status(400).json({ error: `activityLevel must be one of: ${ACTIVITY_LEVELS.join(', ')}` });
-  }
-  if (fitnessGoal !== undefined && !FITNESS_GOALS.includes(fitnessGoal)) {
-    return res.status(400).json({ error: `fitnessGoal must be one of: ${FITNESS_GOALS.join(', ')}` });
-  }
-  if (bio !== undefined && bio !== null && typeof bio !== 'string') {
-    return res.status(400).json({ error: 'bio must be a string' });
-  }
-  if (location !== undefined && location !== null && typeof location !== 'string') {
-    return res.status(400).json({ error: 'location must be a string' });
+  if (errors.length) {
+    return res.status(400).json({ error: errors.join('; ') });
   }
 
   const data = req.db.userdata[req.userId];
-  data.settings = {
-    calorieGoal,
-    macroGoals,
-    heightCm: heightCm === undefined ? (data.settings.heightCm ?? null) : heightCm,
-    targetWeightKg: targetWeightKg === undefined ? (data.settings.targetWeightKg ?? null) : targetWeightKg,
-    activityLevel: activityLevel === undefined ? (data.settings.activityLevel || 'moderate') : activityLevel,
-    fitnessGoal: fitnessGoal === undefined ? (data.settings.fitnessGoal || 'maintain') : fitnessGoal,
-    ageYears: data.settings.ageYears ?? null,
-    weeklyGoalLbs: data.settings.weeklyGoalLbs ?? 1,
-    workoutsPerWeek: data.settings.workoutsPerWeek ?? 3,
-    minutesPerWorkout: data.settings.minutesPerWorkout ?? 45,
-    bio: bio === undefined ? (data.settings.bio ?? '') : (bio || '').slice(0, 500),
-    location: location === undefined ? (data.settings.location ?? '') : (location || '').slice(0, 120)
-  };
+  for (const key of keys) {
+    const limit = SETTINGS_TEXT_LIMITS[key];
+    data.settings[key] = limit ? updates[key].slice(0, limit) : updates[key];
+  }
+  await writeDb(req.db);
+  res.json(data.settings);
+});
+
+// POST /api/settings/notifications — body: partial object of NOTIFICATION_KEYS
+// booleans. Dedicated save path for the Push Notifications sub-view: merges
+// just the provided flags into settings.notifications and persists through
+// the same atomic writeDb used by every other route.
+app.post('/api/settings/notifications', requireAuth, async (req, res) => {
+  const updates = req.body || {};
+  const keys = Object.keys(updates);
+  if (keys.length === 0) {
+    return res.status(400).json({ error: 'body must contain at least one notification field' });
+  }
+
+  const errors = [];
+  for (const key of keys) {
+    if (!NOTIFICATION_KEYS.includes(key)) {
+      errors.push(`unrecognized notification field: ${key}`);
+      continue;
+    }
+    if (typeof updates[key] !== 'boolean') {
+      errors.push(`${key} must be a boolean`);
+    }
+  }
+  if (errors.length) {
+    return res.status(400).json({ error: errors.join('; ') });
+  }
+
+  const data = req.db.userdata[req.userId];
+  data.settings.notifications = { ...data.settings.notifications, ...updates };
+  await writeDb(req.db);
+  res.json(data.settings);
+});
+
+// POST /api/settings/active-day-type — body: { dayType: 'rest'|'work'|'gym' }
+// Sets which day-type configuration is active; the Today dashboard (GET
+// /api/day) substitutes that configuration's saved calorie/macro targets in
+// place of the base calorieGoal/macroGoals for as long as it stays active.
+app.post('/api/settings/active-day-type', requireAuth, async (req, res) => {
+  const { dayType } = req.body || {};
+  if (!DAY_TYPES.includes(dayType)) {
+    return res.status(400).json({ error: `dayType must be one of: ${DAY_TYPES.join(', ')}` });
+  }
+  const data = req.db.userdata[req.userId];
+  data.settings.activeDayType = dayType;
+  await writeDb(req.db);
+  res.json(data.settings);
+});
+
+// POST /api/settings/update — body: { profiles: [{ key: 'rest'|'work'|'gym', label, calories, protein, carbs, fat }, ...] }
+// Dedicated save path for the Target Profiles editor (Goals -> Nutrition Goals
+// -> "Calorie, Carbs, Protein and Fat Goals"): saves all edited Rest/Work/Gym
+// profiles in one call, replacing just those keys of dayTypeTargets and
+// persisting through the same atomic writeDb used by every other route.
+app.post('/api/settings/update', requireAuth, async (req, res) => {
+  const { profiles } = req.body || {};
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    return res.status(400).json({ error: 'profiles must be a non-empty array' });
+  }
+
+  const errors = [];
+  for (const p of profiles) {
+    if (!p || !DAY_TYPES.includes(p.key)) {
+      errors.push(`profile key must be one of: ${DAY_TYPES.join(', ')}`);
+      continue;
+    }
+    if (typeof p.label !== 'string' || !p.label.trim()) {
+      errors.push(`${p.key}: label is required`);
+    }
+    for (const field of ['calories', 'protein', 'carbs', 'fat']) {
+      if (typeof p[field] !== 'number' || Number.isNaN(p[field]) || p[field] <= 0) {
+        errors.push(`${p.key}: ${field} must be a positive number`);
+      }
+    }
+  }
+  if (errors.length) {
+    return res.status(400).json({ error: errors.join('; ') });
+  }
+
+  const data = req.db.userdata[req.userId];
+  const dayTypeTargets = { ...data.settings.dayTypeTargets };
+  for (const p of profiles) {
+    dayTypeTargets[p.key] = {
+      label: p.label.trim().slice(0, 40),
+      calories: p.calories,
+      protein: p.protein,
+      carbs: p.carbs,
+      fat: p.fat
+    };
+  }
+  data.settings.dayTypeTargets = dayTypeTargets;
   await writeDb(req.db);
   res.json(data.settings);
 });
@@ -585,9 +914,16 @@ app.post('/api/entries', requireAuth, async (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  req.db.userdata[req.userId].entries.push(entry);
+  const data = req.db.userdata[req.userId];
+  data.entries.push(entry);
+  applyStreakUpdate(data, todayStr());
   await writeDb(req.db);
   res.status(201).json(entry);
+});
+
+// GET /api/streak — current dynamic food-logging streak, for the header badge
+app.get('/api/streak', requireAuth, async (req, res) => {
+  res.json({ currentStreak: req.db.userdata[req.userId].currentStreak || 0 });
 });
 
 // DELETE /api/entries/:id
@@ -936,6 +1272,55 @@ app.delete('/api/exercise/:id', requireAuth, async (req, res) => {
   res.json(removed);
 });
 
+// ---------- My Exercises (Settings > My Exercises custom activity presets) ----------
+// Distinct from exerciseLogs (a day's logged cardio/strength minutes): this is
+// a reusable library of custom activities with a calories-burned-per-minute
+// rate, defined once from the settings sub-view.
+function getCustomExercises(data) {
+  if (!Array.isArray(data.customExercises)) data.customExercises = [];
+  return data.customExercises;
+}
+
+// GET /api/custom-exercises
+app.get('/api/custom-exercises', requireAuth, async (req, res) => {
+  res.json(getCustomExercises(req.db.userdata[req.userId]));
+});
+
+// POST /api/custom-exercises — body: { name, caloriesPerMinute }
+app.post('/api/custom-exercises', requireAuth, async (req, res) => {
+  const { name, caloriesPerMinute } = req.body || {};
+  const errors = [];
+  if (typeof name !== 'string' || !name.trim()) errors.push('name is required');
+  if (typeof caloriesPerMinute !== 'number' || Number.isNaN(caloriesPerMinute) || caloriesPerMinute <= 0) {
+    errors.push('caloriesPerMinute must be a positive number');
+  }
+  if (errors.length) {
+    return res.status(400).json({ error: errors.join('; ') });
+  }
+
+  const exercise = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    caloriesPerMinute,
+    createdAt: new Date().toISOString()
+  };
+  getCustomExercises(req.db.userdata[req.userId]).push(exercise);
+  await writeDb(req.db);
+  res.status(201).json(exercise);
+});
+
+// DELETE /api/custom-exercises/:id
+app.delete('/api/custom-exercises/:id', requireAuth, async (req, res) => {
+  const exercises = getCustomExercises(req.db.userdata[req.userId]);
+  const idx = exercises.findIndex((e) => e.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: 'custom exercise not found' });
+  }
+  const [removed] = exercises.splice(idx, 1);
+  await writeDb(req.db);
+  res.json(removed);
+});
+
 // ---------- Workout Routines ----------
 // GET /api/routines
 app.get('/api/routines', requireAuth, async (req, res) => {
@@ -1179,7 +1564,15 @@ app.get('/api/day', requireAuth, async (req, res) => {
     .filter((e) => e.date === date)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const totals = computeTotals(entries);
-  res.json({ date, entries, totals, settings: data.settings });
+  // Dynamic Day Type Selector: when a day type (Rest/Work/Gym) is active,
+  // its saved calorie/macro targets substitute for the base calorieGoal/
+  // macroGoals on the dashboard, without overwriting the base plan itself.
+  const activeDayType = data.settings.activeDayType;
+  const dayTypeTarget = activeDayType ? data.settings.dayTypeTargets?.[activeDayType] : null;
+  const activeTargets = dayTypeTarget
+    ? { calorieGoal: dayTypeTarget.calories, macroGoals: { protein: dayTypeTarget.protein, carbs: dayTypeTarget.carbs, fat: dayTypeTarget.fat } }
+    : { calorieGoal: data.settings.calorieGoal, macroGoals: data.settings.macroGoals };
+  res.json({ date, entries, totals, settings: data.settings, activeDayType, activeTargets });
 });
 
 app.listen(PORT, () => {
