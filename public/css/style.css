@@ -66,6 +66,12 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Applied to <body> for one frame around a theme swap so every element's
+   transition/animation is skipped instead of recalculated — without this,
+   toggling data-theme lets every color/background transition fire at once
+   and the recalculation lags visibly on phone GPUs. */
+.no-transitions, .no-transitions * { transition: none !important; animation: none !important; }
+
 /* Kills the browser-native gray tap-flash box and iOS's press-and-hold
    callout menu on every element, for a native-app feel on touch. */
 * {

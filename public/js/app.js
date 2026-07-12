@@ -7,6 +7,12 @@ const CUSTOM_FOOD_ID = '__custom__';
 const externalFoodCache = new Map();
 let globalFoodSearchTimer = null;
 const AUTH_TOKEN_KEY = 'macrogram_token';
+// Caches { username } (never the token or anything server-authoritative)
+// purely so the profile header/name can paint instantly on a returning
+// session instead of showing a "—" placeholder while /auth/me is in flight.
+// It is NOT a substitute for the token — bootstrapAuth() below still
+// re-validates every session against the server before any real data loads.
+const CURRENT_USER_KEY = 'pure_macros_current_user';
 const THEME_KEY = 'pure_macros_theme';
 const WEIGHT_UNIT_KEY = 'pure_macros_weight_unit';
 const HEIGHT_UNIT_KEY = 'pure_macros_height_unit';
@@ -427,6 +433,19 @@ function setToken(token) {
 }
 function clearToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(CURRENT_USER_KEY);
+}
+
+function cacheCurrentUser(username) {
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ username }));
+}
+
+function getCachedCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || 'null');
+  } catch {
+    return null;
+  }
 }
 
 // Wraps fetch() with the session token and centralized 401 handling, for
@@ -548,6 +567,7 @@ async function completeOAuthSignIn(endpoint, body) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Sign-in failed');
   setToken(data.token);
+  cacheCurrentUser(data.username);
   revealApp();
   initApp();
   checkOnboarding();
@@ -596,6 +616,7 @@ loginForm.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to log in');
     setToken(data.token);
+    cacheCurrentUser(data.username);
     revealApp();
     initApp();
     checkOnboarding();
@@ -616,6 +637,7 @@ registerForm.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to create account');
     setToken(data.token);
+    cacheCurrentUser(data.username);
     revealApp();
     initApp();
     checkOnboarding();
@@ -648,8 +670,13 @@ function applyTheme(theme) {
 }
 
 function setTheme(theme) {
+  // Suspend transitions/animations for one tick so every themed element
+  // swaps color instantly instead of animating in parallel — that parallel
+  // recalculation is what was causing visible lag on phone GPUs.
+  document.body.classList.add('no-transitions');
   localStorage.setItem(THEME_KEY, theme);
   applyTheme(theme);
+  setTimeout(() => document.body.classList.remove('no-transitions'), 50);
 }
 
 applyTheme(getStoredTheme());
@@ -2054,6 +2081,12 @@ function initApp() {
 (async function bootstrapAuth() {
   const token = getToken();
   if (!token) return; // auth overlay is the default visible state
+  // Paint the cached username immediately so the profile header doesn't show
+  // a "—" placeholder while /auth/me is in flight. This is display-only —
+  // the token is still what's re-validated against the server below before
+  // any real data loads or the app is revealed.
+  const cachedUser = getCachedCurrentUser();
+  if (cachedUser) state.user = cachedUser;
   try {
     const res = await authFetch(`${API}/auth/me`);
     if (!res.ok) throw new Error('invalid session');
@@ -2063,6 +2096,7 @@ function initApp() {
     initApp();
     if (!data.onboarded) openCoachWizard({ mode: 'onboarding' });
   } catch {
+    state.user = null;
     clearToken();
     // The head script pre-hid the auth overlay on the assumption this token
     // was valid — since it wasn't, undo that so the login form shows.
