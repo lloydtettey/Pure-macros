@@ -1,9 +1,8 @@
 :root {
   --bg: #000000;
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --card-bg-raised: rgba(255, 255, 255, 0.08);
-  --card-border: rgba(255, 255, 255, 0.05);
-  --glass-blur: 12px;
+  --card-bg: #16171a;
+  --card-bg-raised: #202126;
+  --card-border: #2a2b30;
 
   --text-1: #f5f5f7;
   --text-2: #9a9aa0;
@@ -25,44 +24,43 @@
 
   --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.55);
   --shadow-card-hover: 0 6px 26px rgba(0, 0, 0, 0.7);
-  --input-bg: rgba(0, 0, 0, 0.3);
-  --track-bg: #1c1c1c;
-  --chrome-bg: rgba(6, 6, 8, 0.72);
-  --overlay-tint: rgba(0, 0, 0, 0.78);
-  --panel-glass-bg: rgba(255, 255, 255, 0.07);
-  --panel-glass-border: rgba(255, 255, 255, 0.14);
-  /* Near-opaque backing for stacked full-screen sheets (Quick Add, Add
-     Exercise/Voice Log) — unlike --panel-glass-bg this blocks whatever sits
-     underneath instead of letting it bleed through blurred, which is what
-     caused double-text overlap once two sheets stacked. */
-  --sheet-opaque-bg: rgba(16, 16, 20, 0.98);
+  --input-bg: #1c1c1f;
+  --track-bg: #2a2b30;
+  --chrome-bg: #0a0a0c;
+  --overlay-tint: #000000;
+  --panel-glass-bg: #1c1c20;
+  --panel-glass-border: #2e2f36;
+  /* Fully solid opaque backing for stacked full-screen sheets (Quick Add, Add
+     Exercise/Voice Log) — blocks whatever sits underneath completely instead
+     of letting it bleed through blurred, which is what caused double-text
+     overlap once two sheets stacked. */
+  --sheet-opaque-bg: #101014;
 
   --theme-transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
   color-scheme: dark;
 }
 
 /* ---------- Light theme ---------- */
-/* Frosted glass flips from translucent dark grey to translucent white with
+/* Solid, opaque flat surfaces flip from dark charcoal to solid white with
    dark text, while the neon accent colors stay identical across both themes. */
 :root[data-theme="light"] {
-  --bg: #eef1f5;
-  --card-bg: rgba(255, 255, 255, 0.55);
-  --card-bg-raised: rgba(255, 255, 255, 0.75);
-  --card-border: rgba(20, 20, 30, 0.1);
+  --bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --card-bg-raised: #ffffff;
+  --card-border: #e3e5e8;
   --text-1: #14141a;
   --text-2: #55555f;
   --text-3: #83838d;
   --shadow-card: 0 4px 18px rgba(20, 20, 40, 0.1);
   --shadow-card-hover: 0 6px 26px rgba(20, 20, 40, 0.16);
-  --input-bg: rgba(20, 20, 30, 0.06);
-  /* Deep charcoal/slate track — sharp and clearly visible under neon fills,
-     replacing the previous low-contrast translucent-grey track. */
-  --track-bg: rgba(30, 41, 59, 0.15);
-  --chrome-bg: rgba(255, 255, 255, 0.72);
-  --overlay-tint: rgba(255, 255, 255, 0.7);
-  --panel-glass-bg: rgba(255, 255, 255, 0.6);
-  --panel-glass-border: rgba(20, 20, 30, 0.12);
-  --sheet-opaque-bg: rgba(255, 255, 255, 0.97);
+  --input-bg: #f1f2f4;
+  /* Deep charcoal/slate track — sharp and clearly visible under neon fills. */
+  --track-bg: #334155;
+  --chrome-bg: #ffffff;
+  --overlay-tint: #f8f9fa;
+  --panel-glass-bg: #ffffff;
+  --panel-glass-border: #e3e5e8;
+  --sheet-opaque-bg: #ffffff;
   color-scheme: light;
 }
 
@@ -126,11 +124,7 @@ html {
 body {
   margin: 0;
   font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(0, 229, 255, 0.08), transparent 45%),
-    radial-gradient(circle at 85% 20%, rgba(157, 59, 255, 0.08), transparent 45%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg) !important;
   color: var(--text-1);
   min-height: 100vh;
   transition: var(--theme-transition);
@@ -141,10 +135,7 @@ body {
    into an all-over blue haze on white. Toning it down keeps the accent hint
    without eating into content contrast. */
 :root[data-theme="light"] body {
-  background:
-    radial-gradient(circle at 15% 0%, rgba(0, 229, 255, 0.05), transparent 45%),
-    radial-gradient(circle at 85% 20%, rgba(157, 59, 255, 0.04), transparent 45%),
-    var(--bg);
+  background: #f8f9fa !important;
 }
 
 /* Every frosted-glass surface and text-bearing element animates smoothly
@@ -182,6 +173,7 @@ body {
   padding: calc(var(--fixed-top-h, 64px) + var(--pad-sm)) 14px calc(var(--bottom-nav-h, 80px) + env(safe-area-inset-bottom) + var(--pad-sm));
   min-height: 100vh;
   overflow-x: hidden;
+  background: var(--bg) !important;
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 0.5s ease, transform 0.5s ease;
@@ -250,8 +242,6 @@ body {
   margin: 0;
   padding: var(--pad-sm) max(14px, env(safe-area-inset-left)) 10px max(14px, env(safe-area-inset-right));
   background: var(--chrome-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--card-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -301,8 +291,6 @@ body {
   border-radius: 50%;
   border: 1px solid var(--card-border);
   background: var(--card-bg-raised);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--text-1);
   font-size: 16px;
   cursor: pointer;
@@ -312,18 +300,16 @@ body {
   transition: all 0.3s ease;
 }
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: #3a3a3d;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
   transform: translateY(-1px);
 }
 .icon-btn:active { transform: scale(0.94); }
-:root[data-theme="light"] .icon-btn:hover { background: rgba(0, 0, 0, 0.08); }
+:root[data-theme="light"] .icon-btn:hover { background: #e8e9eb; }
 
 .pill-btn {
   border: 1px solid var(--card-border);
   background: var(--card-bg-raised);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--text-1);
   padding: 7px 16px;
   border-radius: var(--radius);
@@ -333,18 +319,16 @@ body {
   transition: all 0.3s ease;
 }
 .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: #3a3a3d;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
   transform: translateY(-1px);
 }
 .pill-btn:active { transform: scale(0.96); }
-:root[data-theme="light"] .pill-btn:hover { background: rgba(0, 0, 0, 0.08); }
+:root[data-theme="light"] .pill-btn:hover { background: #e8e9eb; }
 
 /* ---------- Cards ---------- */
 .card {
   background: var(--card-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -439,10 +423,8 @@ body {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 20px;
-  background: linear-gradient(160deg, rgba(22, 24, 32, 0.94), rgba(10, 11, 16, 0.94));
+  background: #14151a;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   opacity: 0;
   transform: translateX(-50%) translateY(-6px) scale(0.98);
@@ -467,7 +449,7 @@ body {
   flex: 0 0 auto;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  background: #1c1c1e;
   color: #fff;
   font-family: inherit;
   font-size: 15px;
@@ -481,7 +463,7 @@ body {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .calendar-nav-btn:hover {
-  background: rgba(0, 229, 255, 0.18);
+  background: #0b3439;
   border-color: rgba(0, 229, 255, 0.4);
 }
 .calendar-month-label {
@@ -505,7 +487,7 @@ body {
   transition: background 0.15s ease;
 }
 .calendar-month-year-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: #1e1e1e;
 }
 .calendar-month-year-chevron {
   font-size: 11px;
@@ -527,7 +509,7 @@ body {
   margin-bottom: 12px;
   overflow: hidden;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #141414;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .month-year-picker-view.open {
@@ -541,7 +523,7 @@ body {
   height: 34px;
   transform: translateY(-50%);
   border-radius: 9px;
-  background: rgba(0, 229, 255, 0.08);
+  background: #0c1e20;
   border-top: 1px solid rgba(0, 229, 255, 0.35);
   border-bottom: 1px solid rgba(0, 229, 255, 0.35);
   pointer-events: none;
@@ -616,7 +598,7 @@ body {
   transition: background 0.15s ease;
 }
 .calendar-day-cell:hover:not(.is-future):not(.is-empty) {
-  background: rgba(255, 255, 255, 0.1);
+  background: #252525;
 }
 .calendar-day-cell.is-empty {
   visibility: hidden;
@@ -646,8 +628,6 @@ body {
   background: var(--panel-glass-bg);
   border: 1px solid var(--panel-glass-border);
   border-radius: 999px;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 .day-type-btn {
   flex: 1;
@@ -690,7 +670,7 @@ body {
 .streak-chip-icon { font-size: 13px; }
 
 /* ---------- Streak tooltip popover ---------- */
-/* Deliberately light-glass regardless of the app's active theme (dark or
+/* Deliberately solid white regardless of the app's active theme (dark or
    light) so it always reads as a distinct, high-contrast surface floating
    above the page. */
 .streak-popover {
@@ -705,10 +685,8 @@ body {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background: #ffffff;
+  border: 1px solid #e3e5e8;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
   opacity: 0;
   transform: translateX(-50%) translateY(-6px) scale(0.98);
@@ -742,7 +720,7 @@ body {
   height: 22px;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.08);
+  background: #ebebeb;
   color: #14161c;
   font-size: 11px;
   line-height: 1;
@@ -920,7 +898,7 @@ body {
   height: 38px;
   border-radius: 50%;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: #171717;
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -935,7 +913,7 @@ body {
 }
 .cup-btn.filled {
   filter: none;
-  background: rgba(46, 159, 255, 0.15);
+  background: #122331;
   border-color: var(--neon-blue);
   box-shadow: 0 0 12px rgba(46, 159, 255, 0.5);
 }
@@ -945,7 +923,7 @@ body {
    a light page — swap it for soft charcoal glass so the empty cups stay
    readable while the neon-blue filled state still pops. */
 :root[data-theme="light"] .cup-btn {
-  background: rgba(0, 0, 0, 0.06);
+  background: #f0f0f0;
   border-color: rgba(20, 20, 30, 0.12);
 }
 
@@ -1187,7 +1165,7 @@ body {
   margin-bottom: var(--pad-sm);
   border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: var(--radius);
-  background: rgba(0, 229, 255, 0.08);
+  background: #0c1e20;
   color: var(--neon-cyan);
   font-size: 13px;
   font-weight: 700;
@@ -1196,7 +1174,7 @@ body {
   transition: all 0.3s ease;
 }
 .scan-plate-btn:hover {
-  background: rgba(0, 229, 255, 0.16);
+  background: #0b3034;
   box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
   transform: translateY(-1px);
 }
@@ -1207,12 +1185,12 @@ body {
    the button to soft charcoal glass with dark text; the camera icon keeps
    its neon glow so the accent still reads vividly. */
 :root[data-theme="light"] .scan-plate-btn {
-  background: rgba(0, 0, 0, 0.06);
+  background: #f0f0f0;
   border-color: rgba(20, 20, 30, 0.14);
   color: var(--text-1);
 }
 :root[data-theme="light"] .scan-plate-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: #e6e6e6;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
 }
 
@@ -1278,7 +1256,8 @@ body {
   justify-content: center;
   transition: all 0.15s ease;
 }
-.delete-btn:hover { background: rgba(255, 77, 77, 0.15); color: var(--danger); }
+.delete-btn:hover { background: #311717; color: var(--danger); }
+:root[data-theme="light"] .delete-btn:hover { background: #ffeaea; color: var(--danger); }
 
 .empty-state {
   font-size: 12px;
@@ -1369,9 +1348,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--overlay-tint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1390,8 +1367,6 @@ body {
   width: 100%;
   max-width: 420px;
   background: var(--card-bg-raised);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card-hover);
@@ -1442,7 +1417,7 @@ body {
   padding: 12px;
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--card-bg);
 }
 .target-profile-title { margin: 0; font-size: 13px; font-weight: 800; color: var(--text-1); }
 .target-profile-grid {
@@ -1473,13 +1448,14 @@ body {
 .field > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .slider-value {
-  background: rgba(0, 229, 255, 0.12);
+  background: #0b272a;
   color: var(--neon-cyan);
   font-weight: 700;
   font-size: 12px;
   padding: 2px 9px;
   border-radius: 999px;
 }
+:root[data-theme="light"] .slider-value { background: #e0fcff; }
 
 .field input[type="range"] {
   -webkit-appearance: none;
@@ -1731,15 +1707,10 @@ body {
 }
 
 /* Native iOS-style swipe-back-to-close: while the left-edge drag in app.js
-   is tracking a finger, drop the transition (so the view follows 1:1 with
-   no lag) and suspend the sticky header's backdrop-filter (same repaint
-   cost as the bottom-sheet drags above) to keep the drag itself smooth. */
+   is tracking a finger, drop the transition so the view follows 1:1 with
+   no lag. */
 .settings-view.dragging {
   transition: none;
-}
-.settings-view.dragging .settings-view-header {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 .settings-view-header {
@@ -1749,8 +1720,6 @@ body {
   gap: 10px;
   padding: var(--pad-sm) max(14px, env(safe-area-inset-left)) 10px max(14px, env(safe-area-inset-right));
   background: var(--chrome-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--card-border);
   position: sticky;
   top: 0;
@@ -1811,11 +1780,10 @@ body {
   flex-shrink: 0;
   border: 1px solid var(--card-border);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--track-bg);
   cursor: pointer;
   padding: 0;
 }
-:root[data-theme="light"] .theme-switch { background: rgba(30, 41, 59, 0.15); }
 
 .theme-switch-thumb {
   position: absolute;
@@ -1896,7 +1864,7 @@ body {
   aspect-ratio: 4 / 3;
   border-radius: var(--radius);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
+  background: #171717;
   border: 1px solid var(--card-border);
 }
 .scan-image-preview {
@@ -1968,8 +1936,6 @@ body {
   min-width: 0;
   padding: 6px 6px;
   background: var(--chrome-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--card-border);
   border-radius: 22px;
   box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.4), var(--shadow-card);
@@ -1997,11 +1963,11 @@ body {
 .bottom-nav-btn:hover,
 .bottom-nav-btn:active {
   color: var(--neon-cyan);
-  background: rgba(0, 229, 255, 0.08);
+  background: #0c1e20;
 }
 .bottom-nav-btn.active {
   color: var(--neon-cyan);
-  background: rgba(0, 229, 255, 0.1);
+  background: #0c2325;
 }
 .bottom-nav-btn.active .bn-icon { filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7)); }
 .bn-icon { font-size: 18px; }
@@ -2032,12 +1998,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(0, 229, 255, 0.12), transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(157, 59, 255, 0.14), transparent 45%),
-    var(--overlay-tint);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: var(--overlay-tint);
   opacity: 1;
   transition: opacity 0.45s ease;
 }
@@ -2058,8 +2019,6 @@ html.has-session .auth-overlay {
   width: 100%;
   max-width: 340px;
   background: var(--panel-glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-glass-border);
   border-radius: 20px;
   box-shadow: var(--shadow-card-hover);
@@ -2232,12 +2191,7 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(0, 229, 255, 0.12), transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(157, 59, 255, 0.14), transparent 45%),
-    var(--overlay-tint);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: var(--overlay-tint);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.45s ease;
@@ -2254,8 +2208,6 @@ html.has-session .auth-overlay {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   background: var(--panel-glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-glass-border);
   border-radius: 20px;
   box-shadow: var(--shadow-card-hover);
@@ -2322,8 +2274,6 @@ html.has-session .auth-overlay {
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--card-bg-raised);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--card-border);
   color: var(--text-1);
   padding: 12px 20px;
@@ -2360,8 +2310,6 @@ html.has-session .auth-overlay {
   flex: 0 0 auto;
   border: 1px solid var(--panel-glass-border);
   background: var(--panel-glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--text-2);
   font-size: 12px;
   font-weight: 700;
@@ -2734,7 +2682,8 @@ html.has-session .auth-overlay {
   transition: background 0.2s ease;
   position: relative;
 }
-.sleep-header-date-btn:hover { background: rgba(157, 59, 255, 0.08); }
+.sleep-header-date-btn:hover { background: #191120; }
+:root[data-theme="light"] .sleep-header-date-btn:hover { background: #f7efff; }
 .sleep-header-cal-icon { font-size: 10px; opacity: 0.6; margin-top: 1px; }
 
 /* The native date input is visually hidden but kept in the flow so its
@@ -2824,12 +2773,7 @@ html.has-session .auth-overlay {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(0, 229, 255, 0.1), transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(157, 59, 255, 0.12), transparent 45%),
-    var(--overlay-tint);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--overlay-tint);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease;
@@ -2847,8 +2791,6 @@ html.has-session .auth-overlay {
   max-width: 480px;
   max-height: min(92vh, 860px);
   background: var(--sheet-opaque-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-glass-border);
   border-radius: 24px 24px 0 0;
   box-shadow: var(--shadow-card-hover);
@@ -3261,8 +3203,6 @@ html.has-session .auth-overlay {
 .plan-recipe-grid { display: flex; flex-direction: column; gap: var(--pad-sm); }
 .plan-recipe-card {
   background: var(--card-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -3416,7 +3356,7 @@ html.has-session .auth-overlay {
 .pw-option:hover { border-color: var(--neon-cyan); }
 .pw-option.selected {
   border-color: var(--neon-cyan);
-  background: rgba(0, 229, 255, 0.1);
+  background: #0c2325;
   color: #007b8f;
   box-shadow: 0 0 0 1px var(--neon-cyan) inset;
 }
@@ -3464,7 +3404,7 @@ html.has-session .auth-overlay {
 .pw-tier-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--card-border); }
 .pw-tier-notch.selected {
   border-color: var(--neon-violet);
-  background: rgba(157, 59, 255, 0.08);
+  background: #191120;
   color: #6b1fc9;
 }
 .pw-tier-notch.selected .pw-tier-dot { background: var(--neon-violet); box-shadow: 0 0 6px var(--neon-violet); }
@@ -3494,7 +3434,7 @@ html.has-session .auth-overlay {
 .pw-diet-card:hover { border-color: var(--neon-cyan); }
 .pw-diet-card.selected {
   border-color: var(--neon-cyan);
-  background: rgba(0, 229, 255, 0.08);
+  background: #0c1e20;
   box-shadow: 0 0 0 1px var(--neon-cyan) inset;
 }
 .pw-diet-shape { width: 34px; height: 34px; border-radius: 50%; display: block; }
@@ -3569,7 +3509,7 @@ html.has-session .auth-overlay {
   gap: 6px;
   padding: 6px 8px 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 77, 77, 0.1);
+  background: #251313;
   border: 1px solid rgba(255, 77, 77, 0.3);
   color: #b23030;
   font-size: 12.5px;
@@ -3602,8 +3542,10 @@ html.has-session .auth-overlay {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.pw-ld-btn.selected[data-mood="love"] { border-color: var(--neon-green); background: rgba(57, 255, 20, 0.12); }
-.pw-ld-btn.selected[data-mood="dislike"] { border-color: var(--danger); background: rgba(255, 77, 77, 0.12); }
+.pw-ld-btn.selected[data-mood="love"] { border-color: var(--neon-green); background: #122a0e; }
+.pw-ld-btn.selected[data-mood="dislike"] { border-color: var(--danger); background: #2a1515; }
+:root[data-theme="light"] .pw-ld-btn.selected[data-mood="love"] { background: #e7ffe3; }
+:root[data-theme="light"] .pw-ld-btn.selected[data-mood="dislike"] { background: #ffeaea; }
 
 /* ---- Descriptive single-select list (kitchen stock / cooking skill) ---- */
 .pw-desc-list { display: flex; flex-direction: column; gap: 8px; }
@@ -3621,7 +3563,8 @@ html.has-session .auth-overlay {
 }
 .pw-desc-title { font-size: 13.5px; font-weight: 700; color: var(--text-1); }
 .pw-desc-copy { font-size: 11.5px; color: var(--text-2); }
-.pw-desc-option.selected { border-color: var(--neon-cyan); background: rgba(0, 229, 255, 0.08); }
+.pw-desc-option.selected { border-color: var(--neon-cyan); background: #0c1e20; }
+:root[data-theme="light"] .pw-desc-option.selected { background: #f0fdff; }
 
 /* ---- Chip-select (sourcing veggies/fruits) ---- */
 .pw-chip-select { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
@@ -3636,7 +3579,8 @@ html.has-session .auth-overlay {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.pw-chip-option.selected { border-color: var(--neon-green); background: rgba(57, 255, 20, 0.1); color: #1c7a0d; }
+.pw-chip-option.selected { border-color: var(--neon-green); background: #112513; color: #1c7a0d; }
+:root[data-theme="light"] .pw-chip-option.selected { background: #ebffe8; }
 
 /* ---- Tinder-style recipe swipe deck (Step 8) ---- */
 .pw-swipe-deck {
@@ -3671,8 +3615,6 @@ html.has-session .auth-overlay {
   border-radius: 18px;
   border: 1.5px solid var(--panel-glass-border);
   background: var(--panel-glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
   text-align: center;
   touch-action: none;
@@ -3855,8 +3797,6 @@ html.has-session .auth-overlay {
   gap: 8px;
   padding: var(--pad-sm) max(14px, env(safe-area-inset-left)) 10px max(14px, env(safe-area-inset-right));
   background: var(--chrome-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--card-border);
   position: sticky;
   top: 0;
@@ -4015,16 +3955,12 @@ html.has-session .auth-overlay {
   position: absolute;
   inset: 0;
   background: var(--overlay-tint);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .wheel-sheet-panel {
   position: relative;
   width: 100%;
   max-width: 480px;
   background: var(--panel-glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-glass-border);
   border-radius: 24px 24px 0 0;
   box-shadow: var(--shadow-card-hover);
@@ -4088,7 +4024,7 @@ html.has-session .auth-overlay {
   transform: translateY(-50%);
   border-top: 1px solid var(--card-border);
   border-bottom: 1px solid var(--card-border);
-  background: rgba(0, 229, 255, 0.06);
+  background: #0c1a1c;
   pointer-events: none;
 }
 
@@ -4101,8 +4037,6 @@ html.has-session .auth-overlay {
   align-items: flex-end;
   justify-content: center;
   background: var(--overlay-tint);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -4113,8 +4047,6 @@ html.has-session .auth-overlay {
   width: 100%;
   max-width: 480px;
   background: var(--sheet-opaque-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-glass-border);
   border-radius: 24px 24px 0 0;
   box-shadow: var(--shadow-card-hover);
@@ -4126,15 +4058,6 @@ html.has-session .auth-overlay {
 }
 .exercise-sheet.open .exercise-sheet-panel { transform: translateY(0); }
 .exercise-sheet-panel.dragging { transition: none; }
-/* A blurred layer being translated forces a full backdrop repaint every
-   frame — the single biggest contributor to dropped frames while dragging
-   on iOS Safari. Suspending it for the drag's duration keeps the panel
-   tracking the finger at full frame rate; the blur/opacity restore the
-   instant the drag ends via .dragging being removed. */
-.exercise-sheet-panel.dragging {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
 
 @media (min-width: 431px) and (hover: hover) and (pointer: fine) {
   .exercise-sheet { position: absolute; border-radius: inherit; }
@@ -4530,7 +4453,8 @@ html.has-session .auth-overlay {
 .community-post-identity { display: flex; flex-direction: column; min-width: 0; }
 .community-post-name { font-size: 13px; font-weight: 700; color: var(--text-1); }
 .community-post-time { font-size: 11px; color: var(--text-3); }
-.community-post-group-badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: rgba(157, 59, 255, 0.15); color: var(--neon-violet); flex-shrink: 0; }
+.community-post-group-badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #231431; color: var(--neon-violet); flex-shrink: 0; }
+:root[data-theme="light"] .community-post-group-badge { background: #f7efff; }
 .community-post-text { font-size: 13.5px; line-height: 1.5; color: var(--text-1); margin: 10px 0; }
 .community-post-hashtag { color: var(--neon-cyan); font-weight: 600; }
 .community-post-actions { display: flex; align-items: center; gap: 18px; }
@@ -4566,6 +4490,18 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   font-size: 34px;
+}
+.learn-card-banner--green { background: #254923; }
+.learn-card-banner--cyan { background: #1a444d; }
+.learn-card-banner--violet { background: #37264d; }
+.learn-card-banner--pink { background: #48233c; }
+.learn-card-banner--amber { background: #483b25; }
+:root[data-theme="light"] .learn-card-banner--green { background: #dbffd5; }
+:root[data-theme="light"] .learn-card-banner--cyan { background: #d1faff; }
+:root[data-theme="light"] .learn-card-banner--violet { background: #eddcff; }
+:root[data-theme="light"] .learn-card-banner--pink { background: #ffd9ee; }
+:root[data-theme="light"] .learn-card-banner--amber { background: #fff1d7; }
+.learn-card-banner {
   margin-bottom: 10px;
 }
 .learn-card-tag {
@@ -4576,7 +4512,7 @@ html.has-session .auth-overlay {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(57, 255, 20, 0.14);
+  background: #132f0e;
   color: var(--neon-green);
   margin-bottom: 6px;
 }
@@ -4702,8 +4638,6 @@ html.has-session .auth-overlay {
   gap: 8px;
   padding: 10px max(14px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
   background: var(--chrome-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-top: 1px solid var(--card-border);
 }
 .chat-input {
@@ -4728,11 +4662,10 @@ html.has-session .auth-overlay {
   flex-shrink: 0;
   border: 1px solid var(--card-border);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--track-bg);
   cursor: pointer;
   padding: 0;
 }
-:root[data-theme="light"] .toggle-switch { background: rgba(30, 41, 59, 0.15); }
 .toggle-switch-thumb {
   position: absolute;
   top: 2px;
@@ -4765,7 +4698,7 @@ html.has-session .auth-overlay {
 .privacy-danger-row {
   width: 100%;
   padding: 12px;
-  background: rgba(255, 77, 77, 0.1);
+  background: #251313;
   border: 1px solid rgba(255, 77, 77, 0.3);
   border-radius: var(--radius);
   color: var(--danger);
@@ -4774,7 +4707,9 @@ html.has-session .auth-overlay {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.privacy-danger-row:hover { background: rgba(255, 77, 77, 0.18); }
+.privacy-danger-row:hover { background: #391919; }
+:root[data-theme="light"] .privacy-danger-row { background: #ffeaea; }
+:root[data-theme="light"] .privacy-danger-row:hover { background: #ffdfdf; }
 .privacy-danger-row:active { transform: scale(0.98); }
 
 /* ---------- Help & Support (More > Help) ---------- */
@@ -4830,11 +4765,13 @@ html.has-session .auth-overlay {
 
 /* ---------- Settings Sub-Views Generic Engine (Settings > 8 rows) ---------- */
 .btn-danger {
-  background: rgba(255, 77, 77, 0.15);
+  background: #311717;
   color: var(--danger);
   border: 1px solid rgba(255, 77, 77, 0.4);
 }
-.btn-danger:hover { background: rgba(255, 77, 77, 0.25); }
+.btn-danger:hover { background: #4a1d1d; }
+:root[data-theme="light"] .btn-danger { background: #ffeaea; }
+:root[data-theme="light"] .btn-danger:hover { background: #ffd3d3; }
 .btn-danger:active { transform: scale(0.96); }
 
 .logout-confirm-modal { max-width: 340px; }
@@ -4914,7 +4851,7 @@ html.has-session .auth-overlay {
   margin: 0;
   padding: 12px 14px;
   border-radius: var(--radius);
-  background: rgba(255, 176, 32, 0.12);
+  background: #2a210f;
   border: 1px solid rgba(255, 176, 32, 0.4);
   color: var(--text-1);
   font-size: 13px;

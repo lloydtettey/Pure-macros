@@ -1561,11 +1561,19 @@ function openLogOverlay() {
   refreshLogOverlayLists();
   // Diary Settings > "Enable Quick-Add Calorie Button"
   document.getElementById('logFeatureQuickAdd').classList.toggle('hidden', !state.settings?.diary?.quickAddEnabled);
+  // Same display:none enforcement as openSubView: physically removes the
+  // dashboard tab sitting behind this overlay from rendering instead of
+  // just sitting under it at opacity 1, which is what let its text bleed
+  // through the solid overlay sheet.
+  const base = currentBase();
+  if (base) base.classList.add('subview-covered');
   logOverlay.classList.add('open');
 }
 
 function closeLogOverlay() {
   logOverlay.classList.remove('open');
+  const base = currentBase();
+  if (base) base.classList.remove('subview-covered');
 }
 
 fabLogBtn.addEventListener('click', openLogOverlay);
@@ -5877,13 +5885,13 @@ const learnChipsRowEl = document.getElementById('learnChipsRow');
 const learnGridEl = document.getElementById('learnGrid');
 
 const LEARN_ARTICLES = [
-  { id: 1, category: 'nutrition', title: 'Protein Timing: Does It Really Matter?', desc: 'What the research says about pre- and post-workout protein windows.', banner: '🥗', color: 'rgba(57, 255, 20, 0.18)', rd: true },
-  { id: 2, category: 'nutrition', title: 'Reading Nutrition Labels Like a Pro', desc: 'Spot hidden sugars and serving-size tricks in under a minute.', banner: '🏷️', color: 'rgba(0, 229, 255, 0.18)', rd: true },
-  { id: 3, category: 'training', title: 'Progressive Overload for Beginners', desc: 'The one principle that drives almost all strength gains.', banner: '🏋️', color: 'rgba(157, 59, 255, 0.18)', rd: false },
-  { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', banner: '🏃', color: 'rgba(255, 46, 159, 0.18)', rd: false },
-  { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', banner: '🎉', color: 'rgba(255, 176, 32, 0.18)', rd: false },
-  { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', banner: '📲', color: 'rgba(0, 229, 255, 0.18)', rd: false },
-  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'rgba(57, 255, 20, 0.18)', rd: false }
+  { id: 1, category: 'nutrition', title: 'Protein Timing: Does It Really Matter?', desc: 'What the research says about pre- and post-workout protein windows.', banner: '🥗', color: 'green', rd: true },
+  { id: 2, category: 'nutrition', title: 'Reading Nutrition Labels Like a Pro', desc: 'Spot hidden sugars and serving-size tricks in under a minute.', banner: '🏷️', color: 'cyan', rd: true },
+  { id: 3, category: 'training', title: 'Progressive Overload for Beginners', desc: 'The one principle that drives almost all strength gains.', banner: '🏋️', color: 'violet', rd: false },
+  { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', banner: '🏃', color: 'pink', rd: false },
+  { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', banner: '🎉', color: 'amber', rd: false },
+  { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', banner: '📲', color: 'cyan', rd: false },
+  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'green', rd: false }
 ];
 let learnActiveCategory = 'all';
 
@@ -5893,7 +5901,7 @@ function renderLearnGrid() {
     .map(
       (a) => `
         <div class="learn-card" data-article-id="${a.id}">
-          <div class="learn-card-banner" style="background:${a.color}">${a.banner}</div>
+          <div class="learn-card-banner learn-card-banner--${a.color}">${a.banner}</div>
           ${a.rd ? '<span class="learn-card-tag">✅ RD Approved</span>' : ''}
           <h3 class="learn-card-title">${escapeHtml(a.title)}</h3>
           <p class="learn-card-desc">${escapeHtml(a.desc)}</p>
