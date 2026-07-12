@@ -41,6 +41,16 @@ function verifyAppleIdentityToken(identityToken) {
 app.use(express.json({ limit: '12mb' })); // raised limit — scanned plate photos arrive as base64 JSON
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// ---------- iOS Home Screen standalone app routing ----------
+// A Home Screen install launches from a cached URL (the root, often with a
+// trailing slash) rather than a fresh Safari navigation, so it needs an
+// explicit, always-200 handler here instead of relying solely on
+// express.static's implicit index.html resolution above.
+const INDEX_HTML_PATH = path.join(__dirname, '..', 'public', 'index.html');
+app.get(['/', '/index.html'], (req, res) => {
+  res.status(200).sendFile(INDEX_HTML_PATH);
+});
+
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack'];
 const CUSTOM_FOOD_ID = '__custom__';
 const SCRYPT_KEYLEN = 64;
@@ -1573,6 +1583,16 @@ app.get('/api/day', requireAuth, async (req, res) => {
     ? { calorieGoal: dayTypeTarget.calories, macroGoals: { protein: dayTypeTarget.protein, carbs: dayTypeTarget.carbs, fat: dayTypeTarget.fat } }
     : { calorieGoal: data.settings.calorieGoal, macroGoals: data.settings.macroGoals };
   res.json({ date, entries, totals, settings: data.settings, activeDayType, activeTargets });
+});
+
+// Catch-all fallback: any GET that isn't an /api/* route and wasn't already
+// served as a static file (JS/CSS/images matched by express.static above)
+// falls back to index.html at 200 instead of Express's default "Cannot GET"
+// 404. This is what keeps an iOS standalone Home Screen launch — which can
+// replay a stale or trailing-slash URL from its cached launch state — landing
+// on the app shell instead of a dead page.
+app.get(/^\/(?!api\/).*/, (req, res) => {
+  res.status(200).sendFile(INDEX_HTML_PATH);
 });
 
 app.listen(PORT, () => {
