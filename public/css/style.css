@@ -1964,7 +1964,10 @@ body {
   color: var(--text-2);
   cursor: pointer;
   border-radius: var(--radius);
-  transition: all 0.2s ease;
+  /* Active-state snap: tab press must paint instantly with zero easing lag,
+     not ride the global --theme-transition or an "all" transition. */
+  transition: none !important;
+  will-change: background-color;
 }
 .bottom-nav-btn:hover,
 .bottom-nav-btn:active {
@@ -1974,6 +1977,7 @@ body {
 .bottom-nav-btn.active {
   color: var(--neon-cyan);
   background: #0c2325;
+  border: 1px solid #0c2325;
 }
 .bottom-nav-btn.active .bn-icon { filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7)); }
 .bn-icon { font-size: 18px; }

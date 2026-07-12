@@ -798,7 +798,6 @@ function switchTab(tab) {
   if (tab === currentTab) return;
   currentTab = tab;
   tabViews.forEach((view) => view.classList.toggle('hidden', view.dataset.tabView !== tab));
-  bottomNavBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.target === tab));
   tabTitleEl.textContent = TAB_LABELS[tab] || '';
 
   if (tab === 'plan') openPlanTabView();
@@ -809,7 +808,16 @@ function switchTab(tab) {
 }
 
 bottomNavBtns.forEach((btn) => {
-  btn.addEventListener('click', () => switchTab(btn.dataset.target));
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.target;
+    if (tab === currentTab) return;
+    // Strip .active off the old node and paint it onto the new one right on
+    // the click — this is cheap (class + style recalc only) and must commit
+    // its own frame before the heavier view-toggle/data-fetch work in
+    // switchTab gets a chance to block the main thread.
+    bottomNavBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    requestAnimationFrame(() => switchTab(tab));
+  });
 });
 
 // ---------- Progress sub-navigation ----------
