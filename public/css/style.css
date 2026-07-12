@@ -4891,3 +4891,48 @@ body {
 /* My Exercises list reuses .weight-timeline/.weight-entry; give the delete
    icon-btn a compact footprint inside that row. */
 .my-exercises-list .icon-btn { width: 30px; height: 30px; font-size: 13px; flex-shrink: 0; }
+
+/* ---------- iOS Safari anti-zoom floor ---------- */
+/* Safari zooms the viewport on focus of any text-like field under 16px,
+   regardless of the viewport meta tag. !important guarantees this wins over
+   every smaller font-size set on these elements elsewhere in the file. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* ---------- GPU-accelerated transform layers ---------- */
+/* Promotes frequently-animated surfaces to their own compositor layer so
+   iOS scrolling/dragging doesn't repaint the whole page each frame. */
+.modal-overlay,
+.fab-log-btn,
+.pw-swipe-deck,
+.pw-swipe-card,
+.settings-view {
+  will-change: transform, opacity;
+}
+.modal {
+  will-change: transform, opacity;
+  transform: scale(0.95) translateY(8px) translateZ(0);
+}
+.modal-overlay.open .modal {
+  transform: scale(1) translateY(0) translateZ(0);
+}
+.fab-log-btn {
+  transform: translate3d(0, 0, 0);
+}
+.fab-log-btn:hover { transform: translateY(-2px) translateZ(0); }
+.fab-log-btn:active { transform: scale(0.94) translateZ(0); }
+.pw-swipe-deck {
+  transform: translate3d(0, 0, 0);
+}
+.pw-swipe-card {
+  transform: translate3d(0, 0, 0);
+}
+.settings-view {
+  transform: translate3d(24px, 0, 0);
+}
+.settings-view.open {
+  transform: translate3d(0, 0, 0);
+}

@@ -61,7 +61,11 @@
       "Bash(npx --no-install playwright install chromium --dry-run)",
       "Bash(export NODE_PATH=\"/c/Users/lloyd/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules\")",
       "Bash(PORT=3901 node server/server.js)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "Bash(timeout 60 npx --yes playwright@latest --version)",
+      "Bash(mv server/data/db.json.bak-verify2 server/data/db.json)",
+      "Bash(rm -f __verify2.js)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

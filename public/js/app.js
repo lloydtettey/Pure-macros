@@ -1853,6 +1853,12 @@ function startVoiceLogListening() {
   voiceLogRecognition.onend = () => {
     voiceLogListening = false;
     voiceLogMicBtn.classList.remove('listening');
+    const transcript = voiceLogFinalTranscript.trim();
+    if (transcript) {
+      logSearchInput.value = transcript;
+      switchLogSubtab('foods');
+      voiceLogSheet.classList.remove('open');
+    }
   };
 
   voiceLogListening = true;
@@ -4244,7 +4250,30 @@ async function checkOnboarding() {
 // the Plan tab specifically and drives the sample recipe hub shown there.
 const PW_STEP_COUNT = 9;
 let pwCurrentStep = 1;
+let pwSkipStep2 = false;
 let planState = createEmptyPlanState();
+
+// Step 2 (Name/Weight/Goal Weight/Activity) duplicates data we may already
+// have from the profile — Settings > Profile and the weight log use a
+// different activity-level vocabulary than this wizard's 4-tier picker, so
+// map between them when checking/prefilling.
+const PW_ACTIVITY_FROM_SETTINGS = {
+  sedentary: 'sedentary',
+  light: 'lightly-active',
+  moderate: 'active',
+  very: 'very-active',
+  extreme: 'very-active'
+};
+
+function existingProfileStats() {
+  const s = state.settings || {};
+  return {
+    name: s.displayName || '',
+    weight: mostRecentWeightKg(),
+    goalWeight: s.targetWeightKg ?? null,
+    activity: PW_ACTIVITY_FROM_SETTINGS[s.activityLevel] || null
+  };
+}
 
 function createEmptyPlanState() {
   return {
@@ -4539,6 +4568,20 @@ function resetPwUI() {
   setPwServings(1);
   resetPwSwipeDeck();
   document.querySelectorAll('[data-priority-input]').forEach((input) => { input.value = 1; });
+
+  const stats = existingProfileStats();
+  pwSkipStep2 = Boolean(stats.name && stats.weight && stats.goalWeight && stats.activity);
+  if (pwSkipStep2) {
+    planState.name = stats.name;
+    planState.weight = stats.weight;
+    planState.goalWeight = stats.goalWeight;
+    planState.activity = stats.activity;
+    pwNameInput.value = stats.name;
+    pwWeightInput.value = stats.weight;
+    pwGoalWeightInput.value = stats.goalWeight;
+    pwActivityList.querySelector(`.pw-option[data-value="${stats.activity}"]`)?.classList.add('selected');
+  }
+
   pwGoToStep(1);
 }
 
@@ -4555,7 +4598,9 @@ pwSkipBtn.addEventListener('click', () => {
   renderPlanTab();
 });
 
-pwBackBtn.addEventListener('click', () => pwGoToStep(pwCurrentStep - 1));
+pwBackBtn.addEventListener('click', () => {
+  pwGoToStep(pwCurrentStep === 3 && pwSkipStep2 ? 1 : pwCurrentStep - 1);
+});
 
 pwNextBtn.addEventListener('click', async () => {
   const err = validatePwStep(pwCurrentStep);
@@ -4564,7 +4609,7 @@ pwNextBtn.addEventListener('click', async () => {
     return;
   }
   if (pwCurrentStep < PW_STEP_COUNT) {
-    pwGoToStep(pwCurrentStep + 1);
+    pwGoToStep(pwCurrentStep === 1 && pwSkipStep2 ? 3 : pwCurrentStep + 1);
     return;
   }
 
