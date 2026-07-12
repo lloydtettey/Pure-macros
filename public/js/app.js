@@ -452,6 +452,10 @@ function showAuthOverlay() {
   appRoot.classList.remove('app-visible');
   appRoot.classList.add('hidden');
   authOverlay.classList.remove('closing');
+  // Undo the head script's pre-paint hide, e.g. mid-session 401 — otherwise
+  // .has-session keeps display:none on the overlay and the login form this
+  // function is trying to surface never actually appears.
+  document.documentElement.classList.remove('has-session');
 }
 
 function revealApp() {
@@ -2052,6 +2056,9 @@ function initApp() {
     if (!data.onboarded) openCoachWizard({ mode: 'onboarding' });
   } catch {
     clearToken();
+    // The head script pre-hid the auth overlay on the assumption this token
+    // was valid — since it wasn't, undo that so the login form shows.
+    document.documentElement.classList.remove('has-session');
   }
 })();
 
@@ -4708,6 +4715,68 @@ async function loadPlanPreferences() {
 // ---------- Shared sub-view scaffolding (More tab ecosystem) ----------
 function openSubView(view) { view.classList.add('open'); }
 function closeSubView(view) { view.classList.remove('open'); }
+
+// Native iOS-style "swipe from the left edge to pop the screen" gesture for
+// every full-screen .settings-view sub-view (the More tab's 13 subpages plus
+// their nested Settings screens). Purely additive — it drives the same
+// .settings-back-btn each view already closes through, so the manual back
+// arrows keep working exactly as before whether or not this gesture fires.
+(function setupSubViewSwipeBack() {
+  const EDGE_ZONE = 24; // px from the left edge a swipe must start within
+  const CLOSE_THRESHOLD = 80; // px of horizontal travel to commit to closing
+
+  document.querySelectorAll('.settings-view').forEach((view) => {
+    let startX = null;
+    let startY = null;
+    let dragDx = 0;
+    let canceled = false;
+
+    function onStart(e) {
+      if (!view.classList.contains('open')) return;
+      const touch = e.touches[0];
+      if (touch.clientX > EDGE_ZONE) return;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      dragDx = 0;
+      canceled = false;
+      view.classList.add('dragging');
+    }
+
+    function onMove(e) {
+      if (startX === null || canceled) return;
+      const touch = e.touches[0];
+      const rawDx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      // A mostly-vertical drag is the view's own scroll, not a swipe-back —
+      // bail out and stop touching .style.transform for the rest of this touch.
+      if (Math.abs(dy) > Math.abs(rawDx) && Math.abs(dy) > 12) {
+        canceled = true;
+        view.classList.remove('dragging');
+        view.style.transform = '';
+        return;
+      }
+      dragDx = Math.max(0, rawDx);
+      view.style.transform = `translateX(${dragDx}px)`;
+    }
+
+    function onEnd() {
+      if (startX === null) return;
+      view.classList.remove('dragging');
+      view.style.transform = '';
+      if (!canceled && dragDx > CLOSE_THRESHOLD) {
+        view.querySelector('.settings-back-btn')?.click();
+      }
+      startX = null;
+      startY = null;
+      dragDx = 0;
+    }
+
+    view.addEventListener('touchstart', onStart, { passive: true });
+    view.addEventListener('touchmove', onMove, { passive: true });
+    view.addEventListener('touchend', onEnd);
+    view.addEventListener('touchcancel', onEnd);
+  });
+})();
 
 // panels: [{ key, el }]. Wires a .log-subtab-btn row to show/hide matching
 // [data-tab-panel] elements, mirroring the existing switchLogSubtab idiom.

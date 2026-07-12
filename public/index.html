@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>PURE MACROS — Performance Nutrition Dashboard</title>
 <link rel="stylesheet" href="css/style.css" />
+<script>
+  // Runs before the auth overlay below is parsed/painted, so a returning
+  // user with a cached session (key kept in sync with AUTH_TOKEN_KEY in
+  // app.js) never sees the login form flash before the token is validated.
+  try {
+    if (localStorage.getItem('macrogram_token')) {
+      document.documentElement.classList.add('has-session');
+    }
+  } catch {
+    // localStorage unavailable (e.g. private browsing) — fall back to the
+    // normal login-form-first behavior below.
+  }
+</script>
 </head>
 <body>
   <!-- Auth Gate -->
