@@ -15,7 +15,6 @@
   --neon-pink: #ff2e9f;
   --neon-blue: #2e9fff;
   --neon-amber: #ffb020;
-  --gold: #ffd700;
 
   --danger: #ff4d4d;
   --success: var(--neon-green);
@@ -1248,6 +1247,8 @@ body {
 .more-menu-chevron { font-size: 16px; color: var(--text-3); flex-shrink: 0; }
 
 .more-menu-item--logout .more-menu-title { color: var(--danger); }
+.more-menu-item.active-protocol { background: var(--card-bg-raised); }
+.more-menu-item.active-protocol .more-menu-title { color: var(--neon-cyan); }
 
 /* Opened from inside the Goals sub-view (.settings-view, z-index: 120), so it
    needs to stack above that rather than the base .modal-overlay z-index: 50. */
@@ -1260,6 +1261,13 @@ body {
    back arrow reveals the still-open Goals screen underneath. */
 #nutrientGoalsView {
   z-index: 125;
+}
+
+/* Opened from inside the Weight & Measurements sub-view (.settings-view,
+   z-index: 120) via its "Edit Body Measurements" row — same stacking need
+   as #macroGoalsOverlay above. */
+#weightMeasurementsOverlay {
+  z-index: 130;
 }
 
 /* ---------- Settings sub-view (full-screen, nested under the More tab) ---------- */
@@ -1316,40 +1324,6 @@ body {
   flex-direction: column;
   gap: var(--pad-lg);
 }
-
-/* ---------- Premium marketing card ---------- */
-.premium-promo-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
-}
-
-.premium-promo-badge { font-size: 26px; }
-.premium-promo-title { margin: 0; font-size: 16px; font-weight: 800; color: var(--text-1); }
-.premium-promo-copy { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.5; }
-
-.premium-promo-btn {
-  margin-top: 6px;
-  padding: 12px 36px;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, #ffe98a, var(--gold) 55%, #c9960a);
-  color: #3a2900;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  min-height: 44px;
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.35);
-  transition: all 0.3s ease;
-}
-.premium-promo-btn:hover {
-  filter: brightness(1.05);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
-  transform: translateY(-1px);
-}
-.premium-promo-btn:active { transform: scale(0.96); }
 
 .profile-details {
   display: flex;
@@ -2031,6 +2005,7 @@ body {
 .macro-history-line.protein { stroke: var(--neon-green); filter: drop-shadow(0 0 4px var(--neon-green)); }
 .macro-history-line.carbs { stroke: var(--neon-violet); filter: drop-shadow(0 0 4px var(--neon-violet)); }
 .macro-history-line.fat { stroke: var(--neon-pink); filter: drop-shadow(0 0 4px var(--neon-pink)); }
+.macro-history-line.cyan { stroke: var(--neon-cyan); filter: drop-shadow(0 0 4px var(--neon-cyan)); }
 .macro-history-x-labels {
   display: flex;
   justify-content: space-between;
@@ -3689,3 +3664,165 @@ body {
 .exercise-entry-meta { font-size: 11px; color: var(--text-2); }
 .exercise-entry-cals { font-size: 13px; font-weight: 700; color: var(--neon-amber); }
 .pw-next-btn { flex: 1 1 auto; }
+
+/* ---------- More Tab Sub-Page Ecosystem ---------- */
+
+/* My Profile */
+.profile-hero-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.profile-avatar--hero { width: 72px; height: 72px; font-size: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--card-bg-raised); border: 1px solid var(--card-border); margin-bottom: 6px; }
+.profile-hero-name { margin: 0; font-size: 18px; font-weight: 800; color: var(--text-1); }
+.profile-hero-email { margin: 0; font-size: 13px; color: var(--text-2); }
+.bio-textarea {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: var(--text-1);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+.bio-textarea:focus { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15); }
+
+/* Workout Routines */
+.routine-exercise-rows { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.routine-exercise-row { display: grid; grid-template-columns: 1fr 70px 70px; gap: 8px; }
+.routine-exercise-row input {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  color: var(--text-1);
+  font-size: 13px;
+  outline: none;
+}
+.routine-card-stack { display: flex; flex-direction: column; gap: 14px; }
+.routine-card { display: flex; flex-direction: column; gap: 10px; }
+.routine-card-name { margin: 0; font-size: 15px; font-weight: 800; color: var(--text-1); }
+.routine-exercise-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.routine-exercise-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--card-bg-raised);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+.routine-exercise-item-name { color: var(--text-1); font-weight: 700; }
+.routine-exercise-item-meta { color: var(--text-2); }
+.routine-start-btn {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--neon-cyan);
+  color: #001318;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 44px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+  transition: all 0.2s ease;
+}
+.routine-start-btn:hover { filter: brightness(1.05); }
+.routine-start-btn:active { transform: scale(0.97); }
+
+/* Nutrition Analytics / Meals-Recipes-Foods: flat tabs reused from .log-subtabs */
+.mrf-body { padding-bottom: 90px; }
+.mrf-list { max-height: none; }
+.mrf-create-btn {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  padding: 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--neon-cyan);
+  color: #001318;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 44px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+  align-self: center;
+  width: calc(100% - 28px);
+}
+.mrf-create-btn:active { transform: scale(0.97); }
+
+/* Discovery / Learn feed */
+.discovery-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.discovery-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: var(--pad-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.discovery-card-top { display: flex; align-items: center; justify-content: space-between; }
+.discovery-card-name { font-size: 14px; font-weight: 700; color: var(--text-1); }
+.discovery-card-prep { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.discovery-card-cals { font-size: 12px; color: var(--neon-amber); font-weight: 700; }
+.discovery-macro-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: var(--track-bg); }
+.discovery-macro-bar span:nth-child(1) { background: var(--neon-green); }
+.discovery-macro-bar span:nth-child(2) { background: var(--neon-violet); }
+.discovery-macro-bar span:nth-child(3) { background: var(--neon-pink); }
+
+/* Apps & Devices 2x2 grid */
+.apps-devices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.apps-device-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.apps-device-icon { font-size: 26px; }
+.apps-device-name { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.apps-device-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--track-bg);
+  color: var(--text-3);
+}
+.apps-device-card.connected .apps-device-badge { background: var(--neon-green); color: #04240a; }
+
+/* Weekly Report */
+.legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.legend-dot--goal { background: var(--text-3); }
+.legend-dot--actual { background: var(--neon-cyan); }
+.weekly-report-averages { display: flex; flex-direction: column; gap: 12px; }
+.wra-row { display: flex; flex-direction: column; gap: 4px; }
+.wra-row-top { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+.wra-row-label { color: var(--text-2); }
+.wra-row-value { color: var(--text-1); font-weight: 700; }
+.wra-track { height: 8px; border-radius: 999px; background: var(--track-bg); overflow: hidden; }
+.wra-fill { height: 100%; background: var(--neon-cyan); border-radius: 999px; transition: width 0.4s ease; }
+
+/* Reminders — vertical alarm rows, reusing .weight-entry shell */
+.reminders-list .weight-entry { align-items: center; }
+.reminder-time-select {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  color: var(--text-1);
+  font-size: 12px;
+  outline: none;
+}

@@ -21,6 +21,30 @@ const DEFAULT_DB = {
   sleepLogs: []
 };
 
+const DEFAULT_REMINDERS = [
+  { key: 'breakfast', label: 'Log Breakfast', time: '08:00' },
+  { key: 'lunch', label: 'Log Lunch', time: '12:30' },
+  { key: 'dinner', label: 'Log Dinner', time: '18:30' },
+  { key: 'hydration', label: 'Hydration Check', time: '15:00' },
+  { key: 'weight-checkin', label: 'Weight Check-In', time: '07:00' }
+];
+
+function defaultReminders() {
+  return DEFAULT_REMINDERS.map((r) => ({ id: r.key, ...r, enabled: true }));
+}
+
+function defaultDevices() {
+  return {
+    appleHealth: false,
+    googleFit: false,
+    manualEntry: false,
+    garmin: false,
+    fitbit: false,
+    strava: false,
+    myFitnessPal: false
+  };
+}
+
 // Serialize writes so concurrent requests can't clobber each other's changes.
 let writeQueue = Promise.resolve();
 
@@ -66,6 +90,15 @@ async function readDb() {
     if (!data.stepsLogs) data.stepsLogs = [];
     if (!data.sleepLogs) data.sleepLogs = [];
     if (!data.exerciseLogs) data.exerciseLogs = [];
+    if (!data.routines) data.routines = [];
+    if (!data.fasting) data.fasting = { protocol: '16:8', activeSession: null };
+    if (!data.reminders || data.reminders.length === 0) data.reminders = defaultReminders();
+    if (!data.devices) data.devices = defaultDevices();
+    if (!data.savedMeals) data.savedMeals = [];
+    if (!data.savedRecipes) data.savedRecipes = [];
+    if (!data.savedFoods) data.savedFoods = [];
+    if (data.settings && data.settings.bio === undefined) data.settings.bio = '';
+    if (data.settings && data.settings.location === undefined) data.settings.location = '';
     // Accounts that existed before onboarding did are already using the app —
     // don't retroactively block them with the first-launch wizard.
     if (data.onboarded === undefined) data.onboarded = true;

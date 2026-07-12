@@ -14,6 +14,30 @@ const CUSTOM_FOOD_ID = '__custom__';
 const SCRYPT_KEYLEN = 64;
 const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'very', 'extreme'];
 const FITNESS_GOALS = ['lose', 'maintain', 'gain'];
+const FASTING_PROTOCOLS = ['16:8', '18:6', 'custom'];
+const DEVICE_KEYS = ['appleHealth', 'googleFit', 'manualEntry', 'garmin', 'fitbit', 'strava', 'myFitnessPal'];
+
+const DEFAULT_REMINDERS = [
+  { key: 'breakfast', label: 'Log Breakfast', time: '08:00' },
+  { key: 'lunch', label: 'Log Lunch', time: '12:30' },
+  { key: 'dinner', label: 'Log Dinner', time: '18:30' },
+  { key: 'hydration', label: 'Hydration Check', time: '15:00' },
+  { key: 'weight-checkin', label: 'Weight Check-In', time: '07:00' }
+];
+
+// Static editorial content for the Discovery/Learn feed — not per-user data,
+// so it lives alongside FOOD_DB rather than in db.json.
+const RECIPE_CATALOG = [
+  { id: 'r1', name: 'Grilled Chicken & Quinoa Bowl', category: 'high-protein', prepMinutes: 20, calories: 480, protein: 42, carbs: 38, fat: 14 },
+  { id: 'r2', name: 'Greek Yogurt Protein Parfait', category: 'high-protein', prepMinutes: 5, calories: 320, protein: 28, carbs: 30, fat: 8 },
+  { id: 'r3', name: 'Egg White & Spinach Scramble', category: 'high-protein', prepMinutes: 10, calories: 260, protein: 30, carbs: 6, fat: 10 },
+  { id: 'r4', name: 'Tuna Avocado Wrap', category: 'under-15', prepMinutes: 10, calories: 410, protein: 32, carbs: 28, fat: 18 },
+  { id: 'r5', name: 'Microwave Veggie Omelette', category: 'under-15', prepMinutes: 8, calories: 290, protein: 22, carbs: 8, fat: 18 },
+  { id: 'r6', name: 'Peanut Butter Banana Toast', category: 'under-15', prepMinutes: 5, calories: 350, protein: 12, carbs: 44, fat: 14 },
+  { id: 'r7', name: 'Sunday Meal-Prep Chicken & Rice (5 boxes)', category: 'meal-prep', prepMinutes: 45, calories: 520, protein: 40, carbs: 55, fat: 12 },
+  { id: 'r8', name: 'Turkey Chili Batch (6 servings)', category: 'meal-prep', prepMinutes: 40, calories: 390, protein: 34, carbs: 30, fat: 14 },
+  { id: 'r9', name: 'Overnight Oats Jars (4 pack)', category: 'meal-prep', prepMinutes: 10, calories: 340, protein: 14, carbs: 52, fat: 9 }
+];
 
 // ---------- AI Fitness Coach formulation ----------
 const ACTIVITY_MULTIPLIERS = { sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725, extreme: 1.9 };
@@ -215,7 +239,9 @@ function defaultUserData() {
       ageYears: null,
       weeklyGoalLbs: 1,
       workoutsPerWeek: 3,
-      minutesPerWorkout: 45
+      minutesPerWorkout: 45,
+      bio: '',
+      location: ''
     },
     entries: [],
     water: {},
@@ -223,6 +249,21 @@ function defaultUserData() {
     stepsLogs: [],
     sleepLogs: [],
     exerciseLogs: [],
+    routines: [],
+    fasting: { protocol: '16:8', activeSession: null },
+    reminders: DEFAULT_REMINDERS.map((r) => ({ id: r.key, ...r, enabled: true })),
+    devices: {
+      appleHealth: false,
+      googleFit: false,
+      manualEntry: false,
+      garmin: false,
+      fitbit: false,
+      strava: false,
+      myFitnessPal: false
+    },
+    savedMeals: [],
+    savedRecipes: [],
+    savedFoods: [],
     // Fresh accounts must complete the first-launch AI Coach onboarding
     // wizard before the dashboard is considered fully set up.
     onboarded: false,
@@ -450,7 +491,7 @@ app.get('/api/settings', requireAuth, async (req, res) => {
 
 // PUT /api/settings
 app.put('/api/settings', requireAuth, async (req, res) => {
-  const { calorieGoal, macroGoals, heightCm, targetWeightKg, activityLevel, fitnessGoal } = req.body || {};
+  const { calorieGoal, macroGoals, heightCm, targetWeightKg, activityLevel, fitnessGoal, bio, location } = req.body || {};
   if (typeof calorieGoal !== 'number' || calorieGoal <= 0) {
     return res.status(400).json({ error: 'calorieGoal must be a positive number' });
   }
@@ -477,6 +518,12 @@ app.put('/api/settings', requireAuth, async (req, res) => {
   if (fitnessGoal !== undefined && !FITNESS_GOALS.includes(fitnessGoal)) {
     return res.status(400).json({ error: `fitnessGoal must be one of: ${FITNESS_GOALS.join(', ')}` });
   }
+  if (bio !== undefined && bio !== null && typeof bio !== 'string') {
+    return res.status(400).json({ error: 'bio must be a string' });
+  }
+  if (location !== undefined && location !== null && typeof location !== 'string') {
+    return res.status(400).json({ error: 'location must be a string' });
+  }
 
   const data = req.db.userdata[req.userId];
   data.settings = {
@@ -489,7 +536,9 @@ app.put('/api/settings', requireAuth, async (req, res) => {
     ageYears: data.settings.ageYears ?? null,
     weeklyGoalLbs: data.settings.weeklyGoalLbs ?? 1,
     workoutsPerWeek: data.settings.workoutsPerWeek ?? 3,
-    minutesPerWorkout: data.settings.minutesPerWorkout ?? 45
+    minutesPerWorkout: data.settings.minutesPerWorkout ?? 45,
+    bio: bio === undefined ? (data.settings.bio ?? '') : (bio || '').slice(0, 500),
+    location: location === undefined ? (data.settings.location ?? '') : (location || '').slice(0, 120)
   };
   await writeDb(req.db);
   res.json(data.settings);
@@ -885,6 +934,194 @@ app.delete('/api/exercise/:id', requireAuth, async (req, res) => {
   const [removed] = exerciseLogs.splice(idx, 1);
   await writeDb(req.db);
   res.json(removed);
+});
+
+// ---------- Workout Routines ----------
+// GET /api/routines
+app.get('/api/routines', requireAuth, async (req, res) => {
+  res.json(req.db.userdata[req.userId].routines);
+});
+
+// POST /api/routines — body: { name, exercises: [{ name, sets, reps }] }
+app.post('/api/routines', requireAuth, async (req, res) => {
+  const { name, exercises } = req.body || {};
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  if (!Array.isArray(exercises) || exercises.length === 0) {
+    return res.status(400).json({ error: 'exercises must be a non-empty array' });
+  }
+  for (const ex of exercises) {
+    if (!ex || typeof ex.name !== 'string' || !ex.name.trim()) {
+      return res.status(400).json({ error: 'each exercise needs a name' });
+    }
+    if (typeof ex.sets !== 'number' || !Number.isInteger(ex.sets) || ex.sets <= 0) {
+      return res.status(400).json({ error: 'each exercise needs a positive integer sets count' });
+    }
+    if (typeof ex.reps !== 'number' || !Number.isInteger(ex.reps) || ex.reps <= 0) {
+      return res.status(400).json({ error: 'each exercise needs a positive integer reps count' });
+    }
+  }
+
+  const routine = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    exercises: exercises.map((ex) => ({ name: ex.name.trim(), sets: ex.sets, reps: ex.reps })),
+    createdAt: new Date().toISOString()
+  };
+  req.db.userdata[req.userId].routines.push(routine);
+  await writeDb(req.db);
+  res.status(201).json(routine);
+});
+
+// DELETE /api/routines/:id
+app.delete('/api/routines/:id', requireAuth, async (req, res) => {
+  const routines = req.db.userdata[req.userId].routines;
+  const idx = routines.findIndex((r) => r.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: 'routine not found' });
+  }
+  const [removed] = routines.splice(idx, 1);
+  await writeDb(req.db);
+  res.json(removed);
+});
+
+// ---------- Intermittent Fasting ----------
+// GET /api/fasting
+app.get('/api/fasting', requireAuth, async (req, res) => {
+  res.json(req.db.userdata[req.userId].fasting);
+});
+
+// POST /api/fasting/start — body: { protocol, goalHours }
+app.post('/api/fasting/start', requireAuth, async (req, res) => {
+  const { protocol, goalHours } = req.body || {};
+  if (!FASTING_PROTOCOLS.includes(protocol)) {
+    return res.status(400).json({ error: `protocol must be one of: ${FASTING_PROTOCOLS.join(', ')}` });
+  }
+  if (typeof goalHours !== 'number' || Number.isNaN(goalHours) || goalHours <= 0 || goalHours > 72) {
+    return res.status(400).json({ error: 'goalHours must be a positive number no greater than 72' });
+  }
+
+  const data = req.db.userdata[req.userId];
+  data.fasting = {
+    protocol,
+    activeSession: { startedAt: new Date().toISOString(), goalHours }
+  };
+  await writeDb(req.db);
+  res.json(data.fasting);
+});
+
+// POST /api/fasting/end
+app.post('/api/fasting/end', requireAuth, async (req, res) => {
+  const data = req.db.userdata[req.userId];
+  data.fasting.activeSession = null;
+  await writeDb(req.db);
+  res.json(data.fasting);
+});
+
+// ---------- Reminders ----------
+// GET /api/reminders
+app.get('/api/reminders', requireAuth, async (req, res) => {
+  res.json(req.db.userdata[req.userId].reminders);
+});
+
+// PUT /api/reminders/:id — body: { enabled?, time? }
+app.put('/api/reminders/:id', requireAuth, async (req, res) => {
+  const reminders = req.db.userdata[req.userId].reminders;
+  const reminder = reminders.find((r) => r.id === req.params.id);
+  if (!reminder) {
+    return res.status(404).json({ error: 'reminder not found' });
+  }
+  const { enabled, time } = req.body || {};
+  if (enabled !== undefined) {
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'enabled must be a boolean' });
+    }
+    reminder.enabled = enabled;
+  }
+  if (time !== undefined) {
+    if (!/^\d{2}:\d{2}$/.test(time || '')) {
+      return res.status(400).json({ error: 'time must be in HH:MM format' });
+    }
+    reminder.time = time;
+  }
+  await writeDb(req.db);
+  res.json(reminder);
+});
+
+// ---------- Apps & Devices ----------
+// GET /api/devices
+app.get('/api/devices', requireAuth, async (req, res) => {
+  res.json(req.db.userdata[req.userId].devices);
+});
+
+// PUT /api/devices — body: a partial object of { [DEVICE_KEYS]: boolean }, merged in
+app.put('/api/devices', requireAuth, async (req, res) => {
+  const updates = req.body || {};
+  const keys = Object.keys(updates);
+  if (keys.length === 0 || keys.some((k) => !DEVICE_KEYS.includes(k) || typeof updates[k] !== 'boolean')) {
+    return res.status(400).json({ error: `body must only contain boolean values for: ${DEVICE_KEYS.join(', ')}` });
+  }
+  const data = req.db.userdata[req.userId];
+  data.devices = { ...data.devices, ...updates };
+  await writeDb(req.db);
+  res.json(data.devices);
+});
+
+// ---------- Saved Meals / Recipes / Foods (My Meals, Recipes & Foods) ----------
+// A single generic handler family backs all three resources since they share
+// the exact same { name, calories, protein, carbs, fat } shape.
+function registerSavedItemRoutes(resource, label) {
+  app.get(`/api/${resource}`, requireAuth, async (req, res) => {
+    res.json(req.db.userdata[req.userId][resourceKeyFor(resource)]);
+  });
+
+  app.post(`/api/${resource}`, requireAuth, async (req, res) => {
+    const { name, calories, protein, carbs, fat } = req.body || {};
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    for (const [key, val] of Object.entries({ calories, protein, carbs, fat })) {
+      if (typeof val !== 'number' || Number.isNaN(val) || val < 0) {
+        return res.status(400).json({ error: `${key} must be a non-negative number` });
+      }
+    }
+    const item = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      calories,
+      protein,
+      carbs,
+      fat,
+      createdAt: new Date().toISOString()
+    };
+    const list = req.db.userdata[req.userId][resourceKeyFor(resource)];
+    list.push(item);
+    await writeDb(req.db);
+    res.status(201).json(item);
+  });
+
+  app.delete(`/api/${resource}/:id`, requireAuth, async (req, res) => {
+    const list = req.db.userdata[req.userId][resourceKeyFor(resource)];
+    const idx = list.findIndex((i) => i.id === req.params.id);
+    if (idx === -1) {
+      return res.status(404).json({ error: `${label} not found` });
+    }
+    const [removed] = list.splice(idx, 1);
+    await writeDb(req.db);
+    res.json(removed);
+  });
+}
+function resourceKeyFor(resource) {
+  return { 'saved-meals': 'savedMeals', 'saved-recipes': 'savedRecipes', 'saved-foods': 'savedFoods' }[resource];
+}
+registerSavedItemRoutes('saved-meals', 'meal');
+registerSavedItemRoutes('saved-recipes', 'recipe');
+registerSavedItemRoutes('saved-foods', 'food');
+
+// GET /api/recipes/discover — static Discovery/Learn feed catalog (public, like /api/foods)
+app.get('/api/recipes/discover', (req, res) => {
+  res.json(RECIPE_CATALOG);
 });
 
 // GET /api/history?days=N or ?start=YYYY-MM-DD&end=YYYY-MM-DD — zero-filled

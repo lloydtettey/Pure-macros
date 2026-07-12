@@ -28,7 +28,15 @@ const state = {
   sleep: [],
   history: null,
   user: null,
-  mealPlan: null
+  mealPlan: null,
+  routines: [],
+  fasting: null,
+  reminders: [],
+  devices: null,
+  savedMeals: [],
+  savedRecipes: [],
+  savedFoods: [],
+  discoverCatalog: null
 };
 
 function todayStr() {
@@ -134,13 +142,11 @@ const moreMenuListEl = document.getElementById('moreMenuList');
 const settingsView = document.getElementById('settingsView');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const settingsMenuListEl = document.getElementById('settingsMenuList');
-const goPremiumBtn = document.getElementById('goPremiumBtn');
 const themeSwitch = document.getElementById('themeSwitch');
 
 const goalsView = document.getElementById('goalsView');
 const goalsBackBtn = document.getElementById('goalsBackBtn');
 const nutritionGoalsMenuListEl = document.getElementById('nutritionGoalsMenuList');
-const goalsGoPremiumBtn = document.getElementById('goalsGoPremiumBtn');
 const goalsStartingWeightEl = document.getElementById('goalsStartingWeight');
 const goalsCurrentWeightEl = document.getElementById('goalsCurrentWeight');
 const goalsTargetWeightEl = document.getElementById('goalsTargetWeight');
@@ -816,8 +822,6 @@ settingsMenuListEl.addEventListener('click', (e) => {
   else showToast('Coming soon');
 });
 
-goPremiumBtn.addEventListener('click', () => showToast('Coming soon'));
-
 // ---------- Goals sub-view (nested full-screen view opened from the More tab) ----------
 const ACTIVITY_LEVEL_LABELS = {
   sedentary: 'Sedentary',
@@ -927,8 +931,6 @@ nutritionGoalsMenuListEl.addEventListener('click', (e) => {
   if (action) action();
   else showToast('Coming soon');
 });
-
-goalsGoPremiumBtn.addEventListener('click', () => showToast('Coming soon'));
 
 // ---------- Global "+" Food Logging Overlay ----------
 function openLogOverlay() {
@@ -3500,6 +3502,973 @@ async function loadPlanPreferences() {
   if (currentTab === 'plan') renderPlanTab();
 }
 
+// ---------- Shared sub-view scaffolding (More tab ecosystem) ----------
+function openSubView(view) { view.classList.add('open'); }
+function closeSubView(view) { view.classList.remove('open'); }
+
+// panels: [{ key, el }]. Wires a .log-subtab-btn row to show/hide matching
+// [data-tab-panel] elements, mirroring the existing switchLogSubtab idiom.
+function initFlatTabs(tabsEl, panels, onSwitch) {
+  tabsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.log-subtab-btn');
+    if (!btn) return;
+    const key = btn.dataset.tab;
+    tabsEl.querySelectorAll('.log-subtab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+    panels.forEach((p) => p.el.classList.toggle('hidden', p.key !== key));
+    onSwitch(key);
+  });
+}
+
+// r=70 ring progress, matching RING_CIRCUMFERENCE (the sleep ring / any
+// future 160x160 ring built the same way).
+function setRingProgress(circleEl, pct) {
+  const clamped = Math.max(0, Math.min(1, pct));
+  circleEl.style.strokeDasharray = RING_CIRCUMFERENCE;
+  circleEl.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - clamped);
+}
+
+// Parameterized copies of renderMacroRings/renderNutrientsList (which write
+// into the Progress tab's fixed containers) so new More-tab screens can
+// reuse the exact same rendering technique against their own containers.
+function renderMacroRingsInto(container, averages) {
+  const calsFromProtein = (averages.protein || 0) * 4;
+  const calsFromCarbs = (averages.carbs || 0) * 4;
+  const calsFromFat = (averages.fat || 0) * 9;
+  const total = calsFromProtein + calsFromCarbs + calsFromFat;
+  const macros = [
+    { key: 'protein', label: 'Protein', cals: calsFromProtein },
+    { key: 'carbs', label: 'Carbs', cals: calsFromCarbs },
+    { key: 'fat', label: 'Fat', cals: calsFromFat }
+  ];
+  container.innerHTML = '';
+  for (const m of macros) {
+    const pct = total > 0 ? Math.round((m.cals / total) * 100) : 0;
+    const offset = MACRO_RING_CIRCUMFERENCE * (1 - pct / 100);
+    const item = document.createElement('div');
+    item.className = 'macro-ring-item';
+    item.innerHTML = `
+      <div class="macro-ring-wrap">
+        <svg viewBox="0 0 80 80" class="macro-ring-svg">
+          <circle cx="40" cy="40" r="34" class="ring-track" stroke-width="8" />
+          <circle cx="40" cy="40" r="34" class="ring-progress macro-ring-${m.key}" stroke-width="8"
+            stroke-dasharray="${MACRO_RING_CIRCUMFERENCE}" stroke-dashoffset="${offset}" />
+        </svg>
+        <span class="macro-ring-pct">${pct}%</span>
+      </div>
+      <span class="macro-ring-label">${m.label}</span>
+    `;
+    container.appendChild(item);
+  }
+}
+
+function renderNutrientsListInto(container, averages) {
+  container.innerHTML = '';
+  for (const key of Object.keys(NUTRIENT_LABELS)) {
+    const li = document.createElement('li');
+    li.className = 'nutrient-row';
+    li.innerHTML = `<span class="nutrient-name">${NUTRIENT_LABELS[key]}</span><span class="nutrient-value">${averages[key] ?? 0}${NUTRIENT_UNITS[key]}</span>`;
+    container.appendChild(li);
+  }
+}
+
+// ---------- My Profile ----------
+const profileView = document.getElementById('profileView');
+const profileBackBtn = document.getElementById('profileBackBtn');
+const profileHeroNameEl = document.getElementById('profileHeroName');
+const profileHeroEmailEl = document.getElementById('profileHeroEmail');
+const profileDaysActiveEl = document.getElementById('profileDaysActive');
+const profileTotalWeightEl = document.getElementById('profileTotalWeight');
+const profileLocationValueEl = document.getElementById('profileLocationValue');
+const profileBioForm = document.getElementById('profileBioForm');
+const profileBioInput = document.getElementById('profileBioInput');
+const profileLocationInput = document.getElementById('profileLocationInput');
+const profileBioError = document.getElementById('profileBioError');
+
+async function openProfileView() {
+  const username = state.user?.username || '—';
+  profileHeroNameEl.textContent = username;
+  profileHeroEmailEl.textContent = username;
+  profileBioInput.value = state.settings?.bio || '';
+  profileLocationInput.value = state.settings?.location || '';
+  profileLocationValueEl.textContent = state.settings?.location || 'Add location';
+
+  if (state.weights.length > 0) {
+    const unit = getWeightUnit();
+    const latest = state.weights[0].weight;
+    const displayWeight = unit === 'lbs' ? Math.round(kgToLbs(latest) * 10) / 10 : Math.round(latest * 10) / 10;
+    profileTotalWeightEl.textContent = `${displayWeight} ${unit}`;
+  } else {
+    profileTotalWeightEl.textContent = '—';
+  }
+
+  openSubView(profileView);
+
+  const history = await loadHistory({ days: 365 });
+  profileDaysActiveEl.textContent = String(history ? history.days.filter((d) => d.calories > 0).length : 0);
+}
+profileBackBtn.addEventListener('click', () => closeSubView(profileView));
+
+profileBioForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  profileBioError.textContent = '';
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        calorieGoal: state.settings.calorieGoal,
+        macroGoals: state.settings.macroGoals,
+        bio: profileBioInput.value,
+        location: profileLocationInput.value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save profile');
+    state.settings = data;
+    profileLocationValueEl.textContent = data.location || 'Add location';
+    showToast('Profile saved');
+  } catch (err) {
+    profileBioError.textContent = err.message;
+  }
+});
+
+// ---------- Workout Routines ----------
+const workoutsView = document.getElementById('workoutsView');
+const workoutsBackBtn = document.getElementById('workoutsBackBtn');
+const workoutsAddBtn = document.getElementById('workoutsAddBtn');
+const routineCreateForm = document.getElementById('routineCreateForm');
+const routineNameInput = document.getElementById('routineNameInput');
+const routineExerciseRowsEl = document.getElementById('routineExerciseRows');
+const routineAddExerciseRowBtn = document.getElementById('routineAddExerciseRowBtn');
+const routineCreateError = document.getElementById('routineCreateError');
+const routineCancelBtn = document.getElementById('routineCancelBtn');
+const routineSaveBtn = document.getElementById('routineSaveBtn');
+const routinesListEl = document.getElementById('routinesList');
+
+function addRoutineExerciseRow() {
+  const row = document.createElement('div');
+  row.className = 'routine-exercise-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Exercise name" class="routine-ex-name" />
+    <input type="number" placeholder="Sets" min="1" class="routine-ex-sets" />
+    <input type="number" placeholder="Reps" min="1" class="routine-ex-reps" />
+  `;
+  routineExerciseRowsEl.appendChild(row);
+}
+routineAddExerciseRowBtn.addEventListener('click', addRoutineExerciseRow);
+
+async function loadRoutines() {
+  try {
+    const res = await authFetch(`${API}/routines`);
+    if (!res.ok) throw new Error('Failed to load routines');
+    state.routines = await res.json();
+    renderRoutines();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function renderRoutines() {
+  routinesListEl.innerHTML = '';
+  if (state.routines.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = 'No routines yet — tap + to create one.';
+    routinesListEl.appendChild(empty);
+    return;
+  }
+  for (const r of state.routines) {
+    const card = document.createElement('section');
+    card.className = 'card routine-card';
+    card.innerHTML = `
+      <h3 class="routine-card-name">${escapeHtml(r.name)}</h3>
+      <ul class="routine-exercise-list">
+        ${r.exercises.map((ex) => `<li class="routine-exercise-item"><span class="routine-exercise-item-name">${escapeHtml(ex.name)}</span><span class="routine-exercise-item-meta">${ex.sets} × ${ex.reps}</span></li>`).join('')}
+      </ul>
+      <button type="button" class="routine-start-btn" data-start-routine="${r.id}">Start Workout Routine</button>
+      <button type="button" class="delete-btn" data-delete-routine="${r.id}" aria-label="Delete routine">✕</button>
+    `;
+    routinesListEl.appendChild(card);
+  }
+}
+
+routinesListEl.addEventListener('click', async (e) => {
+  const startBtn = e.target.closest('[data-start-routine]');
+  if (startBtn) {
+    const routine = state.routines.find((r) => r.id === startBtn.dataset.startRoutine);
+    if (!routine) return;
+    try {
+      const today = todayStr();
+      for (const ex of routine.exercises) {
+        await authFetch(`${API}/exercise`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: today, type: 'strength', name: ex.name, minutes: ex.sets * ex.reps, caloriesBurned: 0 })
+        });
+      }
+      await loadExercise();
+      showToast(`${routine.name} logged to today`);
+    } catch {
+      showToast('Failed to start routine', true);
+    }
+    return;
+  }
+  const delBtn = e.target.closest('[data-delete-routine]');
+  if (delBtn) {
+    await authFetch(`${API}/routines/${delBtn.dataset.deleteRoutine}`, { method: 'DELETE' });
+    await loadRoutines();
+  }
+});
+
+function openWorkoutsView() {
+  routineCreateForm.classList.add('hidden');
+  loadRoutines();
+  openSubView(workoutsView);
+}
+workoutsBackBtn.addEventListener('click', () => closeSubView(workoutsView));
+workoutsAddBtn.addEventListener('click', () => {
+  routineCreateError.textContent = '';
+  routineNameInput.value = '';
+  routineExerciseRowsEl.innerHTML = '';
+  addRoutineExerciseRow();
+  routineCreateForm.classList.remove('hidden');
+  routineCreateForm.scrollIntoView({ behavior: 'smooth' });
+});
+routineCancelBtn.addEventListener('click', () => routineCreateForm.classList.add('hidden'));
+routineSaveBtn.addEventListener('click', async () => {
+  routineCreateError.textContent = '';
+  const name = routineNameInput.value.trim();
+  if (!name) { routineCreateError.textContent = 'Enter a routine name.'; return; }
+  const exercises = [...routineExerciseRowsEl.querySelectorAll('.routine-exercise-row')]
+    .map((row) => ({
+      name: row.querySelector('.routine-ex-name').value.trim(),
+      sets: Number(row.querySelector('.routine-ex-sets').value),
+      reps: Number(row.querySelector('.routine-ex-reps').value)
+    }))
+    .filter((ex) => ex.name && ex.sets > 0 && ex.reps > 0);
+  if (exercises.length === 0) { routineCreateError.textContent = 'Add at least one exercise with sets and reps.'; return; }
+  try {
+    const res = await authFetch(`${API}/routines`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, exercises })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save routine');
+    routineCreateForm.classList.add('hidden');
+    await loadRoutines();
+    showToast('Routine saved');
+  } catch (err) {
+    routineCreateError.textContent = err.message;
+  }
+});
+
+// ---------- Weight & Measurements ----------
+const weightMeasurementsView = document.getElementById('weightMeasurementsView');
+const weightMeasurementsBackBtn = document.getElementById('weightMeasurementsBackBtn');
+const wmRangeRowEl = document.getElementById('wmRangeRow');
+const wmFilterRowEl = document.getElementById('wmFilterRow');
+const wmChartAxisEl = document.getElementById('wmChartAxis');
+const wmChartSvgEl = document.getElementById('wmChartSvg');
+const wmEmptyStateEl = document.getElementById('wmEmptyState');
+const wmHistoryListEl = document.getElementById('wmHistoryList');
+const wmEditBodyMeasurementsBtn = document.getElementById('wmEditBodyMeasurementsBtn');
+
+const WM_RANGE_DAYS = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
+let wmRange = '3M';
+let wmFilter = 'weight';
+
+function renderWeightMeasurementsChart() {
+  wmChartAxisEl.innerHTML = '';
+  wmChartSvgEl.innerHTML = '';
+  wmHistoryListEl.innerHTML = '';
+
+  if (wmFilter !== 'weight') {
+    wmEmptyStateEl.classList.remove('hidden');
+    wmChartSvgEl.classList.add('hidden');
+    wmChartAxisEl.classList.add('hidden');
+    return;
+  }
+  wmEmptyStateEl.classList.add('hidden');
+  wmChartSvgEl.classList.remove('hidden');
+  wmChartAxisEl.classList.remove('hidden');
+
+  const cutoff = addDaysToDateStr(todayStr(), -WM_RANGE_DAYS[wmRange]);
+  const inRange = state.weights.filter((w) => w.date >= cutoff).slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  for (const w of [...inRange].reverse()) {
+    wmHistoryListEl.appendChild(buildWeightEntry(w));
+  }
+  if (wmHistoryListEl.children.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = 'No weight logged in this range.';
+    wmHistoryListEl.appendChild(empty);
+  }
+
+  if (inRange.length === 0) return;
+
+  const unit = getWeightUnit();
+  const values = inRange.map((w) => (unit === 'lbs' ? kgToLbs(w.weight) : w.weight));
+  const maxVal = Math.max(...values);
+  const minVal = Math.min(...values);
+  const ceiling = maxVal === minVal ? maxVal + 1 : maxVal;
+  const floor = maxVal === minVal ? Math.max(0, minVal - 1) : minVal;
+
+  for (let i = 4; i >= 0; i--) {
+    const span = document.createElement('span');
+    span.textContent = Math.round(floor + ((ceiling - floor) / 4) * i);
+    wmChartAxisEl.appendChild(span);
+  }
+
+  const width = 300;
+  const height = 140;
+  const padY = 6;
+  const plotHeight = height - padY * 2;
+  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
+  const points = values
+    .map((v, i) => {
+      const x = values.length > 1 ? i * stepX : width / 2;
+      const y = padY + plotHeight - ((v - floor) / (ceiling - floor)) * plotHeight;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const gridLines = [0, 1, 2, 3, 4]
+    .map((i) => {
+      const y = (padY + (plotHeight / 4) * i).toFixed(1);
+      return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
+    })
+    .join('');
+  wmChartSvgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  wmChartSvgEl.innerHTML = `${gridLines}<polyline class="macro-history-line cyan" points="${points}" />`;
+}
+
+wmRangeRowEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  wmRange = btn.dataset.range;
+  wmRangeRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderWeightMeasurementsChart();
+});
+wmFilterRowEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  wmFilter = btn.dataset.filter;
+  wmFilterRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderWeightMeasurementsChart();
+});
+wmEditBodyMeasurementsBtn.addEventListener('click', () => openWeightMeasurementsModal());
+
+function openWeightMeasurementsView() {
+  renderWeightMeasurementsChart();
+  openSubView(weightMeasurementsView);
+}
+weightMeasurementsBackBtn.addEventListener('click', () => closeSubView(weightMeasurementsView));
+
+// ---------- Intermittent Fasting ----------
+const fastingView = document.getElementById('fastingView');
+const fastingBackBtn = document.getElementById('fastingBackBtn');
+const fastingRingProgressEl = document.getElementById('fastingRingProgress');
+const fastingCountdownValueEl = document.getElementById('fastingCountdownValue');
+const fastingCountdownLabelEl = document.getElementById('fastingCountdownLabel');
+const fastingStartBtn = document.getElementById('fastingStartBtn');
+const fastingEndBtn = document.getElementById('fastingEndBtn');
+const fastingProtocolListEl = document.getElementById('fastingProtocolList');
+const fastingCustomHoursInput = document.getElementById('fastingCustomHoursInput');
+let fastingSelectedProtocol = '16:8';
+let fastingTickTimer = null;
+
+function fastingGoalHoursFor(protocol) {
+  if (protocol === '16:8') return 16;
+  if (protocol === '18:6') return 18;
+  return Number(fastingCustomHoursInput.value) || 20;
+}
+
+function renderFastingState() {
+  const session = state.fasting?.activeSession;
+  fastingProtocolListEl.querySelectorAll('.more-menu-item').forEach((li) => {
+    li.classList.toggle('active-protocol', li.dataset.protocol === (state.fasting?.protocol || fastingSelectedProtocol));
+  });
+
+  if (!session) {
+    setRingProgress(fastingRingProgressEl, 0);
+    fastingCountdownValueEl.textContent = '00:00:00';
+    fastingCountdownLabelEl.textContent = 'Not fasting';
+    fastingStartBtn.classList.remove('hidden');
+    fastingEndBtn.classList.add('hidden');
+    return;
+  }
+
+  fastingStartBtn.classList.add('hidden');
+  fastingEndBtn.classList.remove('hidden');
+
+  const startedAt = new Date(session.startedAt).getTime();
+  const goalMs = session.goalHours * 3600000;
+  const elapsedMs = Date.now() - startedAt;
+  const remainingMs = Math.max(0, goalMs - elapsedMs);
+  const pct = Math.min(1, elapsedMs / goalMs);
+  setRingProgress(fastingRingProgressEl, pct);
+
+  const h = String(Math.floor(remainingMs / 3600000)).padStart(2, '0');
+  const m = String(Math.floor((remainingMs % 3600000) / 60000)).padStart(2, '0');
+  const s = String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0');
+  fastingCountdownValueEl.textContent = remainingMs > 0 ? `${h}:${m}:${s}` : 'Goal reached!';
+  fastingCountdownLabelEl.textContent = `fasting (${session.goalHours}h goal)`;
+}
+
+async function loadFasting() {
+  try {
+    const res = await authFetch(`${API}/fasting`);
+    if (!res.ok) throw new Error('Failed to load fasting state');
+    state.fasting = await res.json();
+    fastingSelectedProtocol = state.fasting.protocol;
+    renderFastingState();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function openFastingView() {
+  loadFasting();
+  clearInterval(fastingTickTimer);
+  fastingTickTimer = setInterval(renderFastingState, 1000);
+  openSubView(fastingView);
+}
+fastingBackBtn.addEventListener('click', () => {
+  clearInterval(fastingTickTimer);
+  closeSubView(fastingView);
+});
+
+fastingProtocolListEl.addEventListener('click', (e) => {
+  const li = e.target.closest('.more-menu-item');
+  if (!li || e.target === fastingCustomHoursInput) return;
+  fastingSelectedProtocol = li.dataset.protocol;
+  fastingProtocolListEl.querySelectorAll('.more-menu-item').forEach((el) => el.classList.toggle('active-protocol', el === li));
+});
+
+fastingStartBtn.addEventListener('click', async () => {
+  const protocol = FASTING_PROTOCOLS_CLIENT.includes(fastingSelectedProtocol) ? fastingSelectedProtocol : 'custom';
+  try {
+    const res = await authFetch(`${API}/fasting/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocol, goalHours: fastingGoalHoursFor(protocol) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to start fast');
+    state.fasting = data;
+    renderFastingState();
+    showToast('Fast started');
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+fastingEndBtn.addEventListener('click', async () => {
+  try {
+    const res = await authFetch(`${API}/fasting/end`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to end fast');
+    state.fasting = data;
+    renderFastingState();
+    showToast('Fast ended');
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+const FASTING_PROTOCOLS_CLIENT = ['16:8', '18:6'];
+
+// ---------- Nutrition Analytics ----------
+const nutritionAnalyticsView = document.getElementById('nutritionAnalyticsView');
+const nutritionAnalyticsBackBtn = document.getElementById('nutritionAnalyticsBackBtn');
+const naTabsEl = document.getElementById('naTabs');
+const naCaloriesChartEl = document.getElementById('naCaloriesChart');
+const naNutrientsListEl = document.getElementById('naNutrientsList');
+const naMacroRingsEl = document.getElementById('naMacroRings');
+
+initFlatTabs(
+  naTabsEl,
+  [...naTabsEl.parentElement.querySelectorAll('[data-tab-panel]')].map((el) => ({ key: el.dataset.tabPanel, el })),
+  () => {}
+);
+
+async function openNutritionAnalyticsView() {
+  openSubView(nutritionAnalyticsView);
+  const history = await loadHistory({ days: 7 });
+  if (!history) return;
+  renderMetricBarChart(naCaloriesChartEl, history.days, 'calories', state.settings?.calorieGoal || 0);
+  renderNutrientsListInto(naNutrientsListEl, history.averages);
+  renderMacroRingsInto(naMacroRingsEl, history.averages);
+}
+nutritionAnalyticsBackBtn.addEventListener('click', () => closeSubView(nutritionAnalyticsView));
+
+// ---------- Meals, Recipes & Foods ----------
+const mrfView = document.getElementById('mrfView');
+const mrfBackBtn = document.getElementById('mrfBackBtn');
+const mrfTabsEl = document.getElementById('mrfTabs');
+const mrfRecipesListEl = document.getElementById('mrfRecipesList');
+const mrfMealsListEl = document.getElementById('mrfMealsList');
+const mrfFoodsListEl = document.getElementById('mrfFoodsList');
+const mrfCreateForm = document.getElementById('mrfCreateForm');
+const mrfNameInput = document.getElementById('mrfNameInput');
+const mrfCaloriesInput = document.getElementById('mrfCaloriesInput');
+const mrfProteinInput = document.getElementById('mrfProteinInput');
+const mrfCarbsInput = document.getElementById('mrfCarbsInput');
+const mrfFatInput = document.getElementById('mrfFatInput');
+const mrfCreateError = document.getElementById('mrfCreateError');
+const mrfCancelBtn = document.getElementById('mrfCancelBtn');
+const mrfSaveBtn = document.getElementById('mrfSaveBtn');
+const mrfCreateBtn = document.getElementById('mrfCreateBtn');
+
+const MRF_RESOURCE_BY_TAB = { recipes: 'saved-recipes', meals: 'saved-meals', foods: 'saved-foods' };
+const MRF_STATE_KEY_BY_TAB = { recipes: 'savedRecipes', meals: 'savedMeals', foods: 'savedFoods' };
+const MRF_LIST_EL_BY_TAB = { recipes: mrfRecipesListEl, meals: mrfMealsListEl, foods: mrfFoodsListEl };
+let mrfActiveTab = 'recipes';
+
+function buildSavedItemEntry(item, onDelete) {
+  const li = document.createElement('li');
+  li.className = 'weight-entry';
+  li.innerHTML = `
+    <span class="weight-date">${escapeHtml(item.name)}</span>
+    <span class="weight-value">${item.calories} cal · P${item.protein} C${item.carbs} F${item.fat}</span>
+  `;
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.setAttribute('aria-label', 'Delete');
+  deleteBtn.textContent = '✕';
+  deleteBtn.addEventListener('click', onDelete);
+  li.appendChild(deleteBtn);
+  return li;
+}
+
+async function loadMrfTab(tab) {
+  try {
+    const res = await authFetch(`${API}/${MRF_RESOURCE_BY_TAB[tab]}`);
+    if (!res.ok) throw new Error('Failed to load list');
+    state[MRF_STATE_KEY_BY_TAB[tab]] = await res.json();
+    renderMrfTab(tab);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function renderMrfTab(tab) {
+  const listEl = MRF_LIST_EL_BY_TAB[tab];
+  const items = state[MRF_STATE_KEY_BY_TAB[tab]];
+  listEl.innerHTML = '';
+  if (items.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = `No saved ${tab} yet — tap "Create New Item" to add one.`;
+    listEl.appendChild(empty);
+    return;
+  }
+  for (const item of items) {
+    listEl.appendChild(
+      buildSavedItemEntry(item, async () => {
+        await authFetch(`${API}/${MRF_RESOURCE_BY_TAB[tab]}/${item.id}`, { method: 'DELETE' });
+        await loadMrfTab(tab);
+      })
+    );
+  }
+}
+
+initFlatTabs(
+  mrfTabsEl,
+  [...mrfTabsEl.parentElement.querySelectorAll('[data-tab-panel]')].map((el) => ({ key: el.dataset.tabPanel, el })),
+  (key) => {
+    mrfActiveTab = key;
+    loadMrfTab(key);
+  }
+);
+
+function openMrfView() {
+  mrfCreateForm.classList.add('hidden');
+  loadMrfTab(mrfActiveTab);
+  openSubView(mrfView);
+}
+mrfBackBtn.addEventListener('click', () => closeSubView(mrfView));
+mrfCreateBtn.addEventListener('click', () => {
+  mrfCreateError.textContent = '';
+  mrfNameInput.value = '';
+  mrfCaloriesInput.value = '';
+  mrfProteinInput.value = '';
+  mrfCarbsInput.value = '';
+  mrfFatInput.value = '';
+  mrfCreateForm.classList.remove('hidden');
+  mrfCreateForm.scrollIntoView({ behavior: 'smooth' });
+});
+mrfCancelBtn.addEventListener('click', () => mrfCreateForm.classList.add('hidden'));
+mrfSaveBtn.addEventListener('click', async () => {
+  mrfCreateError.textContent = '';
+  const name = mrfNameInput.value.trim();
+  const calories = Number(mrfCaloriesInput.value);
+  const protein = Number(mrfProteinInput.value);
+  const carbs = Number(mrfCarbsInput.value);
+  const fat = Number(mrfFatInput.value);
+  if (!name) { mrfCreateError.textContent = 'Enter a name.'; return; }
+  if ([calories, protein, carbs, fat].some((n) => Number.isNaN(n) || n < 0)) {
+    mrfCreateError.textContent = 'Enter valid non-negative macro values.';
+    return;
+  }
+  try {
+    const res = await authFetch(`${API}/${MRF_RESOURCE_BY_TAB[mrfActiveTab]}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, calories, protein, carbs, fat })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save item');
+    mrfCreateForm.classList.add('hidden');
+    await loadMrfTab(mrfActiveTab);
+    showToast('Saved');
+  } catch (err) {
+    mrfCreateError.textContent = err.message;
+  }
+});
+
+// ---------- Steps Hub ----------
+const stepsHubView = document.getElementById('stepsHubView');
+const stepsHubBackBtn = document.getElementById('stepsHubBackBtn');
+const stepsHubRingProgressEl = document.getElementById('stepsHubRingProgress');
+const stepsHubValueEl = document.getElementById('stepsHubValue');
+const stepsHubGoalLabelEl = document.getElementById('stepsHubGoalLabel');
+const stepsHubSyncListEl = document.getElementById('stepsHubSyncList');
+const STEPS_HUB_DAILY_GOAL = 10000;
+
+async function loadDevices() {
+  try {
+    const res = await authFetch(`${API}/devices`);
+    if (!res.ok) throw new Error('Failed to load devices');
+    state.devices = await res.json();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function renderStepsHubSync() {
+  stepsHubSyncListEl.querySelectorAll('[data-toggle]').forEach((btn) => {
+    const on = Boolean(state.devices?.[btn.dataset.toggle]);
+    btn.setAttribute('aria-checked', String(on));
+  });
+}
+
+stepsHubSyncListEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-toggle]');
+  if (!btn) return;
+  const key = btn.dataset.toggle;
+  const next = btn.getAttribute('aria-checked') !== 'true';
+  btn.setAttribute('aria-checked', String(next));
+  try {
+    const res = await authFetch(`${API}/devices`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: next })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update sync setting');
+    state.devices = data;
+  } catch (err) {
+    btn.setAttribute('aria-checked', String(!next));
+    showToast(err.message, true);
+  }
+});
+
+async function openStepsHubView() {
+  await Promise.all([loadSteps(), loadDevices()]);
+  const today = state.steps.find((s) => s.date === todayStr());
+  const steps = today ? today.steps : 0;
+  stepsHubValueEl.textContent = steps.toLocaleString();
+  stepsHubGoalLabelEl.textContent = `of ${STEPS_HUB_DAILY_GOAL.toLocaleString()} steps`;
+  setRingProgress(stepsHubRingProgressEl, steps / STEPS_HUB_DAILY_GOAL);
+  renderStepsHubSync();
+  openSubView(stepsHubView);
+}
+stepsHubBackBtn.addEventListener('click', () => closeSubView(stepsHubView));
+
+// ---------- Sleep Tracking ----------
+const sleepTrackingView = document.getElementById('sleepTrackingView');
+const sleepTrackingBackBtn = document.getElementById('sleepTrackingBackBtn');
+const sleepWeeklyChartEl = document.getElementById('sleepWeeklyChart');
+const sleepAvgDurationValueEl = document.getElementById('sleepAvgDurationValue');
+const sleepDeepValueEl = document.getElementById('sleepTrackingDeepValue');
+const sleepConsistencyValueEl = document.getElementById('sleepConsistencyValue');
+
+async function openSleepTrackingView() {
+  await loadSleep();
+  const last7 = state.sleep.slice(0, 7).slice().sort((a, b) => a.date.localeCompare(b.date));
+  renderMetricBarChart(sleepWeeklyChartEl, last7, 'totalHours', 0);
+
+  if (last7.length === 0) {
+    sleepAvgDurationValueEl.textContent = '0h';
+    sleepDeepValueEl.textContent = '0h';
+    sleepConsistencyValueEl.textContent = '0%';
+  } else {
+    const avgTotal = last7.reduce((sum, s) => sum + s.totalHours, 0) / last7.length;
+    const avgDeep = last7.reduce((sum, s) => sum + s.deepHours, 0) / last7.length;
+    const mean = avgTotal;
+    const variance = last7.reduce((sum, s) => sum + (s.totalHours - mean) ** 2, 0) / last7.length;
+    const stdDev = Math.sqrt(variance);
+    const consistency = mean > 0 ? Math.max(0, Math.round(100 - (stdDev / mean) * 100)) : 0;
+    sleepAvgDurationValueEl.textContent = `${Math.round(avgTotal * 10) / 10}h`;
+    sleepDeepValueEl.textContent = `${Math.round(avgDeep * 10) / 10}h`;
+    sleepConsistencyValueEl.textContent = `${consistency}%`;
+  }
+  openSubView(sleepTrackingView);
+}
+sleepTrackingBackBtn.addEventListener('click', () => closeSubView(sleepTrackingView));
+
+// ---------- Reminders ----------
+const remindersView = document.getElementById('remindersView');
+const remindersBackBtn = document.getElementById('remindersBackBtn');
+const remindersListEl = document.getElementById('remindersList');
+const REMINDER_TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, i) => {
+  const h = String(Math.floor(i / 4)).padStart(2, '0');
+  const m = String((i % 4) * 15).padStart(2, '0');
+  return `${h}:${m}`;
+});
+
+async function loadReminders() {
+  try {
+    const res = await authFetch(`${API}/reminders`);
+    if (!res.ok) throw new Error('Failed to load reminders');
+    state.reminders = await res.json();
+    renderReminders();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function renderReminders() {
+  remindersListEl.innerHTML = '';
+  for (const r of state.reminders) {
+    const li = document.createElement('li');
+    li.className = 'weight-entry';
+    const options = REMINDER_TIME_OPTIONS.map((t) => `<option value="${t}"${t === r.time ? ' selected' : ''}>${t}</option>`).join('');
+    li.innerHTML = `
+      <span class="weight-date">${escapeHtml(r.label)}</span>
+      <select class="reminder-time-select" data-reminder-time="${r.id}">${options}</select>
+      <button type="button" class="theme-switch" data-reminder-toggle="${r.id}" role="switch" aria-checked="${r.enabled}"><span class="theme-switch-thumb"></span></button>
+    `;
+    remindersListEl.appendChild(li);
+  }
+}
+
+remindersListEl.addEventListener('click', async (e) => {
+  const toggle = e.target.closest('[data-reminder-toggle]');
+  if (!toggle) return;
+  const id = toggle.dataset.reminderToggle;
+  const next = toggle.getAttribute('aria-checked') !== 'true';
+  toggle.setAttribute('aria-checked', String(next));
+  try {
+    await authFetch(`${API}/reminders/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: next })
+    });
+  } catch {
+    toggle.setAttribute('aria-checked', String(!next));
+    showToast('Failed to update reminder', true);
+  }
+});
+remindersListEl.addEventListener('change', async (e) => {
+  const select = e.target.closest('[data-reminder-time]');
+  if (!select) return;
+  try {
+    await authFetch(`${API}/reminders/${select.dataset.reminderTime}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time: select.value })
+    });
+  } catch {
+    showToast('Failed to update reminder time', true);
+  }
+});
+
+function openRemindersView() {
+  loadReminders();
+  openSubView(remindersView);
+}
+remindersBackBtn.addEventListener('click', () => closeSubView(remindersView));
+
+// ---------- Discovery / Learn Feed ----------
+const discoveryView = document.getElementById('discoveryView');
+const discoveryBackBtn = document.getElementById('discoveryBackBtn');
+const discoveryChipsRowEl = document.getElementById('discoveryChipsRow');
+const discoveryCardsListEl = document.getElementById('discoveryCardsList');
+let discoveryActiveCategory = 'all';
+
+function renderDiscoveryCards() {
+  const catalog = state.discoverCatalog || [];
+  const filtered = discoveryActiveCategory === 'all' ? catalog : catalog.filter((r) => r.category === discoveryActiveCategory);
+  discoveryCardsListEl.innerHTML = '';
+  for (const r of filtered) {
+    const totalMacroCals = r.protein * 4 + r.carbs * 4 + r.fat * 9;
+    const pPct = totalMacroCals ? (r.protein * 4 / totalMacroCals) * 100 : 0;
+    const cPct = totalMacroCals ? (r.carbs * 4 / totalMacroCals) * 100 : 0;
+    const fPct = totalMacroCals ? (r.fat * 9 / totalMacroCals) * 100 : 0;
+    const card = document.createElement('div');
+    card.className = 'discovery-card';
+    card.innerHTML = `
+      <div class="discovery-card-top">
+        <span class="discovery-card-name">${escapeHtml(r.name)}</span>
+        <span class="discovery-card-prep">${r.prepMinutes} min</span>
+      </div>
+      <span class="discovery-card-cals">${r.calories} cal</span>
+      <div class="discovery-macro-bar">
+        <span style="width:${pPct}%"></span><span style="width:${cPct}%"></span><span style="width:${fPct}%"></span>
+      </div>
+    `;
+    discoveryCardsListEl.appendChild(card);
+  }
+}
+
+discoveryChipsRowEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  discoveryActiveCategory = btn.dataset.category;
+  discoveryChipsRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderDiscoveryCards();
+});
+
+async function openDiscoveryView() {
+  if (!state.discoverCatalog) {
+    try {
+      const res = await fetch(`${API}/recipes/discover`);
+      if (!res.ok) throw new Error('Failed to load recipes');
+      state.discoverCatalog = await res.json();
+    } catch (err) {
+      showToast(err.message, true);
+      state.discoverCatalog = [];
+    }
+  }
+  renderDiscoveryCards();
+  openSubView(discoveryView);
+}
+discoveryBackBtn.addEventListener('click', () => closeSubView(discoveryView));
+
+// ---------- Apps & Devices ----------
+const appsDevicesView = document.getElementById('appsDevicesView');
+const appsDevicesBackBtn = document.getElementById('appsDevicesBackBtn');
+const appsDevicesGridEl = document.getElementById('appsDevicesGrid');
+
+function renderAppsDevicesGrid() {
+  appsDevicesGridEl.querySelectorAll('.apps-device-card').forEach((card) => {
+    const connected = Boolean(state.devices?.[card.dataset.device]);
+    card.classList.toggle('connected', connected);
+    card.querySelector('.apps-device-badge').textContent = connected ? 'Synced' : 'Connect';
+  });
+}
+
+appsDevicesGridEl.addEventListener('click', async (e) => {
+  const card = e.target.closest('.apps-device-card');
+  if (!card) return;
+  const key = card.dataset.device;
+  const next = !state.devices?.[key];
+  try {
+    const res = await authFetch(`${API}/devices`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: next })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update device');
+    state.devices = data;
+    renderAppsDevicesGrid();
+    showToast(next ? 'Connected' : 'Disconnected');
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+async function openAppsDevicesView() {
+  await loadDevices();
+  renderAppsDevicesGrid();
+  openSubView(appsDevicesView);
+}
+appsDevicesBackBtn.addEventListener('click', () => closeSubView(appsDevicesView));
+
+// ---------- Weekly Report ----------
+const weeklyReportView = document.getElementById('weeklyReportView');
+const weeklyReportBackBtn = document.getElementById('weeklyReportBackBtn');
+const weeklyReportRingProgressEl = document.getElementById('weeklyReportRingProgress');
+const weeklyReportRingValueEl = document.getElementById('weeklyReportRingValue');
+const weeklyReportChartAxisEl = document.getElementById('weeklyReportChartAxis');
+const weeklyReportChartSvgEl = document.getElementById('weeklyReportChartSvg');
+const weeklyReportAveragesListEl = document.getElementById('weeklyReportAveragesList');
+
+function renderWeeklyReportChart(days, goal) {
+  weeklyReportChartAxisEl.innerHTML = '';
+  weeklyReportChartSvgEl.innerHTML = '';
+  if (days.length === 0) return;
+
+  const maxVal = Math.max(goal, ...days.map((d) => d.calories), 1);
+  const ceiling = niceCeil(maxVal);
+  for (let i = 4; i >= 0; i--) {
+    const span = document.createElement('span');
+    span.textContent = Math.round((ceiling / 4) * i);
+    weeklyReportChartAxisEl.appendChild(span);
+  }
+
+  const width = 300;
+  const height = 140;
+  const padY = 6;
+  const plotHeight = height - padY * 2;
+  const stepX = days.length > 1 ? width / (days.length - 1) : 0;
+  const toY = (v) => padY + plotHeight - (Math.min(v, ceiling) / ceiling) * plotHeight;
+  const actualPoints = days.map((d, i) => `${(days.length > 1 ? i * stepX : width / 2).toFixed(1)},${toY(d.calories).toFixed(1)}`).join(' ');
+  const goalPoints = days.map((d, i) => `${(days.length > 1 ? i * stepX : width / 2).toFixed(1)},${toY(goal).toFixed(1)}`).join(' ');
+  const gridLines = [0, 1, 2, 3, 4]
+    .map((i) => {
+      const y = (padY + (plotHeight / 4) * i).toFixed(1);
+      return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
+    })
+    .join('');
+  weeklyReportChartSvgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  weeklyReportChartSvgEl.innerHTML = `
+    ${gridLines}
+    <polyline class="macro-history-line" style="stroke: var(--text-3);" points="${goalPoints}" />
+    <polyline class="macro-history-line cyan" points="${actualPoints}" />
+  `;
+}
+
+function renderWeeklyAverages(averages) {
+  const goal = state.settings || {};
+  const rows = [
+    { label: 'Calories', value: averages.calories, target: goal.calorieGoal || 0 },
+    { label: 'Protein', value: averages.protein, target: goal.macroGoals?.protein || 0 },
+    { label: 'Carbs', value: averages.carbs, target: goal.macroGoals?.carbs || 0 },
+    { label: 'Fat', value: averages.fat, target: goal.macroGoals?.fat || 0 }
+  ];
+  weeklyReportAveragesListEl.innerHTML = rows
+    .map((r) => {
+      const pct = r.target > 0 ? Math.min(100, Math.round((r.value / r.target) * 100)) : 0;
+      return `
+        <div class="wra-row">
+          <div class="wra-row-top">
+            <span class="wra-row-label">${r.label}</span>
+            <span class="wra-row-value">${Math.round(r.value)} / ${r.target}</span>
+          </div>
+          <div class="wra-track"><div class="wra-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function openWeeklyReportView() {
+  openSubView(weeklyReportView);
+  const history = await loadHistory({ days: 7 });
+  if (!history) return;
+  const goal = state.settings?.calorieGoal || 0;
+  const compliantDays = history.days.filter((d) => d.calories > 0 && d.calories >= goal * 0.8 && d.calories <= goal * 1.1).length;
+  const compliancePct = history.days.length ? compliantDays / history.days.length : 0;
+  setRingProgress(weeklyReportRingProgressEl, compliancePct);
+  weeklyReportRingValueEl.textContent = `${Math.round(compliancePct * 100)}%`;
+  renderWeeklyReportChart(history.days, goal);
+  renderWeeklyAverages(history.averages);
+}
+weeklyReportBackBtn.addEventListener('click', () => closeSubView(weeklyReportView));
+
 // ---------- More tab (profile header, menu, body metrics, theme, logout) ----------
 // Logging streak = consecutive days with logged calories, counted backward
 // from the most recent day in a 60-day history window.
@@ -3533,13 +4502,19 @@ async function openMoreTab() {
 // Menu rows that map onto functionality already elsewhere in the app; every
 // other row is a placeholder for a not-yet-built feature and just toasts.
 const MORE_MENU_ACTIONS = {
+  profile: () => openProfileView(),
   goals: () => openGoalsView(),
-  'weight-measurements': () => openWeightMeasurementsModal(),
-  nutrition: () => { switchTab('progress'); switchProgressSubtab('nutrients'); },
-  'my-meals': () => { openLogOverlay(); switchLogSubtab('meals'); },
-  steps: () => { switchTab('progress'); switchProgressSubtab('steps'); },
-  sleep: () => { switchTab('progress'); switchProgressSubtab('sleep'); },
-  'weekly-report': () => { switchTab('progress'); switchProgressSubtab('overview'); },
+  workouts: () => openWorkoutsView(),
+  'weight-measurements': () => openWeightMeasurementsView(),
+  fasting: () => openFastingView(),
+  nutrition: () => openNutritionAnalyticsView(),
+  'my-meals': () => openMrfView(),
+  steps: () => openStepsHubView(),
+  sleep: () => openSleepTrackingView(),
+  reminders: () => openRemindersView(),
+  'recipe-discovery': () => openDiscoveryView(),
+  'apps-devices': () => openAppsDevicesView(),
+  'weekly-report': () => openWeeklyReportView(),
   settings: () => openSettingsView(),
   sync: async () => {
     await Promise.all([loadDay(), loadWeights(), loadProfile()]);
