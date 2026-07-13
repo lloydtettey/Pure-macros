@@ -26,6 +26,12 @@ const CURRENT_USER_KEY = 'pure_macros_current_user';
 const THEME_KEY = 'pure_macros_theme';
 const WEIGHT_UNIT_KEY = 'pure_macros_weight_unit';
 const HEIGHT_UNIT_KEY = 'pure_macros_height_unit';
+const UNIT_SYSTEM_KEY = 'pure_macros_unit_system';
+
+// Global Dynamic Multi-Unit System Toggle preference ('metric' | 'imperial'),
+// read once at load and mutated in place by setUnitSystemPreference() below —
+// recipe modals and the workout weight ledger both key off this same value.
+let userUnitPreference = localStorage.getItem(UNIT_SYSTEM_KEY) === 'imperial' ? 'imperial' : 'metric';
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 70;
 
@@ -822,6 +828,52 @@ heightUnitToggle.addEventListener('click', (e) => {
   localStorage.setItem(HEIGHT_UNIT_KEY, btn.dataset.unit);
   applyHeightUnitUI();
   writeHeightFieldsFromCm(currentCm);
+});
+
+// ---------- Dynamic Multi-Unit System Toggle (Metric g/kg/°C <-> Imperial oz/lbs/°F) ----------
+const unitSystemToggleEl = document.getElementById('unitSystemToggle');
+const workoutWeightEls = document.querySelectorAll('.wr-log-weight');
+
+function applyUnitSystemUI() {
+  unitSystemToggleEl.dataset.active = userUnitPreference;
+  unitSystemToggleEl.querySelectorAll('.unit-segmented-btn').forEach((btn) => {
+    const active = btn.dataset.unitSystem === userUnitPreference;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+}
+
+// Converts the logged exercise weight text on each Workout Routines card
+// between its stored lbs/kg values for the active unit preference.
+function applyWorkoutWeightUnits() {
+  workoutWeightEls.forEach((el) => {
+    el.textContent = userUnitPreference === 'metric'
+      ? `${el.dataset.weightKg} kg`
+      : `${el.dataset.weightLbs} lbs`;
+  });
+}
+
+function setUnitSystemPreference(preference) {
+  if (preference !== 'metric' && preference !== 'imperial') return;
+  userUnitPreference = preference;
+  localStorage.setItem(UNIT_SYSTEM_KEY, preference);
+  applyUnitSystemUI();
+  // Batches the recipe modal and workout ledger text updates into the next
+  // paint so the sliding thumb and every dependent row flip in the same
+  // frame instead of the ledger lagging a tick behind the toggle.
+  requestAnimationFrame(() => {
+    renderRecipeModalUnits();
+    applyWorkoutWeightUnits();
+  });
+}
+
+applyUnitSystemUI();
+applyWorkoutWeightUnits();
+
+unitSystemToggleEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.unit-segmented-btn');
+  if (!btn) return;
+  setUnitSystemPreference(btn.dataset.unitSystem);
 });
 
 // ---------- Tabs (Today / Plan / Progress / More) ----------
@@ -4777,22 +4829,42 @@ const PLAN_SAMPLE_RECIPES = [
     name: 'Grilled Chicken & Quinoa Bowl',
     kcal: 420, protein: 38, carbs: 34, fat: 12,
     img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80',
-    ingredients: [
-      '6 oz grilled chicken breast, sliced',
-      '3/4 cup cooked quinoa',
-      '1/2 cup cherry tomatoes, halved',
-      '1/4 cup cucumber, diced',
-      '2 tbsp crumbled feta cheese',
-      '1 tbsp olive oil & lemon dressing'
-    ],
-    instructions: [
-      'Season the chicken breast with salt, pepper, and a pinch of paprika.',
-      'Grill over medium-high heat for 6-7 minutes per side, until it reaches 165°F internally.',
-      'Rinse the quinoa, then simmer in a 2:1 water ratio for 15 minutes and fluff with a fork.',
-      'Let the chicken rest 5 minutes, then slice and arrange over the quinoa.',
-      'Top with cherry tomatoes, cucumber, and feta.',
-      'Drizzle with the olive oil and lemon dressing just before serving.'
-    ]
+    ingredientsByUnit: {
+      metric: [
+        '170g grilled chicken breast, sliced',
+        '150g cooked quinoa',
+        '75g cherry tomatoes, halved',
+        '30g cucumber, diced',
+        '30g crumbled feta cheese',
+        '15ml olive oil & lemon dressing'
+      ],
+      imperial: [
+        '6 oz grilled chicken breast, sliced',
+        '3/4 cup cooked quinoa',
+        '1/2 cup cherry tomatoes, halved',
+        '1/4 cup cucumber, diced',
+        '2 tbsp crumbled feta cheese',
+        '1 tbsp olive oil & lemon dressing'
+      ]
+    },
+    instructionsByUnit: {
+      metric: [
+        'Season the chicken breast with salt, pepper, and a pinch of paprika.',
+        'Grill over medium-high heat for 6-7 minutes per side, until it reaches 74°C internally.',
+        'Rinse the quinoa, then simmer in a 2:1 water ratio for 15 minutes and fluff with a fork.',
+        'Let the chicken rest 5 minutes, then slice and arrange over the quinoa.',
+        'Top with cherry tomatoes, cucumber, and feta.',
+        'Drizzle with the olive oil and lemon dressing just before serving.'
+      ],
+      imperial: [
+        'Season the chicken breast with salt, pepper, and a pinch of paprika.',
+        'Grill over medium-high heat for 6-7 minutes per side, until it reaches 165°F internally.',
+        'Rinse the quinoa, then simmer in a 2:1 water ratio for 15 minutes and fluff with a fork.',
+        'Let the chicken rest 5 minutes, then slice and arrange over the quinoa.',
+        'Top with cherry tomatoes, cucumber, and feta.',
+        'Drizzle with the olive oil and lemon dressing just before serving.'
+      ]
+    }
   },
   {
     id: 'herb-crusted-salmon-asparagus',
@@ -4843,22 +4915,42 @@ const PLAN_SAMPLE_RECIPES = [
     name: 'High-Protein Beef Stir-Fry',
     kcal: 460, protein: 42, carbs: 30, fat: 16,
     img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80',
-    ingredients: [
-      '6 oz lean beef sirloin, thinly sliced',
-      '1 cup broccoli florets',
-      '1/2 cup carrots, julienned',
-      '1/2 cup snap peas',
-      '2 tbsp low-sodium soy sauce',
-      '1 tsp sesame oil & 1 tsp ginger-garlic, minced'
-    ],
-    instructions: [
-      'Heat sesame oil in a wok or large skillet over high heat.',
-      'Sear the sliced beef for 1-2 minutes per side until browned; remove and set aside.',
-      'Add the ginger and garlic to the pan and stir for 30 seconds until fragrant.',
-      'Add the broccoli, carrots, and snap peas, stir-frying for 3-4 minutes until crisp-tender.',
-      'Return the beef to the pan and stir in the soy sauce.',
-      'Toss everything together for 1 minute more and serve hot.'
-    ]
+    ingredientsByUnit: {
+      metric: [
+        '170g lean beef sirloin, thinly sliced',
+        '75g broccoli florets',
+        '60g carrots, julienned',
+        '75g snap peas',
+        '30ml low-sodium soy sauce',
+        '5ml sesame oil & 5g ginger-garlic, minced'
+      ],
+      imperial: [
+        '6 oz lean beef sirloin, thinly sliced',
+        '1 cup broccoli florets',
+        '1/2 cup carrots, julienned',
+        '1/2 cup snap peas',
+        '2 tbsp low-sodium soy sauce',
+        '1 tsp sesame oil & 1 tsp ginger-garlic, minced'
+      ]
+    },
+    instructionsByUnit: {
+      metric: [
+        'Heat sesame oil in a wok or large skillet over high heat.',
+        'Sear the sliced beef for 1-2 minutes per side until browned; remove and set aside.',
+        'Add the ginger and garlic to the pan and stir for 30 seconds until fragrant.',
+        'Add the broccoli, carrots, and snap peas, stir-frying for 3-4 minutes until crisp-tender.',
+        'Return the beef to the pan and stir in the soy sauce.',
+        'Toss everything together for 1 minute more and serve hot.'
+      ],
+      imperial: [
+        'Heat sesame oil in a wok or large skillet over high heat.',
+        'Sear the sliced beef for 1-2 minutes per side until browned; remove and set aside.',
+        'Add the ginger and garlic to the pan and stir for 30 seconds until fragrant.',
+        'Add the broccoli, carrots, and snap peas, stir-frying for 3-4 minutes until crisp-tender.',
+        'Return the beef to the pan and stir in the soy sauce.',
+        'Toss everything together for 1 minute more and serve hot.'
+      ]
+    }
   },
   {
     id: 'cottage-cheese-egg-white-scramble',
@@ -4929,14 +5021,33 @@ function buildPlanRecipes() {
   for (const r of PLAN_SAMPLE_RECIPES) {
     if (seen.has(r.id)) continue;
     seen.add(r.id);
+    const dualUnit = Boolean(r.ingredientsByUnit);
     recipes.push({
       ...r,
       name: fillTokens(r.nameTemplate || r.name),
-      ingredients: r.ingredients.map(fillTokens),
-      instructions: r.instructions.map(fillTokens)
+      ingredients: dualUnit ? undefined : r.ingredients.map(fillTokens),
+      instructions: dualUnit ? undefined : r.instructions.map(fillTokens),
+      ingredientsByUnit: dualUnit ? {
+        metric: r.ingredientsByUnit.metric.map(fillTokens),
+        imperial: r.ingredientsByUnit.imperial.map(fillTokens)
+      } : undefined,
+      instructionsByUnit: dualUnit ? {
+        metric: r.instructionsByUnit.metric.map(fillTokens),
+        imperial: r.instructionsByUnit.imperial.map(fillTokens)
+      } : undefined
     });
   }
   return recipes;
+}
+
+// Resolves a recipe's ingredient/instruction lines for the active
+// userUnitPreference — recipes without dual-unit data just show their
+// single (imperial-authored) list regardless of the toggle.
+function getRecipeIngredientLines(recipe) {
+  return recipe.ingredientsByUnit ? recipe.ingredientsByUnit[userUnitPreference] : recipe.ingredients;
+}
+function getRecipeInstructionLines(recipe) {
+  return recipe.instructionsByUnit ? recipe.instructionsByUnit[userUnitPreference] : recipe.instructions;
 }
 
 const PW_GOAL_LABELS = {
@@ -4991,7 +5102,19 @@ const recipeModalFatEl = document.getElementById('recipeModalFat');
 const recipeModalIngredientsEl = document.getElementById('recipeModalIngredients');
 const recipeModalInstructionsEl = document.getElementById('recipeModalInstructions');
 
+// Tracks whichever recipe is currently open in the modal so the Unit System
+// toggle can re-render its ingredient/instruction lines in place without
+// having to reopen the sheet.
+let currentRecipeModalRecipe = null;
+
+function renderRecipeModalUnits() {
+  if (!currentRecipeModalRecipe) return;
+  recipeModalIngredientsEl.innerHTML = getRecipeIngredientLines(currentRecipeModalRecipe).map((i) => `<li>${escapeHtml(i)}</li>`).join('');
+  recipeModalInstructionsEl.innerHTML = getRecipeInstructionLines(currentRecipeModalRecipe).map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+}
+
 function openRecipeModal(recipe) {
+  currentRecipeModalRecipe = recipe;
   recipeModalImgEl.src = recipe.img || '';
   recipeModalImgEl.alt = recipe.name;
   recipeModalTitleEl.textContent = recipe.name;
@@ -4999,8 +5122,7 @@ function openRecipeModal(recipe) {
   recipeModalProteinEl.textContent = `${recipe.protein}g`;
   recipeModalCarbsEl.textContent = `${recipe.carbs}g`;
   recipeModalFatEl.textContent = `${recipe.fat}g`;
-  recipeModalIngredientsEl.innerHTML = recipe.ingredients.map((i) => `<li>${escapeHtml(i)}</li>`).join('');
-  recipeModalInstructionsEl.innerHTML = recipe.instructions.map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+  renderRecipeModalUnits();
   recipeModalEl.classList.remove('hidden');
   // Force a reflow before adding .open so the translate3d transition plays
   // from its 100% starting position instead of jumping straight to 0.

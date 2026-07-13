@@ -5257,6 +5257,49 @@ html.has-session .auth-overlay {
 }
 .appearance-card--active .appearance-card-check { opacity: 1; }
 
+/* More tab — Preferences: premium sliding segmented Unit System selector */
+.unit-system-label { margin: 0 0 10px; font-size: 13px; color: var(--text-2); }
+.unit-segmented {
+  position: relative;
+  display: flex;
+  background: var(--track-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 3px;
+}
+.unit-segmented-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
+}
+.unit-segmented[data-active="imperial"] .unit-segmented-thumb {
+  transform: translateX(100%);
+  background: linear-gradient(135deg, var(--neon-violet), var(--neon-pink));
+  box-shadow: 0 0 14px rgba(157, 59, 255, 0.45);
+}
+.unit-segmented-btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 10px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+.unit-segmented-btn.active { color: #05070b; }
+
 /* Push Notifications — MyFitnessPal-style circular checkbox toggle indicators
    (distinct from the switch/plain-checkbox styles used elsewhere) */
 .notif-toggle-circle {
