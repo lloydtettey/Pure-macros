@@ -4586,6 +4586,64 @@ html.has-session .auth-overlay {
 .learn-card-footer { display: flex; justify-content: flex-end; }
 
 /* ---------- Friends Network Directory (More > Friends) ---------- */
+.friends-promo-banner {
+  background: linear-gradient(135deg, #101014, #1c1d24);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+:root[data-theme="light"] .friends-promo-banner { background: linear-gradient(135deg, #14141a, #24242e); }
+.friends-promo-text { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: #f5f5f7; }
+.friends-promo-link { color: var(--neon-blue); font-weight: 800; text-decoration: none; }
+.friends-promo-link:hover { text-decoration: underline; }
+
+.friends-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.friends-empty-text { margin: 0; font-size: 13.5px; color: var(--text-2); }
+
+.btn-outline-blue {
+  background: transparent;
+  border: 1.5px solid var(--neon-blue);
+  color: var(--neon-blue);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 9px 22px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-outline-blue:hover { background: rgba(46, 159, 255, 0.12); }
+.btn-outline-blue:active { transform: scale(0.96); }
+
+.friend-request-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--card-bg-raised);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+}
+.friend-request-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.friend-request-accept-btn, .friend-request-decline-btn {
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.friend-request-accept-btn { border: none; background: var(--neon-cyan); color: #001318; }
+.friend-request-accept-btn:hover { filter: brightness(1.1); }
+.friend-request-decline-btn { border: 1px solid var(--card-border); background: transparent; color: var(--text-2); }
+.friend-request-decline-btn:hover { color: var(--text-1); border-color: var(--text-2); }
+
 .friends-list { display: flex; flex-direction: column; gap: 10px; }
 .friend-row {
   display: flex;

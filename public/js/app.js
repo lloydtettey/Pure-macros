@@ -2123,6 +2123,7 @@ function initApp() {
   loadProfile();
   refreshStreak();
   loadPlanPreferences();
+  loadMessages();
 }
 
 (async function bootstrapAuth() {
@@ -6041,6 +6042,10 @@ const friendsAddBtn = document.getElementById('friendsAddBtn');
 const friendsTotalCountEl = document.getElementById('friendsTotalCount');
 const friendsActiveTodayCountEl = document.getElementById('friendsActiveTodayCount');
 const friendsListEl = document.getElementById('friendsList');
+const friendsSubnavEl = document.getElementById('friendsSubnav');
+const friendsEmptyStateEl = document.getElementById('friendsEmptyState');
+const friendsEmptyAddBtn = document.getElementById('friendsEmptyAddBtn');
+const friendsPromoLearnMore = document.getElementById('friendsPromoLearnMore');
 
 const FRIENDS = [
   { id: 1, name: 'Jamie Rivera', avatar: '🧑', active: true, streak: 14 },
@@ -6050,9 +6055,45 @@ const FRIENDS = [
   { id: 5, name: 'Devon Park', avatar: '🧑', active: false, streak: 3 }
 ];
 
+const FRIEND_REQUESTS = [
+  { id: 101, name: 'Elena Vasquez', avatar: '👩', mutual: 3 },
+  { id: 102, name: 'Tariq Hassan', avatar: '🧔', mutual: 1 }
+];
+
+let activeFriendsTab = 'all';
+
 function renderFriendsList() {
   friendsTotalCountEl.textContent = String(FRIENDS.length);
   friendsActiveTodayCountEl.textContent = String(FRIENDS.filter((f) => f.active).length);
+
+  if (activeFriendsTab === 'requests') {
+    friendsEmptyStateEl.classList.add('hidden');
+    friendsListEl.classList.remove('hidden');
+    friendsListEl.innerHTML = FRIEND_REQUESTS.length
+      ? FRIEND_REQUESTS.map(
+          (r) => `
+            <div class="friend-request-row" data-request-id="${r.id}">
+              <span class="friend-avatar-wrap">
+                <span class="friend-avatar" aria-hidden="true">${r.avatar}</span>
+              </span>
+              <div class="friend-identity">
+                <span class="friend-name">${escapeHtml(r.name)}</span>
+                <span class="friend-streak">${r.mutual} mutual friend${r.mutual === 1 ? '' : 's'}</span>
+              </div>
+              <div class="friend-request-actions">
+                <button type="button" class="friend-request-accept-btn" data-action="accept">Accept</button>
+                <button type="button" class="friend-request-decline-btn" data-action="decline">Decline</button>
+              </div>
+            </div>
+          `
+        ).join('')
+      : `<div class="friends-empty-state"><p class="friends-empty-text">No pending friend requests</p></div>`;
+    return;
+  }
+
+  const isEmpty = FRIENDS.length === 0;
+  friendsEmptyStateEl.classList.toggle('hidden', !isEmpty);
+  friendsListEl.classList.toggle('hidden', isEmpty);
   friendsListEl.innerHTML = FRIENDS.map(
     (f) => `
       <div class="friend-row" data-friend-id="${f.id}">
@@ -6074,6 +6115,22 @@ function renderFriendsList() {
 }
 
 friendsListEl.addEventListener('click', (e) => {
+  const requestRow = e.target.closest('.friend-request-row');
+  if (requestRow) {
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    const request = FRIEND_REQUESTS.find((r) => r.id === Number(requestRow.dataset.requestId));
+    if (!request || !action) return;
+    const idx = FRIEND_REQUESTS.indexOf(request);
+    FRIEND_REQUESTS.splice(idx, 1);
+    if (action === 'accept') {
+      FRIENDS.push({ id: request.id, name: request.name, avatar: request.avatar, active: true, streak: 0 });
+      showToast(`You and ${request.name} are now friends`);
+    } else {
+      showToast('Friend request declined');
+    }
+    renderFriendsList();
+    return;
+  }
   const btn = e.target.closest('.friend-action-btn');
   if (!btn) return;
   const row = btn.closest('.friend-row');
@@ -6086,7 +6143,20 @@ friendsListEl.addEventListener('click', (e) => {
   }
 });
 
+friendsSubnavEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  activeFriendsTab = btn.dataset.friendsTab;
+  friendsSubnavEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderFriendsList();
+});
+
 friendsAddBtn.addEventListener('click', () => showToast('Friend request sent'));
+friendsEmptyAddBtn.addEventListener('click', () => showToast('Friend request sent'));
+friendsPromoLearnMore.addEventListener('click', (e) => {
+  e.preventDefault();
+  showToast('Diet with friends is coming soon');
+});
 
 function openFriendsView() {
   renderFriendsList();
@@ -6106,6 +6176,8 @@ const chatBubblesEl = document.getElementById('chatBubbles');
 const chatInputForm = document.getElementById('chatInputForm');
 const chatInput = document.getElementById('chatInput');
 const moreMessagesBadgeEl = document.getElementById('moreMessagesBadge');
+const messagesSubnavEl = document.getElementById('messagesSubnav');
+let activeMessagesTab = 'inbox';
 
 const MESSAGE_THREADS = [
   {
@@ -6143,10 +6215,11 @@ function updateMessagesBadge() {
   moreMessagesBadgeEl.classList.toggle('hidden', totalUnread === 0);
 }
 
-function renderMessageThreadList() {
-  const query = messagesSearchInput.value.trim().toLowerCase();
+// Inbox tab: one row per thread, previewing its most recent message —
+// covers both friend DMs and system notes (e.g. the welcome message).
+function renderInboxRows(query) {
   const filtered = query ? MESSAGE_THREADS.filter((t) => t.name.toLowerCase().includes(query)) : MESSAGE_THREADS;
-  messageThreadListEl.innerHTML = filtered
+  return filtered
     .map((t) => {
       const last = t.messages[t.messages.length - 1];
       return `
@@ -6168,12 +6241,57 @@ function renderMessageThreadList() {
     .join('');
 }
 
+// Sent tab: every outgoing message across every thread, newest first — each
+// row previews the message text along with who it was sent to.
+function renderSentRows(query) {
+  const sent = [];
+  for (const t of MESSAGE_THREADS) {
+    if (query && !t.name.toLowerCase().includes(query)) continue;
+    for (const m of t.messages) {
+      if (m.from === 'me') sent.push({ thread: t, message: m });
+    }
+  }
+  sent.reverse();
+  if (!sent.length) return `<p class="friends-empty-text" style="padding: 24px 4px;">You haven't sent any messages yet</p>`;
+  return sent
+    .map(
+      ({ thread, message }) => `
+        <div class="message-thread-row" data-thread-id="${thread.id}">
+          <span class="message-thread-avatar" aria-hidden="true">${thread.avatar}</span>
+          <div class="message-thread-meta">
+            <div class="message-thread-top-line">
+              <span class="message-thread-name">${escapeHtml(thread.name)}</span>
+              <span class="message-thread-time">${message.time}</span>
+            </div>
+            <div class="message-thread-snippet-row">
+              <span class="message-thread-snippet">${escapeHtml(message.text)}</span>
+            </div>
+          </div>
+        </div>
+      `
+    )
+    .join('');
+}
+
+function renderMessageThreadList() {
+  const query = messagesSearchInput.value.trim().toLowerCase();
+  messageThreadListEl.innerHTML = activeMessagesTab === 'sent' ? renderSentRows(query) : renderInboxRows(query);
+}
+
 messagesSearchInput.addEventListener('input', renderMessageThreadList);
+
+messagesSubnavEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  activeMessagesTab = btn.dataset.messageTab;
+  messagesSubnavEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderMessageThreadList();
+});
 
 messageThreadListEl.addEventListener('click', (e) => {
   const row = e.target.closest('.message-thread-row');
   if (!row) return;
-  const thread = MESSAGE_THREADS.find((t) => t.id === Number(row.dataset.threadId));
+  const thread = MESSAGE_THREADS.find((t) => String(t.id) === row.dataset.threadId);
   if (thread) openMessageThread(thread);
 });
 
@@ -6193,8 +6311,15 @@ function renderChatBubbles(thread) {
 
 function openMessageThread(thread) {
   activeThreadId = thread.id;
+  const wasUnread = thread.unread > 0;
   thread.unread = 0;
   messageThreadTitleEl.textContent = thread.name;
+  // System notes (e.g. the registration welcome message) are read-only — no
+  // reply box, and there's a real backend record to mark read.
+  chatInputForm.classList.toggle('hidden', Boolean(thread.system));
+  if (thread.system && wasUnread && thread.sourceMessageId) {
+    authFetch(`${API}/messages/${thread.sourceMessageId}/read`, { method: 'PUT' }).catch(() => {});
+  }
   renderChatBubbles(thread);
   renderMessageThreadList();
   updateMessagesBadge();
@@ -6220,6 +6345,34 @@ chatInputForm.addEventListener('submit', (e) => {
   chatInput.value = '';
   renderChatBubbles(thread);
 });
+
+// Pulls the real backend inbox (system notes like the registration welcome
+// message) and merges each into MESSAGE_THREADS as a read-only thread, so it
+// renders through the same row/bubble UI as friend DMs.
+async function loadMessages() {
+  try {
+    const res = await authFetch(`${API}/messages`);
+    if (!res.ok) return;
+    const serverMessages = await res.json();
+    for (const msg of serverMessages) {
+      const threadId = `system-${msg.id}`;
+      if (MESSAGE_THREADS.some((t) => t.id === threadId)) continue;
+      MESSAGE_THREADS.unshift({
+        id: threadId,
+        name: msg.sender,
+        avatar: '📣',
+        unread: msg.read ? 0 : 1,
+        system: true,
+        sourceMessageId: msg.id,
+        messages: [{ from: 'them', text: msg.body, time: new Date(msg.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }]
+      });
+    }
+    renderMessageThreadList();
+    updateMessagesBadge();
+  } catch {
+    // Non-critical — the Messages sub-view still works with local threads.
+  }
+}
 
 function openMessagesView() {
   renderMessageThreadList();

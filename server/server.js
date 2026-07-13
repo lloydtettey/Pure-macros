@@ -353,6 +353,9 @@ function defaultUserData() {
     savedMeals: [],
     savedRecipes: [],
     savedFoods: [],
+    // More > Messages inbox — system messages (e.g. the registration welcome
+    // note) plus anything a real messaging feature appends later.
+    messages: [],
     // Dynamic food-logging streak engine — see applyStreakUpdate() below.
     currentStreak: 0,
     lastLoggedDate: null,
@@ -363,6 +366,20 @@ function defaultUserData() {
     // from the AI Coach wizard above. Gates whether tapping "Plan" opens the
     // quiz or goes straight to the generated hub.
     mealPlan: { onboarded: false, preferences: null }
+  };
+}
+
+// Every freshly created account gets this system note waiting in their
+// Messages inbox — pushed onto userdata.messages right after account
+// creation, for both password signup and first-time OAuth signup.
+function welcomeMessage() {
+  return {
+    id: crypto.randomUUID(),
+    sender: 'Pure Macros Team',
+    subject: 'Welcome to the Community!',
+    body: "Dear Pure Macros Member, welcome to your new structured nutrition journey. Let's hit those daily targets together!",
+    date: new Date().toISOString(),
+    read: false
   };
 }
 
@@ -461,6 +478,7 @@ function findOrCreateOAuthUser(db, { provider, providerId, email, name }) {
   };
   db.users.push(user);
   db.userdata[user.id] = defaultUserData();
+  db.userdata[user.id].messages.push(welcomeMessage());
   if (db.users.length === 1) claimLegacyData(db, user.id);
   return user;
 }
@@ -485,6 +503,7 @@ app.post('/api/auth/register', async (req, res) => {
   const user = { id: crypto.randomUUID(), username: cleanUsername, salt, hash, createdAt: new Date().toISOString() };
   db.users.push(user);
   db.userdata[user.id] = defaultUserData();
+  db.userdata[user.id].messages.push(welcomeMessage());
   if (db.users.length === 1) claimLegacyData(db, user.id);
 
   const token = createSession(db, user.id);
@@ -992,6 +1011,23 @@ app.post('/api/entries', requireAuth, async (req, res) => {
 // GET /api/streak — current dynamic food-logging streak, for the header badge
 app.get('/api/streak', requireAuth, async (req, res) => {
   res.json({ currentStreak: req.db.userdata[req.userId].currentStreak || 0 });
+});
+
+// GET /api/messages — the More > Messages inbox (system notes like the
+// registration welcome message, newest first).
+app.get('/api/messages', requireAuth, async (req, res) => {
+  const messages = [...req.db.userdata[req.userId].messages].sort((a, b) => new Date(b.date) - new Date(a.date));
+  res.json(messages);
+});
+
+// PUT /api/messages/:id/read — marks one inbox message read (drives the More
+// tab's unread badge count).
+app.put('/api/messages/:id/read', requireAuth, async (req, res) => {
+  const message = req.db.userdata[req.userId].messages.find((m) => m.id === req.params.id);
+  if (!message) return res.status(404).json({ error: 'Message not found' });
+  message.read = true;
+  await writeDb(req.db);
+  res.json(message);
 });
 
 // DELETE /api/entries/:id

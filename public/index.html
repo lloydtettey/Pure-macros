@@ -2670,6 +2670,17 @@
           <span class="stat-mini-label">Active Today</span>
         </div>
       </div>
+      <div class="friends-promo-banner">
+        <p class="friends-promo-text">Diet with friends and lose up to 3x more. <a href="#" class="friends-promo-link" id="friendsPromoLearnMore">Learn more.</a></p>
+      </div>
+      <div class="progress-subnav" id="friendsSubnav">
+        <button type="button" class="progress-subnav-btn active" data-friends-tab="all">All</button>
+        <button type="button" class="progress-subnav-btn" data-friends-tab="requests">Requests</button>
+      </div>
+      <div class="friends-empty-state hidden" id="friendsEmptyState">
+        <p class="friends-empty-text">You haven't added any friends yet</p>
+        <button type="button" class="btn-outline-blue" id="friendsEmptyAddBtn">Add Friends</button>
+      </div>
       <div class="friends-list" id="friendsList"></div>
     </div>
   </div>
@@ -2685,6 +2696,10 @@
       <div class="log-search-wrap">
         <span class="log-search-icon" aria-hidden="true">🔎</span>
         <input type="search" id="messagesSearchInput" class="log-search-input" placeholder="Search conversations…" autocomplete="off" />
+      </div>
+      <div class="progress-subnav" id="messagesSubnav">
+        <button type="button" class="progress-subnav-btn active" data-message-tab="inbox">Inbox</button>
+        <button type="button" class="progress-subnav-btn" data-message-tab="sent">Sent</button>
       </div>
       <div class="message-thread-list" id="messageThreadList"></div>
     </div>
