@@ -4324,6 +4324,126 @@ html.has-session .auth-overlay {
 }
 .bio-textarea:focus { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15); }
 
+/* Community Connect Onboarding Sub-View */
+.community-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #0b3d91, #123a63);
+  box-shadow: 0 4px 16px rgba(11, 61, 145, 0.35);
+}
+.community-banner-brand {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-transform: lowercase;
+}
+.community-banner-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+.community-banner-btn:hover { background: rgba(255, 255, 255, 0.22); }
+
+.community-connect-card { margin-top: var(--pad-lg); }
+.community-connect-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.community-connect-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--card-bg-raised);
+  border: 1px solid var(--card-border);
+  flex-shrink: 0;
+}
+.community-connect-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--text-1); }
+.community-connect-subtitle { margin: 2px 0 0; font-size: 12px; color: var(--text-2); }
+
+.community-connect-form { display: flex; flex-direction: column; gap: 14px; }
+.community-connect-form .field { text-align: left; }
+.community-connect-form .field input,
+.community-connect-form .field select {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text-1);
+  font-size: 16px;
+  outline: none;
+  min-height: 44px;
+  transition: all 0.3s ease;
+}
+.community-connect-form .field input:focus,
+.community-connect-form .field select:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 3px rgba(46, 159, 255, 0.15);
+}
+
+.btn-solid-blue {
+  width: 100%;
+  text-align: center;
+  background: var(--neon-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.3s ease;
+}
+.btn-solid-blue:hover { background: #1c86e8; box-shadow: 0 0 14px rgba(46, 159, 255, 0.4); }
+.btn-solid-blue:active { transform: scale(0.97); }
+
+/* Site Navigation Overlay Drawer — nested inside the Community Connect sub-view */
+.site-nav-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-lg);
+  padding: var(--pad-lg);
+  background: var(--bg);
+  transform: translateZ(0);
+}
+.site-nav-header { display: flex; align-items: center; justify-content: space-between; }
+.site-nav-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.site-nav-links { display: flex; flex-direction: column; }
+.site-nav-link {
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.site-nav-link:last-child { border-bottom: none; }
+.site-nav-link:hover, .site-nav-link:active { color: var(--neon-blue); }
+
 /* Workout Routines */
 .routine-exercise-rows { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 .routine-exercise-row { display: grid; grid-template-columns: 1fr 70px 70px; gap: 8px; }

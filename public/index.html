@@ -2612,6 +2612,77 @@
     </div>
   </div>
 
+  <!-- Community Connect Onboarding Sub-View (full-screen, nested under the More tab) -->
+  <!-- Shown once per account before the Community feed; gated by settings.communityConnected -->
+  <div class="settings-view" id="community-subview">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="communitySubviewBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Community</h1>
+      <button type="button" class="icon-btn" id="communitySubviewDoneBtn" aria-label="Done">✓</button>
+    </header>
+    <div class="settings-view-body">
+      <div class="community-banner">
+        <button type="button" class="icon-btn community-banner-btn" id="communityHamburgerBtn" aria-label="Site navigation">☰</button>
+        <span class="community-banner-brand">pure macros</span>
+        <button type="button" class="icon-btn community-banner-btn" id="communitySearchBtn" aria-label="Search">🔎</button>
+      </div>
+
+      <section class="card community-connect-card">
+        <div class="community-connect-heading">
+          <span class="community-connect-avatar" aria-hidden="true">👤</span>
+          <div>
+            <h2 class="community-connect-title">puremacros.com Connect</h2>
+            <p class="community-connect-subtitle">Add Info &amp; Create Account</p>
+          </div>
+        </div>
+        <form id="communityConnectForm" class="community-connect-form">
+          <label class="field">
+            <span>Preferred Pronouns</span>
+            <select id="communityPronounsInput">
+              <option value="">Select…</option>
+              <option value="she/her">She/Her</option>
+              <option value="he/him">He/Him</option>
+              <option value="they/them">They/Them</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Why I'm Here</span>
+            <input type="text" id="communityWhyHereInput" maxlength="120" placeholder="What brings you to Pure Macros?" />
+          </label>
+          <label class="field">
+            <span>Hobbies</span>
+            <input type="text" id="communityHobbiesInput" maxlength="120" placeholder="Running, cooking, hiking…" />
+          </label>
+          <label class="field">
+            <span>Fun Fact</span>
+            <input type="text" id="communityFunFactInput" maxlength="120" placeholder="Something people wouldn't guess about you" />
+          </label>
+          <label class="field">
+            <span>Bio</span>
+            <textarea id="communityBioInput" class="bio-textarea" rows="4" maxlength="500" placeholder="Tell the community about yourself…"></textarea>
+          </label>
+          <p class="form-error" id="communityConnectError"></p>
+          <button type="submit" class="btn-solid-blue community-connect-btn">Connect</button>
+        </form>
+      </section>
+
+      <!-- Site Navigation Overlay Drawer -->
+      <div class="site-nav-drawer hidden" id="community-site-nav">
+        <div class="site-nav-header">
+          <span class="site-nav-label">SITE NAVIGATION</span>
+          <button type="button" class="icon-btn site-nav-close" id="communitySiteNavCloseBtn" aria-label="Close">✕</button>
+        </div>
+        <nav class="site-nav-links">
+          <a href="#" class="site-nav-link" data-site-nav-link="categories">Categories</a>
+          <a href="#" class="site-nav-link" data-site-nav-link="recent-posts">Recent Posts</a>
+          <a href="#" class="site-nav-link" data-site-nav-link="groups">Groups</a>
+          <a href="#" class="site-nav-link" data-site-nav-link="invite-friends">Invite Friends</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+
   <!-- Community Forum Sub-View (full-screen, nested under the More tab) -->
   <div class="settings-view" id="communityView">
     <header class="settings-view-header">

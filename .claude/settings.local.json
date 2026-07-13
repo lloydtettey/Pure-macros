@@ -70,7 +70,8 @@
       "Bash(NODE_PATH=\"/c/Users/lloyd/calorie-tracker-app/node_modules\" node -e \"require.resolve\\('playwright'\\)\")",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,Path,StartTime\")",
       "Bash(cd \"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\")",
-      "Bash(echo)"
+      "Bash(echo)",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*server/server.js*'\\\\'' -and $_.CommandLine -like '\\\\''*3011*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')"
     ]
   }
 }

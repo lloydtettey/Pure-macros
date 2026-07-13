@@ -306,6 +306,13 @@ function defaultUserData() {
       location: '',
       // Profile Settings sub-view
       displayName: '',
+      // Community Connect onboarding sub-view
+      communityConnected: false,
+      communityPronouns: '',
+      communityWhyHere: '',
+      communityHobbies: '',
+      communityFunFact: '',
+      communityBio: '',
       currentWeightKg: null,
       customCalorieTargets: { rest: 2000, moderate: 2200, active: 2500 },
       // Dynamic Day Type Selector & Calorie Target Engine (Today dashboard capsule)
@@ -797,6 +804,12 @@ const SETTINGS_VALIDATORS = {
   bio: (v) => typeof v === 'string',
   location: (v) => typeof v === 'string',
   displayName: (v) => typeof v === 'string',
+  communityConnected: (v) => typeof v === 'boolean',
+  communityPronouns: (v) => typeof v === 'string',
+  communityWhyHere: (v) => typeof v === 'string',
+  communityHobbies: (v) => typeof v === 'string',
+  communityFunFact: (v) => typeof v === 'string',
+  communityBio: (v) => typeof v === 'string',
   weekStart: (v) => WEEK_START_OPTIONS.includes(v),
   customCalorieTargets: (v) =>
     v && typeof v === 'object' &&
@@ -829,7 +842,16 @@ const NOTIFICATION_KEYS = [
 ];
 
 // bio/location/displayName are free text — clamp length instead of rejecting.
-const SETTINGS_TEXT_LIMITS = { bio: 500, location: 120, displayName: 80 };
+const SETTINGS_TEXT_LIMITS = {
+  bio: 500,
+  location: 120,
+  displayName: 80,
+  communityPronouns: 40,
+  communityWhyHere: 120,
+  communityHobbies: 120,
+  communityFunFact: 120,
+  communityBio: 500
+};
 
 // GET /api/settings
 app.get('/api/settings', requireAuth, async (req, res) => {

@@ -5869,6 +5869,69 @@ async function openWeeklyReportView() {
 }
 weeklyReportBackBtn.addEventListener('click', () => closeSubView(weeklyReportView));
 
+// ---------- Community Connect Onboarding ----------
+// Shown once per account (gated by settings.communityConnected) before the
+// Community feed below, mirroring the app's existing More-tab sub-view pattern.
+const communitySubview = document.getElementById('community-subview');
+const communitySubviewBackBtn = document.getElementById('communitySubviewBackBtn');
+const communitySubviewDoneBtn = document.getElementById('communitySubviewDoneBtn');
+const communityHamburgerBtn = document.getElementById('communityHamburgerBtn');
+const communitySearchBtn = document.getElementById('communitySearchBtn');
+const communitySiteNav = document.getElementById('community-site-nav');
+const communitySiteNavCloseBtn = document.getElementById('communitySiteNavCloseBtn');
+const communityConnectForm = document.getElementById('communityConnectForm');
+const communityConnectError = document.getElementById('communityConnectError');
+const communityPronounsInput = document.getElementById('communityPronounsInput');
+const communityWhyHereInput = document.getElementById('communityWhyHereInput');
+const communityHobbiesInput = document.getElementById('communityHobbiesInput');
+const communityFunFactInput = document.getElementById('communityFunFactInput');
+const communityBioInput = document.getElementById('communityBioInput');
+
+function openCommunitySubview() {
+  openSubView(communitySubview);
+}
+communitySubviewBackBtn.addEventListener('click', () => closeSubView(communitySubview));
+
+communityHamburgerBtn.addEventListener('click', () => communitySiteNav.classList.remove('hidden'));
+communitySiteNavCloseBtn.addEventListener('click', () => communitySiteNav.classList.add('hidden'));
+communitySiteNav.addEventListener('click', (e) => {
+  const link = e.target.closest('.site-nav-link');
+  if (!link) return;
+  e.preventDefault();
+  communitySiteNav.classList.add('hidden');
+  showToast('Coming soon');
+});
+communitySearchBtn.addEventListener('click', () => showToast('Coming soon'));
+
+communityConnectForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  communityConnectError.textContent = '';
+  const payload = {
+    communityPronouns: communityPronounsInput.value,
+    communityWhyHere: communityWhyHereInput.value.trim(),
+    communityHobbies: communityHobbiesInput.value.trim(),
+    communityFunFact: communityFunFactInput.value.trim(),
+    communityBio: communityBioInput.value.trim(),
+    communityConnected: true
+  };
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save Community profile');
+    state.settings = data;
+    showToast('Connected to Pure Macros community');
+    closeSubView(communitySubview);
+    openCommunityView();
+  } catch (err) {
+    communityConnectError.textContent = err.message;
+  }
+});
+communitySubviewDoneBtn.addEventListener('click', () => communityConnectForm.requestSubmit());
+
 // ---------- Community Forum ----------
 const communityView = document.getElementById('communityView');
 const communityBackBtn = document.getElementById('communityBackBtn');
@@ -6622,7 +6685,7 @@ const MORE_MENU_ACTIONS = {
   'recipe-discovery': () => openDiscoveryView(),
   'apps-devices': () => openAppsDevicesView(),
   'weekly-report': () => openWeeklyReportView(),
-  community: () => openCommunityView(),
+  community: () => (state.settings?.communityConnected ? openCommunityView() : openCommunitySubview()),
   learn: () => openLearnView(),
   friends: () => openFriendsView(),
   messages: () => openMessagesView(),
