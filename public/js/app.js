@@ -5403,6 +5403,109 @@ routineSaveBtn.addEventListener('click', async () => {
   }
 });
 
+// ---------- Workout Routines: Explore / My Routines directory ----------
+const workoutRoutinesView = document.getElementById('workout-routines-view');
+const wrBackBtn = document.getElementById('wrBackBtn');
+const wrTabsEl = document.getElementById('wrTabs');
+const wrExplorePanel = document.getElementById('wrExplorePanel');
+const wrMyRoutinesPanel = document.getElementById('wrMyRoutinesPanel');
+const wrExploreListEl = document.getElementById('wrExploreList');
+const wrTrackRepsBtn = document.getElementById('wrTrackRepsBtn');
+
+// photo ids reused across categories that weren't given their own Unsplash shots
+const WORKOUT_CATEGORIES = [
+  { title: 'Stretch & Strength', desc: 'Loosen tight muscles and build a stable foundation with full-range mobility flows.', cards: [
+    { photo: '1544367567-0f2fcb009e0b', title: 'Morning Mobility Flow', duration: '12 min', equipment: 'No Equipment', desc: 'Wake up joints and prime your spine before the day gets moving.' },
+    { photo: '1571019613454-1cb2f99b2d8b', title: 'Deep Hip Opener Series', duration: '15 min', equipment: 'Mat', desc: 'Release tight hips from sitting all day with a slow, controlled sequence.' },
+    { photo: '1517838277536-f5f99be501cd', title: 'Foundational Strength Primer', duration: '20 min', equipment: 'Bodyweight', desc: 'Build baseline strength in the core, glutes, and shoulders before loading weight.' }
+  ]},
+  { title: 'Full-Body Burn', desc: 'High-output circuits that torch calories and work every major muscle group in one session.', cards: [
+    { photo: '1541534741688-6078c6bfb5c5', title: '20-Minute Metabolic Circuit', duration: '20 min', equipment: 'Bodyweight', desc: 'Non-stop compound moves designed to keep your heart rate elevated.' },
+    { photo: '1518310383802-640c2de311b2', title: 'Total Body Tabata', duration: '16 min', equipment: 'Timer', desc: 'Eight rounds of all-out effort with short recovery windows.' },
+    { photo: '1599447421416-3414500d18a5', title: 'Full-Body Finisher', duration: '10 min', equipment: 'Bodyweight', desc: 'A short, brutal finisher to close out any workout.' }
+  ]},
+  { title: 'Dumbbell Only', desc: 'Everything you need from just a single pair of dumbbells — perfect for home or travel.', cards: [
+    { photo: '1638536532686-d610adfc8e5c', title: 'Classic Dumbbell Strength', duration: '30 min', equipment: 'Dumbbells', desc: 'A balanced push-pull session covering every major muscle group.' }
+  ]},
+  { title: 'Recover Well', desc: 'Slow it down with recovery-focused sessions that reduce soreness and improve mobility.', cards: [
+    { photo: '1600880292203-757bb62b4baf', title: 'Foam Roll Reset', duration: '10 min', equipment: 'Foam Roller', desc: 'Release fascia and speed up recovery after a heavy training week.' },
+    { photo: '1552196563-55cd4e45efb3', title: 'Gentle Cooldown Stretch', duration: '12 min', equipment: 'Mat', desc: 'Bring your heart rate down and lengthen worked muscles.' },
+    { photo: '1506126613408-eca07ce68773', title: 'Active Recovery Walk & Stretch', duration: '25 min', equipment: 'No Equipment', desc: 'Low-intensity movement to flush out lactic acid on rest days.' }
+  ]},
+  { title: 'Everyday Stretches', desc: 'Short, no-equipment stretch breaks you can slot in anywhere — desk, gym floor, or bedroom.', cards: [
+    { photo: '1544367567-0f2fcb009e0b', title: '5-Minute Desk Break Stretch', duration: '5 min', equipment: 'No Equipment', desc: 'Undo hours of sitting with a quick standing stretch sequence.' },
+    { photo: '1571019613454-1cb2f99b2d8b', title: 'Full-Body Flexibility Routine', duration: '10 min', equipment: 'Mat', desc: 'A head-to-toe stretch to keep everyday stiffness away.' }
+  ]},
+  { title: 'HIIT Cardio Blasts', desc: 'Short, intense interval workouts built to spike your heart rate and burn calories fast.', cards: [
+    { photo: '1534438327276-14e5300c3a48', title: '10-Minute HIIT Sprint', duration: '10 min', equipment: 'Bodyweight', desc: 'Maximum intensity intervals for a fast, effective cardio hit.' },
+    { photo: '1599447421416-3414500d18a5', title: 'Cardio Blast Ladder', duration: '18 min', equipment: 'Bodyweight', desc: 'Climbing work-to-rest ratios that ramp up the challenge each round.' }
+  ]},
+  { title: 'Full Body Kettlebell', desc: 'Swing, press, and carry your way through dynamic kettlebell flows for strength and conditioning.', cards: [
+    { photo: '1583454110551-21f2fa2afe61', title: 'Kettlebell Swing & Carry Flow', duration: '25 min', equipment: 'Kettlebell', desc: 'Build posterior-chain power and grip strength in one flowing circuit.' }
+  ]},
+  { title: 'Yoga for Everyone', desc: 'Approachable yoga sequences that build flexibility, balance, and calm — no experience required.', cards: [
+    { photo: '1600880292203-757bb62b4baf', title: 'Beginner Flow', duration: '15 min', equipment: 'Mat', desc: 'A gentle introduction to foundational yoga poses and breathing.' },
+    { photo: '1506126613408-eca07ce68773', title: 'Balance & Breath Sequence', duration: '20 min', equipment: 'Mat', desc: 'Steady, flowing poses that build core stability and focus.' }
+  ]},
+  { title: 'Blog Favourites', desc: 'Reader-favorite routines pulled straight from our most-loved training articles.', cards: [
+    { photo: '1534438327276-14e5300c3a48', title: 'The 15-Minute Habit Builder', duration: '15 min', equipment: 'Bodyweight', desc: 'The routine readers say finally made working out stick.' },
+    { photo: '1541534741688-6078c6bfb5c5', title: 'Strength Basics Everyone Loves', duration: '22 min', equipment: 'Dumbbells', desc: 'Our most-shared beginner strength routine, still a community favorite.' }
+  ]},
+  { title: 'Simple Self Care', desc: 'Gentle, restorative sessions that put wellbeing first — perfect for low-energy days.', cards: [
+    { photo: '1545205597-3d9d02c29597', title: 'Slow Morning Reset', duration: '10 min', equipment: 'Mat', desc: 'Ease into the day with gentle movement and mindful breathing.' },
+    { photo: '1515377905703-c4788e51af15', title: 'Evening Wind-Down', duration: '12 min', equipment: 'No Equipment', desc: 'A calming sequence to release tension before bed.' }
+  ]},
+  { title: 'Fitness at Home', desc: 'No gym, no problem — full workouts built entirely around your living room.', cards: [
+    { photo: '1584735935682-2f2b69dff9d2', title: 'Living Room Full-Body Workout', duration: '20 min', equipment: 'Bodyweight', desc: 'Everything you need for a complete session without leaving home.' }
+  ]}
+];
+
+function renderWorkoutExplore() {
+  if (wrExploreListEl.childElementCount > 0) return;
+  wrExploreListEl.innerHTML = WORKOUT_CATEGORIES.map((cat) => `
+    <section class="wr-category">
+      <h2 class="wr-category-title">${escapeHtml(cat.title)}</h2>
+      <p class="wr-category-desc">${escapeHtml(cat.desc)}</p>
+      <div class="wr-carousel">
+        ${cat.cards.map((card) => `
+          <article class="wr-card">
+            <img class="wr-card-thumb" src="https://images.unsplash.com/photo-${card.photo}?auto=format&fit=crop&w=400&q=80" alt="${escapeHtml(card.title)}" loading="lazy" />
+            <span class="wr-card-meta">⏱ ${escapeHtml(card.duration)} | ${escapeHtml(card.equipment)}</span>
+            <h3 class="wr-card-title">${escapeHtml(card.title)}</h3>
+            <p class="wr-card-desc">${escapeHtml(card.desc)}</p>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `).join('');
+}
+
+// Panel swap runs inside requestAnimationFrame so the tab underline and the
+// card-list toggle land in the same paint — no stutter from two separate reflows.
+function switchWorkoutRoutinesTab(key) {
+  requestAnimationFrame(() => {
+    wrTabsEl.querySelectorAll('.log-subtab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === key));
+    wrExplorePanel.classList.toggle('hidden', key !== 'explore');
+    wrMyRoutinesPanel.classList.toggle('hidden', key !== 'my-routines');
+  });
+}
+wrTabsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.log-subtab-btn');
+  if (!btn) return;
+  switchWorkoutRoutinesTab(btn.dataset.tab);
+});
+
+function openWorkoutRoutinesView() {
+  renderWorkoutExplore();
+  switchWorkoutRoutinesTab('explore');
+  openSubView(workoutRoutinesView);
+}
+wrBackBtn.addEventListener('click', () => closeSubView(workoutRoutinesView));
+wrTrackRepsBtn.addEventListener('click', () => {
+  closeSubView(workoutRoutinesView);
+  openWorkoutsView();
+});
+
 // ---------- Weight & Measurements ----------
 const weightMeasurementsView = document.getElementById('weightMeasurementsView');
 const weightMeasurementsBackBtn = document.getElementById('weightMeasurementsBackBtn');
@@ -6928,7 +7031,7 @@ async function openMoreTab() {
 const MORE_MENU_ACTIONS = {
   profile: () => openProfileView(),
   goals: () => openGoalsView(),
-  workouts: () => openWorkoutsView(),
+  workouts: () => openWorkoutRoutinesView(),
   'weight-measurements': () => openWeightMeasurementsView(),
   fasting: () => openFastingView(),
   nutrition: () => openNutritionAnalyticsView(),

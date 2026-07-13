@@ -2280,6 +2280,62 @@
     </div>
   </div>
 
+  <!-- Workout Routines Explore/My Routines Directory (full-screen, nested under the More tab) -->
+  <div class="settings-view" id="workout-routines-view">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="wrBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Workout Routines</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="log-subtabs" id="wrTabs">
+        <button type="button" class="log-subtab-btn active" data-tab="explore">EXPLORE</button>
+        <button type="button" class="log-subtab-btn" data-tab="my-routines">MY ROUTINES</button>
+      </div>
+
+      <div class="wr-panel" id="wrExplorePanel" data-tab-panel="explore">
+        <div class="wr-category-list" id="wrExploreList"></div>
+      </div>
+
+      <div class="wr-panel hidden" id="wrMyRoutinesPanel" data-tab-panel="my-routines">
+        <section class="card wr-log-card">
+          <h3 class="routine-card-name">Core Plus</h3>
+          <ul class="routine-exercise-list">
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Hip/Spine Rolling</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Planks</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Goblet Squats</span></li>
+          </ul>
+          <div class="wr-log-meta"><span>25 lbs</span><span>20:00</span><span>285 kcal</span></div>
+        </section>
+
+        <section class="card wr-log-card">
+          <h3 class="routine-card-name">Lower Body Mobility</h3>
+          <ul class="routine-exercise-list">
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Calf/Glute Foam Rolls</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Plank Shoulder Taps</span></li>
+          </ul>
+          <div class="wr-log-meta"><span>15 lbs</span><span>18:00</span><span>165 kcal</span></div>
+        </section>
+
+        <section class="card wr-log-card">
+          <h3 class="routine-card-name">Kettlebell 30</h3>
+          <ul class="routine-exercise-list">
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Bridges</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Lunges</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Deadlifts</span></li>
+            <li class="routine-exercise-item"><span class="routine-exercise-item-name">Rows</span></li>
+          </ul>
+          <div class="wr-log-meta"><span>95 lbs</span><span>45:00</span><span>400 kcal</span></div>
+        </section>
+
+        <section class="card wr-cta-card">
+          <p class="wr-cta-text">Track Reps, Sets, and Weights</p>
+          <button type="button" class="btn-outline-blue" id="wrTrackRepsBtn">Get Started</button>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <!-- Weight & Measurements Sub-View (full-screen, nested under the More tab) -->
   <div class="settings-view" id="weightMeasurementsView">
     <header class="settings-view-header">
