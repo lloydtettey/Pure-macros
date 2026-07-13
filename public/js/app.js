@@ -477,6 +477,21 @@ async function authFetch(url, options = {}) {
   return res;
 }
 
+// Inline #app-splash (index.html head) is still on screen at this point —
+// it painted before style.css/app.js even started loading. Once we know
+// whether a cached session is valid or the login form needs to show, fade
+// it out and drop it from the DOM entirely so it can't intercept taps.
+const appSplashEl = document.getElementById('app-splash');
+function hideSplash() {
+  if (!appSplashEl || !appSplashEl.isConnected) return;
+  appSplashEl.classList.add('app-splash-hide');
+  appSplashEl.addEventListener('transitionend', () => appSplashEl.remove(), { once: true });
+}
+// Safety net — if some unexpected error keeps both the auth-resolved and
+// auth-failed paths below from ever running, don't leave the splash stuck
+// on screen forever.
+setTimeout(hideSplash, 4000);
+
 function handleSessionExpired() {
   clearToken();
   showAuthOverlay();
@@ -484,6 +499,7 @@ function handleSessionExpired() {
 }
 
 function showAuthOverlay() {
+  hideSplash();
   appRoot.classList.remove('app-visible');
   appRoot.classList.add('hidden');
   authOverlay.classList.remove('closing');
@@ -494,6 +510,7 @@ function showAuthOverlay() {
 }
 
 function revealApp() {
+  hideSplash();
   authOverlay.classList.add('closing');
   appRoot.classList.remove('hidden');
   requestAnimationFrame(() => {
@@ -864,6 +881,7 @@ function setUnitSystemPreference(preference) {
   requestAnimationFrame(() => {
     renderRecipeModalUnits();
     applyWorkoutWeightUnits();
+    renderWorkoutModalUnits();
   });
 }
 
@@ -2194,7 +2212,7 @@ function initApp() {
 
 (async function bootstrapAuth() {
   const token = getToken();
-  if (!token) return; // auth overlay is the default visible state
+  if (!token) { hideSplash(); return; } // auth overlay is the default visible state
   // Paint the cached username immediately so the profile header doesn't show
   // a "—" placeholder while /auth/me is in flight. This is display-only —
   // the token is still what's re-validated against the server below before
@@ -5535,62 +5553,187 @@ const wrExploreListEl = document.getElementById('wrExploreList');
 const wrTrackRepsBtn = document.getElementById('wrTrackRepsBtn');
 
 // photo ids reused across categories that weren't given their own Unsplash shots
+//
+// Open-source (Pexels-licensed, free for commercial use, no attribution
+// required) exercise loops, reused across categories the same way the
+// Unsplash photo ids above are — a handful of verified clips is enough to
+// cover all 11 Explore categories without a bespoke shoot per card.
+const WORKOUT_VIDEO = {
+  pushups: 'https://videos.pexels.com/video-files/6388436/6388436-uhd_2560_1440_25fps.mp4',
+  squats: 'https://videos.pexels.com/video-files/5319755/5319755-uhd_2560_1440_25fps.mp4',
+  stretchA: 'https://videos.pexels.com/video-files/4608975/4608975-hd_1920_1080_25fps.mp4',
+  jumpingJacks: 'https://videos.pexels.com/video-files/6326725/6326725-hd_1920_1080_25fps.mp4',
+  yoga: 'https://videos.pexels.com/video-files/3327752/3327752-hd_1920_1080_24fps.mp4',
+  mat: 'https://videos.pexels.com/video-files/6525485/6525485-hd_1920_1080_25fps.mp4',
+  stretchB: 'https://videos.pexels.com/video-files/7591716/7591716-uhd_1440_2560_25fps.mp4'
+};
+
 const WORKOUT_CATEGORIES = [
   { title: 'Stretch & Strength', desc: 'Loosen tight muscles and build a stable foundation with full-range mobility flows.', cards: [
-    { photo: '1544367567-0f2fcb009e0b', title: 'Morning Mobility Flow', duration: '12 min', equipment: 'No Equipment', desc: 'Wake up joints and prime your spine before the day gets moving.' },
-    { photo: '1571019613454-1cb2f99b2d8b', title: 'Deep Hip Opener Series', duration: '15 min', equipment: 'Mat', desc: 'Release tight hips from sitting all day with a slow, controlled sequence.' },
-    { photo: '1517838277536-f5f99be501cd', title: 'Foundational Strength Primer', duration: '20 min', equipment: 'Bodyweight', desc: 'Build baseline strength in the core, glutes, and shoulders before loading weight.' }
+    { photo: '1544367567-0f2fcb009e0b', title: 'Morning Mobility Flow', duration: '12 min', equipment: 'No Equipment', desc: 'Wake up joints and prime your spine before the day gets moving.', video: WORKOUT_VIDEO.stretchA, calories: 45, timeline: [
+      { time: 0, move: 'Cat-Cow Spinal Rolls', cue: 'Move slow through flexion and extension, breathing with each rep.' },
+      { time: 180, move: "World's Greatest Stretch", cue: 'Rotate through the thoracic spine, keep the front knee stacked over the ankle.' },
+      { time: 420, move: 'Standing Reach & Fold', cue: 'Hinge from the hips and let the arms hang heavy toward the floor.' },
+      { time: 600, move: 'Neck & Shoulder Rolls', cue: 'Finish by releasing tension through the neck and shoulders.' }
+    ]},
+    { photo: '1571019613454-1cb2f99b2d8b', title: 'Deep Hip Opener Series', duration: '15 min', equipment: 'Mat', desc: 'Release tight hips from sitting all day with a slow, controlled sequence.', video: WORKOUT_VIDEO.stretchB, calories: 50, timeline: [
+      { time: 0, move: '90/90 Hip Switches', cue: 'Keep both sit bones grounded as you rotate the knees side to side.' },
+      { time: 240, move: 'Pigeon Pose Hold', cue: 'Square the hips forward and breathe into the stretch for 60 seconds per side.' },
+      { time: 540, move: 'Deep Lunge with Rotation', cue: 'Sink the back knee low and reach the opposite arm toward the ceiling.' },
+      { time: 780, move: 'Seated Butterfly Fold', cue: 'Let gravity draw the chest forward — don’t force the knees down.' }
+    ]},
+    { photo: '1517838277536-f5f99be501cd', title: 'Foundational Strength Primer', duration: '20 min', equipment: 'Bodyweight', desc: 'Build baseline strength in the core, glutes, and shoulders before loading weight.', video: WORKOUT_VIDEO.squats, calories: 110, timeline: [
+      { time: 0, move: 'Glute Bridge x15', cue: 'Squeeze the glutes hard at the top and avoid arching the lower back.' },
+      { time: 300, move: 'Bird Dog x10/side', cue: 'Keep the hips level and extend the opposite arm and leg without rotating.' },
+      { time: 660, move: 'Wall Sit Hold', cue: 'Knees at 90°, back flat against the wall, breathe steadily.' },
+      { time: 1020, move: 'Incline Push-Up x12', cue: 'Hands on an elevated surface, lower the chest with elbows at 45°.' }
+    ]}
   ]},
   { title: 'Full-Body Burn', desc: 'High-output circuits that torch calories and work every major muscle group in one session.', cards: [
-    { photo: '1541534741688-6078c6bfb5c5', title: '20-Minute Metabolic Circuit', duration: '20 min', equipment: 'Bodyweight', desc: 'Non-stop compound moves designed to keep your heart rate elevated.' },
-    { photo: '1518310383802-640c2de311b2', title: 'Total Body Tabata', duration: '16 min', equipment: 'Timer', desc: 'Eight rounds of all-out effort with short recovery windows.' },
-    { photo: '1599447421416-3414500d18a5', title: 'Full-Body Finisher', duration: '10 min', equipment: 'Bodyweight', desc: 'A short, brutal finisher to close out any workout.' }
+    { photo: '1541534741688-6078c6bfb5c5', title: '20-Minute Metabolic Circuit', duration: '20 min', equipment: 'Bodyweight', desc: 'Non-stop compound moves designed to keep your heart rate elevated.', video: WORKOUT_VIDEO.jumpingJacks, calories: 220, timeline: [
+      { time: 0, move: 'Jumping Jacks x40', cue: 'Land soft on the balls of the feet and keep a steady rhythm.' },
+      { time: 300, move: 'Mountain Climbers x30', cue: 'Drive the knees to the chest fast without letting the hips pike up.' },
+      { time: 660, move: 'Burpees x12', cue: 'Chest to floor, explode up into the jump, control the landing.' },
+      { time: 1020, move: 'Plank Hold to Finish', cue: 'Brace the core and keep a straight line from head to heels.' }
+    ]},
+    { photo: '1518310383802-640c2de311b2', title: 'Total Body Tabata', duration: '16 min', equipment: 'Timer', desc: 'Eight rounds of all-out effort with short recovery windows.', video: WORKOUT_VIDEO.pushups, calories: 190, timeline: [
+      { time: 0, move: 'Round 1: Push-Ups', cue: '20s max effort, 10s rest — full range of motion on every rep.' },
+      { time: 240, move: 'Round 3: Squat Jumps', cue: 'Land soft and immediately load into the next rep.' },
+      { time: 540, move: 'Round 5: Plank Shoulder Taps', cue: 'Keep the hips still and minimize side-to-side rock.' },
+      { time: 840, move: 'Round 8: Sprint in Place', cue: 'Max cadence for the final round — empty the tank.' }
+    ]},
+    { photo: '1599447421416-3414500d18a5', title: 'Full-Body Finisher', duration: '10 min', equipment: 'Bodyweight', desc: 'A short, brutal finisher to close out any workout.', video: WORKOUT_VIDEO.squats, calories: 95, timeline: [
+      { time: 0, move: 'Squat to Press x15', cue: 'Drive through the heels and punch the arms overhead at the top.' },
+      { time: 180, move: 'Plank Jacks x20', cue: 'Keep the shoulders stacked over the wrists as the feet jump wide.' },
+      { time: 360, move: 'High Knees x30s', cue: 'Pump the arms and knees together at a fast, controlled pace.' },
+      { time: 480, move: 'Cool-Down Breathing', cue: 'Slow the heart rate with 5 deep breaths before you stop.' }
+    ]}
   ]},
   { title: 'Dumbbell Only', desc: 'Everything you need from just a single pair of dumbbells — perfect for home or travel.', cards: [
-    { photo: '1638536532686-d610adfc8e5c', title: 'Classic Dumbbell Strength', duration: '30 min', equipment: 'Dumbbells', desc: 'A balanced push-pull session covering every major muscle group.' }
+    { photo: '1638536532686-d610adfc8e5c', title: 'Classic Dumbbell Strength', duration: '30 min', equipment: 'Dumbbells', weightLbs: 20, desc: 'A balanced push-pull session covering every major muscle group.', video: WORKOUT_VIDEO.squats, calories: 240, timeline: [
+      { time: 0, move: 'Goblet Squat x12', cue: 'Hold the dumbbell at chest height and sit back into the heels.' },
+      { time: 480, move: 'Bent-Over Row x12/side', cue: 'Flat back, pull the elbow past the ribs, squeeze the shoulder blade.' },
+      { time: 960, move: 'Dumbbell Shoulder Press x10', cue: 'Press straight overhead and avoid flaring the ribs.' },
+      { time: 1560, move: 'Romanian Deadlift x12', cue: 'Soft knees, hinge the hips back, keep the dumbbells close to the shins.' }
+    ]}
   ]},
   { title: 'Recover Well', desc: 'Slow it down with recovery-focused sessions that reduce soreness and improve mobility.', cards: [
-    { photo: '1600880292203-757bb62b4baf', title: 'Foam Roll Reset', duration: '10 min', equipment: 'Foam Roller', desc: 'Release fascia and speed up recovery after a heavy training week.' },
-    { photo: '1552196563-55cd4e45efb3', title: 'Gentle Cooldown Stretch', duration: '12 min', equipment: 'Mat', desc: 'Bring your heart rate down and lengthen worked muscles.' },
-    { photo: '1506126613408-eca07ce68773', title: 'Active Recovery Walk & Stretch', duration: '25 min', equipment: 'No Equipment', desc: 'Low-intensity movement to flush out lactic acid on rest days.' }
+    { photo: '1600880292203-757bb62b4baf', title: 'Foam Roll Reset', duration: '10 min', equipment: 'Foam Roller', desc: 'Release fascia and speed up recovery after a heavy training week.', video: WORKOUT_VIDEO.stretchB, calories: 35, timeline: [
+      { time: 0, move: 'Quad Roll', cue: 'Slow, controlled passes — pause on tender spots for 20-30 seconds.' },
+      { time: 180, move: 'IT Band Roll', cue: 'Support bodyweight with the opposite leg to control the pressure.' },
+      { time: 360, move: 'Upper Back Roll', cue: 'Support the head with clasped hands, roll from mid-back to shoulders.' },
+      { time: 480, move: 'Calf Roll', cue: 'Cross one leg over the other to add pressure, roll heel to knee.' }
+    ]},
+    { photo: '1552196563-55cd4e45efb3', title: 'Gentle Cooldown Stretch', duration: '12 min', equipment: 'Mat', desc: 'Bring your heart rate down and lengthen worked muscles.', video: WORKOUT_VIDEO.stretchA, calories: 40, timeline: [
+      { time: 0, move: 'Standing Forward Fold', cue: 'Bend the knees generously and let the spine round completely.' },
+      { time: 240, move: 'Seated Spinal Twist', cue: 'Rotate from the ribcage, keep both sit bones grounded.' },
+      { time: 480, move: "Child's Pose Hold", cue: 'Reach the arms long and breathe into the lower back for 60 seconds.' },
+      { time: 600, move: 'Supine Hamstring Stretch', cue: 'Use a strap or your hands behind the thigh, keep the leg soft.' }
+    ]},
+    { photo: '1506126613408-eca07ce68773', title: 'Active Recovery Walk & Stretch', duration: '25 min', equipment: 'No Equipment', desc: 'Low-intensity movement to flush out lactic acid on rest days.', video: WORKOUT_VIDEO.mat, calories: 120, timeline: [
+      { time: 0, move: 'Easy Pace Walk', cue: 'Keep the effort conversational — this is recovery, not cardio.' },
+      { time: 600, move: 'Walking Lunges x10/side', cue: 'Control the descent and avoid letting the front knee cave in.' },
+      { time: 1200, move: 'Standing Calf Stretch', cue: 'Keep the back heel grounded and lean into the wall.' },
+      { time: 1440, move: 'Deep Breathing Cooldown', cue: 'Five slow breaths, in through the nose, out through the mouth.' }
+    ]}
   ]},
   { title: 'Everyday Stretches', desc: 'Short, no-equipment stretch breaks you can slot in anywhere — desk, gym floor, or bedroom.', cards: [
-    { photo: '1544367567-0f2fcb009e0b', title: '5-Minute Desk Break Stretch', duration: '5 min', equipment: 'No Equipment', desc: 'Undo hours of sitting with a quick standing stretch sequence.' },
-    { photo: '1571019613454-1cb2f99b2d8b', title: 'Full-Body Flexibility Routine', duration: '10 min', equipment: 'Mat', desc: 'A head-to-toe stretch to keep everyday stiffness away.' }
+    { photo: '1544367567-0f2fcb009e0b', title: '5-Minute Desk Break Stretch', duration: '5 min', equipment: 'No Equipment', desc: 'Undo hours of sitting with a quick standing stretch sequence.', video: WORKOUT_VIDEO.stretchA, calories: 18, timeline: [
+      { time: 0, move: 'Seated Spinal Twist', cue: 'Rotate from your seat and keep the hips square to the chair.' },
+      { time: 60, move: 'Neck Side Stretch', cue: 'Ear to shoulder, gentle pull with the hand — no forcing.' },
+      { time: 180, move: 'Doorway Chest Stretch', cue: 'Elbow at shoulder height, lean forward until you feel the stretch.' },
+      { time: 240, move: 'Standing Forward Reach', cue: 'Interlace the fingers, reach forward and round the upper back.' }
+    ]},
+    { photo: '1571019613454-1cb2f99b2d8b', title: 'Full-Body Flexibility Routine', duration: '10 min', equipment: 'Mat', desc: 'A head-to-toe stretch to keep everyday stiffness away.', video: WORKOUT_VIDEO.stretchB, calories: 35, timeline: [
+      { time: 0, move: 'Cat-Cow Flow', cue: 'Move with the breath — one full cycle per inhale/exhale.' },
+      { time: 180, move: 'Downward Dog Hold', cue: 'Press the floor away and pedal the heels to loosen the calves.' },
+      { time: 360, move: 'Lizard Lunge Stretch', cue: 'Lower the back knee for a lighter variation if needed.' },
+      { time: 480, move: 'Supine Twist', cue: 'Let both knees fall to one side, keep the shoulders flat on the mat.' }
+    ]}
   ]},
   { title: 'HIIT Cardio Blasts', desc: 'Short, intense interval workouts built to spike your heart rate and burn calories fast.', cards: [
-    { photo: '1534438327276-14e5300c3a48', title: '10-Minute HIIT Sprint', duration: '10 min', equipment: 'Bodyweight', desc: 'Maximum intensity intervals for a fast, effective cardio hit.' },
-    { photo: '1599447421416-3414500d18a5', title: 'Cardio Blast Ladder', duration: '18 min', equipment: 'Bodyweight', desc: 'Climbing work-to-rest ratios that ramp up the challenge each round.' }
+    { photo: '1534438327276-14e5300c3a48', title: '10-Minute HIIT Sprint', duration: '10 min', equipment: 'Bodyweight', desc: 'Maximum intensity intervals for a fast, effective cardio hit.', video: WORKOUT_VIDEO.jumpingJacks, calories: 130, timeline: [
+      { time: 0, move: 'Jumping Jacks (40s)', cue: 'Max pace, land softly, keep the arms fully extended overhead.' },
+      { time: 120, move: 'Squat Jumps (40s)', cue: 'Explode up and absorb the landing softly through the knees.' },
+      { time: 300, move: 'Mountain Climbers (40s)', cue: 'Fast feet, keep the hips low and the core braced.' },
+      { time: 480, move: 'Sprint in Place', cue: 'Final all-out push — empty the tank before the cooldown.' }
+    ]},
+    { photo: '1599447421416-3414500d18a5', title: 'Cardio Blast Ladder', duration: '18 min', equipment: 'Bodyweight', desc: 'Climbing work-to-rest ratios that ramp up the challenge each round.', video: WORKOUT_VIDEO.pushups, calories: 215, timeline: [
+      { time: 0, move: 'Round 1: 20s Work / 40s Rest', cue: 'Ease in — focus on clean form over speed.' },
+      { time: 360, move: 'Round 4: 30s Work / 30s Rest', cue: 'Ratio tightens — hold pace through the full interval.' },
+      { time: 720, move: 'Round 7: 40s Work / 20s Rest', cue: 'Push through the fatigue, keep the breathing rhythmic.' },
+      { time: 960, move: 'Round 10: 50s Work / 10s Rest', cue: 'Final ladder rung — leave nothing in reserve.' }
+    ]}
   ]},
   { title: 'Full Body Kettlebell', desc: 'Swing, press, and carry your way through dynamic kettlebell flows for strength and conditioning.', cards: [
-    { photo: '1583454110551-21f2fa2afe61', title: 'Kettlebell Swing & Carry Flow', duration: '25 min', equipment: 'Kettlebell', desc: 'Build posterior-chain power and grip strength in one flowing circuit.' }
+    { photo: '1583454110551-21f2fa2afe61', title: 'Kettlebell Swing & Carry Flow', duration: '25 min', equipment: 'Kettlebell', desc: 'Build posterior-chain power and grip strength in one flowing circuit.', video: WORKOUT_VIDEO.squats, calories: 260, timeline: [
+      { time: 0, move: 'Two-Hand Kettlebell Swing x15', cue: 'Hinge from the hips and snap forward with the glutes, not the arms.' },
+      { time: 480, move: 'Goblet Carry (40m)', cue: 'Hold tight to the chest and brace the core with every step.' },
+      { time: 960, move: 'Single-Arm Swing x10/side', cue: 'Let the bell float weightless at the top, control the descent.' },
+      { time: 1320, move: "Farmer's Carry (40m)", cue: 'Shoulders back, walk tall, grip the handle hard.' }
+    ]}
   ]},
   { title: 'Yoga for Everyone', desc: 'Approachable yoga sequences that build flexibility, balance, and calm — no experience required.', cards: [
-    { photo: '1600880292203-757bb62b4baf', title: 'Beginner Flow', duration: '15 min', equipment: 'Mat', desc: 'A gentle introduction to foundational yoga poses and breathing.' },
-    { photo: '1506126613408-eca07ce68773', title: 'Balance & Breath Sequence', duration: '20 min', equipment: 'Mat', desc: 'Steady, flowing poses that build core stability and focus.' }
+    { photo: '1600880292203-757bb62b4baf', title: 'Beginner Flow', duration: '15 min', equipment: 'Mat', desc: 'A gentle introduction to foundational yoga poses and breathing.', video: WORKOUT_VIDEO.yoga, calories: 55, timeline: [
+      { time: 0, move: 'Mountain Pose Breathing', cue: 'Root through all four corners of the feet and lengthen the spine.' },
+      { time: 240, move: 'Sun Salutation A', cue: 'Move one breath per pose, keep the flow unhurried.' },
+      { time: 540, move: 'Warrior II Hold', cue: 'Front knee tracks over the ankle, arms reach actively long.' },
+      { time: 780, move: 'Seated Meditation', cue: 'Close the eyes and settle the breath before you finish.' }
+    ]},
+    { photo: '1506126613408-eca07ce68773', title: 'Balance & Breath Sequence', duration: '20 min', equipment: 'Mat', desc: 'Steady, flowing poses that build core stability and focus.', video: WORKOUT_VIDEO.yoga, calories: 70, timeline: [
+      { time: 0, move: 'Tree Pose Hold', cue: 'Press the foot into the standing leg and fix your gaze on one point.' },
+      { time: 360, move: 'Half Moon Pose', cue: 'Stack the hips, extend through both the fingertips and the lifted heel.' },
+      { time: 780, move: 'Crow Pose Prep', cue: 'Shift the weight forward slowly, knees braced on the triceps.' },
+      { time: 1080, move: 'Legs-Up-The-Wall', cue: 'Relax completely and let gravity drain the tension from the legs.' }
+    ]}
   ]},
   { title: 'Blog Favourites', desc: 'Reader-favorite routines pulled straight from our most-loved training articles.', cards: [
-    { photo: '1534438327276-14e5300c3a48', title: 'The 15-Minute Habit Builder', duration: '15 min', equipment: 'Bodyweight', desc: 'The routine readers say finally made working out stick.' },
-    { photo: '1541534741688-6078c6bfb5c5', title: 'Strength Basics Everyone Loves', duration: '22 min', equipment: 'Dumbbells', desc: 'Our most-shared beginner strength routine, still a community favorite.' }
+    { photo: '1534438327276-14e5300c3a48', title: 'The 15-Minute Habit Builder', duration: '15 min', equipment: 'Bodyweight', desc: 'The routine readers say finally made working out stick.', video: WORKOUT_VIDEO.mat, calories: 95, timeline: [
+      { time: 0, move: 'Bodyweight Squat x15', cue: 'Sit back like into a chair, knees tracking over the toes.' },
+      { time: 240, move: 'Push-Up x10', cue: 'Full range of motion, chest to floor, elbows at 45°.' },
+      { time: 540, move: 'Plank Hold (30s)', cue: 'Straight line from head to heels, brace the core.' },
+      { time: 720, move: 'Glute Bridge x15', cue: 'Squeeze at the top and avoid overarching the back.' }
+    ]},
+    { photo: '1541534741688-6078c6bfb5c5', title: 'Strength Basics Everyone Loves', duration: '22 min', equipment: 'Dumbbells', weightLbs: 15, desc: 'Our most-shared beginner strength routine, still a community favorite.', video: WORKOUT_VIDEO.squats, calories: 180, timeline: [
+      { time: 0, move: 'Dumbbell Squat x12', cue: 'Dumbbells at your sides, chest tall through the full squat.' },
+      { time: 420, move: 'Dumbbell Row x12/side', cue: 'Flat back, pull the elbow tight to the ribs.' },
+      { time: 840, move: 'Dumbbell Bicep Curl x12', cue: 'Elbows pinned to the sides — no swinging the weight.' },
+      { time: 1140, move: 'Overhead Triceps Extension x12', cue: 'One dumbbell, elbows close to the ears, control the descent.' }
+    ]}
   ]},
   { title: 'Simple Self Care', desc: 'Gentle, restorative sessions that put wellbeing first — perfect for low-energy days.', cards: [
-    { photo: '1545205597-3d9d02c29597', title: 'Slow Morning Reset', duration: '10 min', equipment: 'Mat', desc: 'Ease into the day with gentle movement and mindful breathing.' },
-    { photo: '1515377905703-c4788e51af15', title: 'Evening Wind-Down', duration: '12 min', equipment: 'No Equipment', desc: 'A calming sequence to release tension before bed.' }
+    { photo: '1545205597-3d9d02c29597', title: 'Slow Morning Reset', duration: '10 min', equipment: 'Mat', desc: 'Ease into the day with gentle movement and mindful breathing.', video: WORKOUT_VIDEO.stretchB, calories: 30, timeline: [
+      { time: 0, move: 'Lying Full-Body Stretch', cue: 'Reach the fingertips and toes in opposite directions.' },
+      { time: 180, move: 'Gentle Spinal Twist', cue: 'Let both knees fall to one side, breathe into the ribs.' },
+      { time: 360, move: 'Seated Neck Rolls', cue: 'Slow, wide circles — reverse direction halfway through.' },
+      { time: 480, move: 'Gratitude Breathing', cue: 'Three slow breaths, setting an intention for the day.' }
+    ]},
+    { photo: '1515377905703-c4788e51af15', title: 'Evening Wind-Down', duration: '12 min', equipment: 'No Equipment', desc: 'A calming sequence to release tension before bed.', video: WORKOUT_VIDEO.stretchA, calories: 32, timeline: [
+      { time: 0, move: 'Standing Forward Fold', cue: 'Let the head hang heavy, keep the knees soft.' },
+      { time: 240, move: 'Legs-Up-The-Wall', cue: 'Rest the arms open and breathe low into the belly.' },
+      { time: 480, move: "Child's Pose Hold", cue: 'Sink the hips to the heels, arms relaxed long overhead.' },
+      { time: 600, move: 'Body Scan Breathing', cue: 'Move attention slowly head to toe, releasing tension.' }
+    ]}
   ]},
   { title: 'Fitness at Home', desc: 'No gym, no problem — full workouts built entirely around your living room.', cards: [
-    { photo: '1584735935682-2f2b69dff9d2', title: 'Living Room Full-Body Workout', duration: '20 min', equipment: 'Bodyweight', desc: 'Everything you need for a complete session without leaving home.' }
+    { photo: '1584735935682-2f2b69dff9d2', title: 'Living Room Full-Body Workout', duration: '20 min', equipment: 'Bodyweight', desc: 'Everything you need for a complete session without leaving home.', video: WORKOUT_VIDEO.pushups, calories: 175, timeline: [
+      { time: 0, move: 'Bodyweight Squat x15', cue: 'Use a chair behind you for a depth reference if needed.' },
+      { time: 360, move: 'Push-Up x12', cue: 'Modify on the knees if needed, keep the hips in line.' },
+      { time: 720, move: 'Reverse Lunge x10/side', cue: 'Step back softly, keep the front shin vertical.' },
+      { time: 1020, move: 'Plank Hold (45s)', cue: 'Brace the core and keep breathing steady throughout.' }
+    ]}
   ]}
 ];
 
 function renderWorkoutExplore() {
   if (wrExploreListEl.childElementCount > 0) return;
-  wrExploreListEl.innerHTML = WORKOUT_CATEGORIES.map((cat) => `
+  wrExploreListEl.innerHTML = WORKOUT_CATEGORIES.map((cat, catIdx) => `
     <section class="wr-category">
       <h2 class="wr-category-title">${escapeHtml(cat.title)}</h2>
       <p class="wr-category-desc">${escapeHtml(cat.desc)}</p>
       <div class="wr-carousel">
-        ${cat.cards.map((card) => `
-          <article class="wr-card">
+        ${cat.cards.map((card, cardIdx) => `
+          <article class="wr-card" data-cat-idx="${catIdx}" data-card-idx="${cardIdx}" tabindex="0" role="button" aria-label="Open ${escapeHtml(card.title)} details">
             <img class="wr-card-thumb" src="https://images.unsplash.com/photo-${card.photo}?auto=format&fit=crop&w=400&q=80" alt="${escapeHtml(card.title)}" loading="lazy" />
             <span class="wr-card-meta">⏱ ${escapeHtml(card.duration)} | ${escapeHtml(card.equipment)}</span>
             <h3 class="wr-card-title">${escapeHtml(card.title)}</h3>
@@ -5601,6 +5744,97 @@ function renderWorkoutExplore() {
     </section>
   `).join('');
 }
+
+// ---------- Workout Video Details Modal (sliding sheet) ----------
+const workoutModalEl = document.getElementById('workout-detail-modal');
+const workoutModalBackdropEl = document.getElementById('workoutModalBackdrop');
+const workoutModalSheetEl = document.getElementById('workoutModalSheet');
+const workoutModalVideoEl = document.getElementById('workoutModalVideo');
+const workoutModalCloseBtn = document.getElementById('workoutModalCloseBtn');
+const workoutModalTitleEl = document.getElementById('workoutModalTitle');
+const workoutModalDurationEl = document.getElementById('workoutModalDuration');
+const workoutModalEquipmentEl = document.getElementById('workoutModalEquipment');
+const workoutModalCaloriesEl = document.getElementById('workoutModalCalories');
+const workoutModalWeightEl = document.getElementById('workoutModalWeight');
+const workoutModalTimelineEl = document.getElementById('workoutModalTimeline');
+
+// Tracks whichever card is currently open so the Unit System toggle can
+// re-render the weight badge in place without having to reopen the sheet —
+// same pattern as currentRecipeModalRecipe/renderRecipeModalUnits() above.
+let currentWorkoutModalCard = null;
+
+function renderWorkoutModalUnits() {
+  if (!currentWorkoutModalCard || !currentWorkoutModalCard.weightLbs) return;
+  const lbs = currentWorkoutModalCard.weightLbs;
+  workoutModalWeightEl.textContent = userUnitPreference === 'metric'
+    ? `⚖ ${Math.round(lbsToKg(lbs))} kg`
+    : `⚖ ${lbs} lbs`;
+}
+
+function openWorkoutModal(card) {
+  currentWorkoutModalCard = card;
+  workoutModalVideoEl.src = card.video || '';
+  workoutModalTitleEl.textContent = card.title;
+  workoutModalDurationEl.textContent = `⏱ ${card.duration}`;
+  workoutModalEquipmentEl.textContent = `🏋 ${card.equipment}`;
+  workoutModalCaloriesEl.textContent = `🔥 ${card.calories} kcal`;
+  workoutModalWeightEl.classList.toggle('hidden', !card.weightLbs);
+  renderWorkoutModalUnits();
+  workoutModalTimelineEl.innerHTML = (card.timeline || []).map((step) => `
+    <li>
+      <span class="workout-modal-timeline-time">${step.time}s</span>
+      <span class="workout-modal-timeline-copy">
+        <span class="workout-modal-timeline-move">${escapeHtml(step.move)}</span>
+        <span class="workout-modal-timeline-cue">${escapeHtml(step.cue)}</span>
+      </span>
+    </li>
+  `).join('');
+  workoutModalEl.classList.remove('hidden');
+  workoutModalEl.setAttribute('aria-hidden', 'false');
+  workoutModalVideoEl.play().catch(() => {
+    // Autoplay can be blocked before any user gesture on some browsers —
+    // the video still shows its poster frame and the sheet still opens fine.
+  });
+  // Force a reflow before adding .open so the translate3d transition plays
+  // from its 100% starting position instead of jumping straight to 0.
+  void workoutModalSheetEl.offsetHeight;
+  requestAnimationFrame(() => workoutModalEl.classList.add('open'));
+}
+
+function closeWorkoutModal() {
+  if (workoutModalEl.classList.contains('hidden')) return;
+  workoutModalEl.classList.remove('open');
+  workoutModalEl.setAttribute('aria-hidden', 'true');
+  const onEnd = (e) => {
+    if (e.target !== workoutModalSheetEl || e.propertyName !== 'transform') return;
+    workoutModalSheetEl.removeEventListener('transitionend', onEnd);
+    workoutModalEl.classList.add('hidden');
+    workoutModalVideoEl.pause();
+    workoutModalVideoEl.removeAttribute('src');
+    workoutModalVideoEl.load();
+    currentWorkoutModalCard = null;
+  };
+  workoutModalSheetEl.addEventListener('transitionend', onEnd);
+}
+
+wrExploreListEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.wr-card');
+  if (!card) return;
+  const cat = WORKOUT_CATEGORIES[Number(card.dataset.catIdx)];
+  const item = cat && cat.cards[Number(card.dataset.cardIdx)];
+  if (item) openWorkoutModal(item);
+});
+wrExploreListEl.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.wr-card');
+  if (!card) return;
+  e.preventDefault();
+  const cat = WORKOUT_CATEGORIES[Number(card.dataset.catIdx)];
+  const item = cat && cat.cards[Number(card.dataset.cardIdx)];
+  if (item) openWorkoutModal(item);
+});
+workoutModalCloseBtn.addEventListener('click', closeWorkoutModal);
+workoutModalBackdropEl.addEventListener('click', closeWorkoutModal);
 
 // Panel swap runs inside requestAnimationFrame so the tab underline and the
 // card-list toggle land in the same paint — no stutter from two separate reflows.

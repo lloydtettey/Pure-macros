@@ -2,10 +2,57 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- Inline lightning splash — this is the very first thing the browser can
+     paint, before css/style.css or app.js have even started downloading, so
+     there is never a blank white flash while the real app boots. -->
+<style id="app-splash-style">
+  html, body { background: #05060a; }
+  #app-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #12141c 0%, #05060a 68%, #020203 100%);
+    transition: opacity 0.5s ease;
+  }
+  #app-splash.app-splash-hide { opacity: 0; pointer-events: none; }
+  #app-splash .app-splash-mark {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+    letter-spacing: 0.16em;
+    color: #f4f6fb;
+    animation: app-splash-pulse 1.7s ease-in-out infinite;
+  }
+  #app-splash .app-splash-bolt {
+    font-size: 1.25em;
+    line-height: 1;
+    color: #baff29;
+    filter: drop-shadow(0 0 10px rgba(186, 255, 41, 0.55));
+    animation: app-splash-bolt-pulse 1.7s ease-in-out infinite;
+  }
+  @keyframes app-splash-pulse {
+    0%, 100% { opacity: 0.82; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.045); }
+  }
+  @keyframes app-splash-bolt-pulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(186, 255, 41, 0.35)); }
+    50% { filter: drop-shadow(0 0 20px rgba(186, 255, 41, 0.95)); }
+  }
+</style>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" id="themeColorMeta" content="#000000" />
 <title>PURE MACROS — Performance Nutrition Dashboard</title>
-<link rel="stylesheet" href="css/style.css" />
+<!-- Loaded non-blocking (preload + swap to stylesheet on load) so the main
+     stylesheet fetch can't hold up first paint; the splash above covers the
+     screen the whole time so there's nothing to flash unstyled underneath. -->
+<link rel="preload" href="css/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="css/style.css" /></noscript>
 <link rel="manifest" href="manifest.json" />
 <script>
   // Runs before the auth overlay below is parsed/painted, so a returning
@@ -22,6 +69,7 @@
 </script>
 </head>
 <body>
+  <div id="app-splash"><div class="app-splash-mark"><span class="app-splash-bolt">⚡</span>PURE MACROS</div></div>
   <!-- Auth Gate -->
   <div class="auth-overlay" id="authOverlay">
     <div class="auth-panel">
@@ -3027,6 +3075,32 @@
         <section class="recipe-modal-section">
           <h3 class="recipe-modal-section-title">Instructions</h3>
           <ol class="recipe-modal-instructions" id="recipeModalInstructions"></ol>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WORKOUT VIDEO DETAILS MODAL (sliding sheet) ============ -->
+  <div class="workout-modal hidden" id="workout-detail-modal" aria-hidden="true">
+    <div class="workout-modal-backdrop" id="workoutModalBackdrop"></div>
+    <div class="workout-modal-sheet" id="workoutModalSheet">
+      <div class="workout-modal-media">
+        <video class="workout-modal-video" id="workoutModalVideo" autoplay loop muted playsinline></video>
+        <div class="workout-modal-media-vignette" aria-hidden="true"></div>
+        <div class="workout-modal-drag-handle" aria-hidden="true"></div>
+        <button type="button" class="workout-modal-close" id="workoutModalCloseBtn" aria-label="Close workout details">✕</button>
+      </div>
+      <div class="workout-modal-body">
+        <h2 class="workout-modal-title" id="workoutModalTitle">Exercise</h2>
+        <div class="workout-modal-badges">
+          <span class="workout-modal-badge" id="workoutModalDuration">⏱ 0 min</span>
+          <span class="workout-modal-badge" id="workoutModalEquipment">🏋 Equipment</span>
+          <span class="workout-modal-badge" id="workoutModalCalories">🔥 0 kcal</span>
+          <span class="workout-modal-badge hidden" id="workoutModalWeight">⚖ 0 lbs</span>
+        </div>
+        <section class="workout-modal-section">
+          <h3 class="workout-modal-section-title">Exercise Timeline</h3>
+          <ul class="workout-modal-timeline" id="workoutModalTimeline"></ul>
         </section>
       </div>
     </div>

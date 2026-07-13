@@ -3477,6 +3477,138 @@ html.has-session .auth-overlay {
   font-weight: 800;
 }
 
+/* ---------- Workout Video Details Modal (sliding sheet) ----------
+   Same translate3d slide pattern as the recipe modal, forced onto the GPU
+   compositor via will-change so the sheet and its looping <video> never
+   jank against touch/scroll input while dragging or animating in/out. */
+.workout-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 262;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.workout-modal.hidden { display: none; }
+
+.workout-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.workout-modal.open .workout-modal-backdrop { opacity: 1; }
+
+.workout-modal-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--card-bg-raised);
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--shadow-card-hover);
+  will-change: transform, opacity;
+  transform: translate3d(0, 100%, 0);
+  opacity: 0;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+}
+.workout-modal.open .workout-modal-sheet {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.workout-modal-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+  background: #000000;
+}
+.workout-modal-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.workout-modal-media-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.1) 65%, var(--card-bg-raised) 100%);
+}
+.workout-modal-drag-handle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+}
+.workout-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.workout-modal-body { padding: 18px 20px 28px; }
+.workout-modal-title { margin: 0 0 12px; font-size: 22px; font-weight: 800; color: var(--text-1); }
+.workout-modal-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.workout-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-1);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+.workout-modal-badge.hidden { display: none; }
+.workout-modal-section-title { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-1); }
+.workout-modal-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.workout-modal-timeline li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+.workout-modal-timeline-time {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  min-width: 40px;
+}
+.workout-modal-timeline-copy { display: flex; flex-direction: column; gap: 2px; }
+.workout-modal-timeline-move { font-size: 13.5px; font-weight: 700; color: var(--text-1); }
+.workout-modal-timeline-cue { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+
 /* ============================================================
    Meal Planner 9-Step Wizard — theme-aware surfaces
    The wizard used to redefine the shared custom properties on this
@@ -4701,6 +4833,7 @@ html.has-session .auth-overlay {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  cursor: pointer;
 }
 .wr-card-thumb { width: 100%; height: 110px; border-radius: 14px; object-fit: cover; display: block; }
 .wr-card-meta { font-size: 10.5px; font-weight: 600; color: var(--text-3); }
