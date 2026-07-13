@@ -3273,7 +3273,10 @@ html.has-session .auth-overlay {
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
 }
+.plan-recipe-card:active { transform: scale(0.98); }
 .plan-recipe-card-media { flex-shrink: 0; }
 .plan-recipe-thumb {
   width: 88px;
@@ -3324,6 +3327,155 @@ html.has-session .auth-overlay {
 .plan-macro-pill.protein .plan-macro-pill-value { color: var(--neon-green); text-shadow: 0 0 8px rgba(57, 255, 20, 0.5); }
 .plan-macro-pill.carbs .plan-macro-pill-value { color: var(--neon-violet); text-shadow: 0 0 8px rgba(157, 59, 255, 0.5); }
 .plan-macro-pill.fat .plan-macro-pill-value { color: var(--neon-pink); text-shadow: 0 0 8px rgba(255, 46, 159, 0.5); }
+
+/* ---------- Recipe Details Modal (sliding sheet) ----------
+   Slides up from the base of the phone-frame viewport using only
+   transform/opacity (translate3d) so the animation stays on the GPU
+   compositor and doesn't jank on mobile scroll. */
+.recipe-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.recipe-modal.hidden { display: none; }
+
+.recipe-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.recipe-modal.open .recipe-modal-backdrop { opacity: 1; }
+
+.recipe-modal-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--card-bg-raised);
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--shadow-card-hover);
+  will-change: transform, opacity;
+  transform: translate3d(0, 100%, 0);
+  opacity: 0;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+}
+.recipe-modal.open .recipe-modal-sheet {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.recipe-modal-banner {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+  background: var(--input-bg);
+}
+.recipe-modal-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.recipe-modal-banner-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0.1) 62%, var(--card-bg-raised) 100%);
+}
+.recipe-modal-drag-handle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+}
+.recipe-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.recipe-modal-body { padding: 18px 20px 28px; }
+.recipe-modal-title { margin: 0 0 10px; font-size: 22px; font-weight: 800; color: var(--text-1); }
+.recipe-modal-kcal-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #001318;
+  background: var(--neon-cyan);
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+  margin-bottom: 14px;
+}
+.recipe-modal-macros { display: flex; gap: 10px; margin-bottom: 22px; }
+.recipe-modal-section { margin-bottom: 22px; }
+.recipe-modal-section:last-child { margin-bottom: 0; }
+.recipe-modal-section-title { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-1); }
+.recipe-modal-ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recipe-modal-ingredients li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-2);
+  padding: 9px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+}
+.recipe-modal-ingredients li::before {
+  content: '•';
+  color: var(--neon-cyan);
+  font-weight: 800;
+}
+.recipe-modal-instructions {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.recipe-modal-instructions li {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+  padding-left: 4px;
+}
+.recipe-modal-instructions li::marker {
+  color: var(--neon-cyan);
+  font-weight: 800;
+}
 
 /* ============================================================
    Meal Planner 9-Step Wizard — theme-aware surfaces

@@ -4768,14 +4768,176 @@ planRetakeQuizBtn.addEventListener('click', openPlanWizard);
 
 // Sample high-protein recipes shown in the hub once the quiz is complete —
 // carbs/protein/fat are rendered as high-contrast pills per the spec.
+// Ingredient lines containing {{veggie}}/{{fruit}} and name templates
+// containing the same tokens are resolved per-user in buildPlanRecipes()
+// from their onboarding quiz veggie/fruit picks.
 const PLAN_SAMPLE_RECIPES = [
-  { name: 'Grilled Chicken & Quinoa Bowl', kcal: 420, protein: 38, carbs: 34, fat: 12, img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80' },
-  { name: 'Herb-Crusted Salmon with Asparagus', kcal: 390, protein: 34, carbs: 10, fat: 22, img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80' },
-  { name: 'Turkey & Sweet Potato Skillet', kcal: 410, protein: 36, carbs: 40, fat: 10, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80' },
-  { name: 'High-Protein Beef Stir-Fry', kcal: 460, protein: 42, carbs: 30, fat: 16, img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80' },
-  { name: 'Cottage Cheese & Egg White Scramble', kcal: 320, protein: 40, carbs: 8, fat: 10, img: 'https://images.unsplash.com/photo-1687630433865-f86f07be989a?auto=format&fit=crop&w=800&q=80' },
-  { name: 'Greek Yogurt Protein Parfait', kcal: 300, protein: 30, carbs: 28, fat: 6 }
+  {
+    id: 'grilled-chicken-quinoa-bowl',
+    name: 'Grilled Chicken & Quinoa Bowl',
+    kcal: 420, protein: 38, carbs: 34, fat: 12,
+    img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80',
+    ingredients: [
+      '6 oz grilled chicken breast, sliced',
+      '3/4 cup cooked quinoa',
+      '1/2 cup cherry tomatoes, halved',
+      '1/4 cup cucumber, diced',
+      '2 tbsp crumbled feta cheese',
+      '1 tbsp olive oil & lemon dressing'
+    ],
+    instructions: [
+      'Season the chicken breast with salt, pepper, and a pinch of paprika.',
+      'Grill over medium-high heat for 6-7 minutes per side, until it reaches 165°F internally.',
+      'Rinse the quinoa, then simmer in a 2:1 water ratio for 15 minutes and fluff with a fork.',
+      'Let the chicken rest 5 minutes, then slice and arrange over the quinoa.',
+      'Top with cherry tomatoes, cucumber, and feta.',
+      'Drizzle with the olive oil and lemon dressing just before serving.'
+    ]
+  },
+  {
+    id: 'herb-crusted-salmon-asparagus',
+    name: 'Herb-Crusted Salmon with Asparagus',
+    kcal: 390, protein: 34, carbs: 10, fat: 22,
+    img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80',
+    ingredients: [
+      '6 oz salmon fillet',
+      '1 tbsp fresh herbs (dill, parsley), chopped',
+      '1 tsp garlic, minced',
+      '1 bunch asparagus, trimmed',
+      '1 tbsp olive oil',
+      '1/2 lemon, sliced'
+    ],
+    instructions: [
+      'Preheat the oven to 400°F (200°C).',
+      'Pat the salmon dry and press the chopped herbs and garlic onto the top.',
+      'Toss the asparagus with olive oil, salt, and pepper on a lined baking sheet.',
+      'Place the salmon on the same sheet and top with lemon slices.',
+      'Roast for 12-14 minutes, until the salmon flakes easily with a fork.',
+      'Serve the salmon over the roasted asparagus.'
+    ]
+  },
+  {
+    id: 'turkey-sweet-potato-skillet',
+    name: 'Turkey & Sweet Potato Skillet',
+    kcal: 410, protein: 36, carbs: 40, fat: 10,
+    img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+    ingredients: [
+      '6 oz ground turkey (93% lean)',
+      '1 cup sweet potato, diced',
+      '1/2 cup yellow onion, diced',
+      '1/2 cup bell peppers, diced',
+      '1 tsp smoked paprika',
+      '1 tsp olive oil'
+    ],
+    instructions: [
+      'Heat the olive oil in a skillet over medium heat and add the sweet potato.',
+      'Cover and cook for 8-10 minutes, stirring occasionally, until fork-tender.',
+      'Push the sweet potato aside and add the ground turkey, breaking it apart as it browns.',
+      'Stir in the onion, bell peppers, and smoked paprika.',
+      'Cook for another 5-6 minutes until the turkey is fully cooked and vegetables have softened.',
+      'Season with salt and pepper to taste and serve straight from the skillet.'
+    ]
+  },
+  {
+    id: 'high-protein-beef-stir-fry',
+    name: 'High-Protein Beef Stir-Fry',
+    kcal: 460, protein: 42, carbs: 30, fat: 16,
+    img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80',
+    ingredients: [
+      '6 oz lean beef sirloin, thinly sliced',
+      '1 cup broccoli florets',
+      '1/2 cup carrots, julienned',
+      '1/2 cup snap peas',
+      '2 tbsp low-sodium soy sauce',
+      '1 tsp sesame oil & 1 tsp ginger-garlic, minced'
+    ],
+    instructions: [
+      'Heat sesame oil in a wok or large skillet over high heat.',
+      'Sear the sliced beef for 1-2 minutes per side until browned; remove and set aside.',
+      'Add the ginger and garlic to the pan and stir for 30 seconds until fragrant.',
+      'Add the broccoli, carrots, and snap peas, stir-frying for 3-4 minutes until crisp-tender.',
+      'Return the beef to the pan and stir in the soy sauce.',
+      'Toss everything together for 1 minute more and serve hot.'
+    ]
+  },
+  {
+    id: 'cottage-cheese-egg-white-scramble',
+    name: 'Cottage Cheese & Egg White Scramble',
+    nameTemplate: 'Cottage Cheese & Egg White Scramble with {{veggie}}',
+    kcal: 320, protein: 40, carbs: 8, fat: 10,
+    img: 'https://images.unsplash.com/photo-1687630433865-f86f07be989a?auto=format&fit=crop&w=800&q=80',
+    ingredients: [
+      '1 cup egg whites',
+      '1/2 cup low-fat cottage cheese',
+      '1 cup {{veggie}}, chopped',
+      '1 tsp olive oil',
+      'Salt, pepper & chili flakes, to taste'
+    ],
+    instructions: [
+      'Heat the olive oil in a nonstick pan over medium heat.',
+      'Add the {{veggie}} and sauté for 2-3 minutes until just tender.',
+      'Pour in the egg whites and let them set slightly around the edges.',
+      'Gently fold and scramble the eggs with the {{veggie}} for 2-3 minutes.',
+      'Remove from heat and fold in the cottage cheese.',
+      'Season with salt, pepper, and chili flakes before serving.'
+    ]
+  },
+  {
+    id: 'greek-yogurt-protein-parfait',
+    name: 'Greek Yogurt Protein Parfait',
+    nameTemplate: 'Greek Yogurt Protein Parfait with {{fruit}}',
+    kcal: 300, protein: 30, carbs: 28, fat: 6,
+    img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=400&q=80',
+    ingredients: [
+      '1 cup plain nonfat Greek yogurt',
+      '1/2 cup {{fruit}}',
+      '2 tbsp granola',
+      '1 tsp honey',
+      '1 tbsp chia seeds'
+    ],
+    instructions: [
+      'Spoon half the Greek yogurt into the bottom of a glass or jar.',
+      'Layer in half the {{fruit}} and a sprinkle of granola.',
+      'Repeat with the remaining yogurt, {{fruit}}, and granola.',
+      'Drizzle honey over the top and finish with a sprinkle of chia seeds.',
+      'Serve immediately, or chill for up to 12 hours for meal prep.'
+    ]
+  }
 ];
+
+// Turns a quiz chip's kebab-case data-value (e.g. "bell-peppers") into the
+// same label shown on its button ("Bell Peppers").
+function pwSlugLabel(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Resolves the {{veggie}}/{{fruit}} placeholders in PLAN_SAMPLE_RECIPES
+// against the user's onboarding quiz picks (falling back to Spinach/
+// Blueberries when nothing was selected), then de-dupes by recipe id so the
+// rendered hub can never show the same meal twice.
+function buildPlanRecipes() {
+  const prefs = state.mealPlan?.preferences || {};
+  const veggieSlug = prefs.cookedVeggies?.[0] || prefs.rawVeggies?.[0] || null;
+  const fruitSlug = prefs.fruits?.[0] || null;
+  const veggieLabel = veggieSlug ? pwSlugLabel(veggieSlug) : 'Spinach';
+  const fruitLabel = fruitSlug ? pwSlugLabel(fruitSlug) : 'Blueberries';
+
+  const fillTokens = (text) => text.replace(/\{\{veggie\}\}/g, veggieLabel).replace(/\{\{fruit\}\}/g, fruitLabel);
+
+  const seen = new Set();
+  const recipes = [];
+  for (const r of PLAN_SAMPLE_RECIPES) {
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    recipes.push({
+      ...r,
+      name: fillTokens(r.nameTemplate || r.name),
+      ingredients: r.ingredients.map(fillTokens),
+      instructions: r.instructions.map(fillTokens)
+    });
+  }
+  return recipes;
+}
 
 const PW_GOAL_LABELS = {
   'lose-weight': 'losing weight',
@@ -4790,12 +4952,15 @@ const PW_GOAL_LABELS = {
   'try-new': 'trying something new'
 };
 
+let currentPlanRecipes = [];
+
 function renderPlanHub() {
   const prefs = state.mealPlan?.preferences || {};
   const goalLabel = PW_GOAL_LABELS[prefs.goal];
   planHubSubtitleEl.textContent = goalLabel ? `Focused on ${goalLabel} · high-protein picks` : 'High-protein picks for your goals';
-  planRecipeGridEl.innerHTML = PLAN_SAMPLE_RECIPES.map((r) => `
-    <div class="plan-recipe-card">
+  currentPlanRecipes = buildPlanRecipes();
+  planRecipeGridEl.innerHTML = currentPlanRecipes.map((r) => `
+    <div class="plan-recipe-card" data-recipe-id="${r.id}" role="button" tabindex="0">
       ${r.img ? `<div class="plan-recipe-card-media"><img class="plan-recipe-thumb" src="${r.img}" alt="${escapeHtml(r.name)}" loading="lazy" /></div>` : ''}
       <div class="plan-recipe-card-body">
         <div class="plan-recipe-card-top">
@@ -4811,6 +4976,65 @@ function renderPlanHub() {
     </div>
   `).join('');
 }
+
+// ---------- Recipe Details Modal (sliding sheet) ----------
+const recipeModalEl = document.getElementById('recipe-modal');
+const recipeModalSheetEl = document.getElementById('recipeModalSheet');
+const recipeModalBackdropEl = document.getElementById('recipeModalBackdrop');
+const recipeModalCloseBtn = document.getElementById('recipeModalCloseBtn');
+const recipeModalImgEl = document.getElementById('recipeModalImg');
+const recipeModalTitleEl = document.getElementById('recipeModalTitle');
+const recipeModalKcalEl = document.getElementById('recipeModalKcal');
+const recipeModalProteinEl = document.getElementById('recipeModalProtein');
+const recipeModalCarbsEl = document.getElementById('recipeModalCarbs');
+const recipeModalFatEl = document.getElementById('recipeModalFat');
+const recipeModalIngredientsEl = document.getElementById('recipeModalIngredients');
+const recipeModalInstructionsEl = document.getElementById('recipeModalInstructions');
+
+function openRecipeModal(recipe) {
+  recipeModalImgEl.src = recipe.img || '';
+  recipeModalImgEl.alt = recipe.name;
+  recipeModalTitleEl.textContent = recipe.name;
+  recipeModalKcalEl.textContent = `${recipe.kcal} kcal`;
+  recipeModalProteinEl.textContent = `${recipe.protein}g`;
+  recipeModalCarbsEl.textContent = `${recipe.carbs}g`;
+  recipeModalFatEl.textContent = `${recipe.fat}g`;
+  recipeModalIngredientsEl.innerHTML = recipe.ingredients.map((i) => `<li>${escapeHtml(i)}</li>`).join('');
+  recipeModalInstructionsEl.innerHTML = recipe.instructions.map((s) => `<li>${escapeHtml(s)}</li>`).join('');
+  recipeModalEl.classList.remove('hidden');
+  // Force a reflow before adding .open so the translate3d transition plays
+  // from its 100% starting position instead of jumping straight to 0.
+  void recipeModalSheetEl.offsetHeight;
+  requestAnimationFrame(() => recipeModalEl.classList.add('open'));
+}
+
+function closeRecipeModal() {
+  if (recipeModalEl.classList.contains('hidden')) return;
+  recipeModalEl.classList.remove('open');
+  const onEnd = (e) => {
+    if (e.target !== recipeModalSheetEl || e.propertyName !== 'transform') return;
+    recipeModalSheetEl.removeEventListener('transitionend', onEnd);
+    recipeModalEl.classList.add('hidden');
+  };
+  recipeModalSheetEl.addEventListener('transitionend', onEnd);
+}
+
+planRecipeGridEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.plan-recipe-card');
+  if (!card) return;
+  const recipe = currentPlanRecipes.find((r) => r.id === card.dataset.recipeId);
+  if (recipe) openRecipeModal(recipe);
+});
+planRecipeGridEl.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.plan-recipe-card');
+  if (!card) return;
+  e.preventDefault();
+  const recipe = currentPlanRecipes.find((r) => r.id === card.dataset.recipeId);
+  if (recipe) openRecipeModal(recipe);
+});
+recipeModalCloseBtn.addEventListener('click', closeRecipeModal);
+recipeModalBackdropEl.addEventListener('click', closeRecipeModal);
 
 function renderPlanTab() {
   const onboarded = Boolean(state.mealPlan?.onboarded);
