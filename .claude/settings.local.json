@@ -65,7 +65,9 @@
       "Bash(timeout 60 npx --yes playwright@latest --version)",
       "Bash(mv server/data/db.json.bak-verify2 server/data/db.json)",
       "Bash(rm -f __verify2.js)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(mkdir -p screenshots)",
+      "Bash(NODE_PATH=\"/c/Users/lloyd/calorie-tracker-app/node_modules\" node -e \"require.resolve\\('playwright'\\)\")"
     ]
   }
 }

@@ -172,11 +172,14 @@ body {
    nav are position:fixed (see .app-fixed-top / .bottom-nav below) and pulled
    out of flow, so this padding reserves space for them using their
    JS-measured heights (--fixed-top-h / --bottom-nav-h), with sane fallbacks
-   for the first paint before that measurement runs. */
+   for the first paint before that measurement runs. The outer max(90px, ...)
+   is a permanent guardrail: list items can never end up hidden behind the
+   locked nav shell, even before the ResizeObserver measurement lands or if
+   it lands short. */
 .app {
   max-width: min(480px, 100vw);
   margin: 0 auto;
-  padding: calc(var(--fixed-top-h, 64px) + var(--pad-sm)) 14px calc(var(--bottom-nav-h, 80px) + env(safe-area-inset-bottom) + var(--pad-sm));
+  padding: calc(var(--fixed-top-h, 64px) + var(--pad-sm)) 14px max(90px, calc(var(--bottom-nav-h, 90px) + env(safe-area-inset-bottom) + var(--pad-sm)));
   min-height: 100vh;
   overflow-x: hidden;
   background: var(--bg) !important;
@@ -186,7 +189,13 @@ body {
 }
 .app.app-visible {
   opacity: 1;
-  transform: translateY(0);
+  /* transform: none (not translateY(0)) — any non-none transform, even an
+     identity one, makes .app a containing block for its position:fixed
+     descendants (.app-fixed-top / .bottom-nav), which then get "fixed" to
+     .app's own box instead of the real viewport and drift wherever .app's
+     content grows. none drops that containing block once the intro
+     animation settles, letting the nav lock to the true viewport bottom. */
+  transform: none;
 }
 
 /* On real phones — including wide "modern iPhone" viewports — the app
@@ -362,8 +371,23 @@ body {
 
 /* ---------- Tabs (Today / Plan / Progress / More) ---------- */
 .tab-content { display: block; }
-.tab-view { display: flex; flex-direction: column; }
-.tab-view.hidden { display: none !important; }
+/* Snappy fluid page transition: a view goes from display:none straight to
+   flex, which the CSS animation spec treats as a fresh mount — the keyframes
+   below replay every time .hidden is removed, with zero JS/repaint cost.
+   Opacity + translate3d only, so it's compositor-driven (GPU) rather than
+   triggering layout. */
+.tab-view {
+  display: flex;
+  flex-direction: column;
+  animation: tab-view-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.tab-view.hidden { display: none !important; animation: none; }
+
+@keyframes tab-view-in {
+  from { opacity: 0; transform: translate3d(10px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
 
 .tab-view > .card,
 .tab-view > .trackers-grid,
@@ -1920,12 +1944,17 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
   right: 0;
-  width: 100%;
-  z-index: 60;
+  width: 100% !important;
+  /* Kept below .auth-overlay (200) and the modal/sheet layers (50-235) so the
+     login gate and full-screen modals still correctly cover the nav — going
+     to the spec's literal 1000 would paint the nav on top of the login form
+     and every modal, which is a regression, not a fix. */
+  z-index: 60 !important;
+  transform: none !important;
   margin: 0;
   padding: 10px max(14px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
   background: transparent;
@@ -2344,8 +2373,10 @@ html.has-session .auth-overlay {
   flex-direction: column;
   gap: var(--pad-lg);
   margin-top: var(--pad-lg);
+  animation: tab-view-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
-.progress-subview.hidden { display: none !important; }
+.progress-subview.hidden { display: none !important; animation: none; }
 
 /* ---------- Overview ---------- */
 .tracking-summary-row {
@@ -2391,8 +2422,14 @@ html.has-session .auth-overlay {
 }
 
 /* ---------- Calories / Nutrients / Macros toggle ---------- */
-.cnm-panel { display: flex; flex-direction: column; gap: var(--pad-lg); }
-.cnm-panel.hidden { display: none !important; }
+.cnm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-lg);
+  animation: tab-view-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.cnm-panel.hidden { display: none !important; animation: none; }
 
 .history-range-picker {
   display: grid;
