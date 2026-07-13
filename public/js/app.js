@@ -6039,21 +6039,13 @@ learnBackBtn.addEventListener('click', () => closeSubView(learnView));
 const friendsView = document.getElementById('friendsView');
 const friendsBackBtn = document.getElementById('friendsBackBtn');
 const friendsAddBtn = document.getElementById('friendsAddBtn');
-const friendsTotalCountEl = document.getElementById('friendsTotalCount');
-const friendsActiveTodayCountEl = document.getElementById('friendsActiveTodayCount');
 const friendsListEl = document.getElementById('friendsList');
 const friendsSubnavEl = document.getElementById('friendsSubnav');
 const friendsEmptyStateEl = document.getElementById('friendsEmptyState');
 const friendsEmptyAddBtn = document.getElementById('friendsEmptyAddBtn');
 const friendsPromoLearnMore = document.getElementById('friendsPromoLearnMore');
 
-const FRIENDS = [
-  { id: 1, name: 'Jamie Rivera', avatar: '🧑', active: true, streak: 14 },
-  { id: 2, name: 'Priya Natarajan', avatar: '👩', active: true, streak: 32 },
-  { id: 3, name: 'Marcus Cole', avatar: '🧔', active: false, streak: 6 },
-  { id: 4, name: 'Sofia Alvarez', avatar: '👩', active: true, streak: 58 },
-  { id: 5, name: 'Devon Park', avatar: '🧑', active: false, streak: 3 }
-];
+const FRIENDS = [];
 
 const FRIEND_REQUESTS = [
   { id: 101, name: 'Elena Vasquez', avatar: '👩', mutual: 3 },
@@ -6063,9 +6055,6 @@ const FRIEND_REQUESTS = [
 let activeFriendsTab = 'all';
 
 function renderFriendsList() {
-  friendsTotalCountEl.textContent = String(FRIENDS.length);
-  friendsActiveTodayCountEl.textContent = String(FRIENDS.filter((f) => f.active).length);
-
   if (activeFriendsTab === 'requests') {
     friendsEmptyStateEl.classList.add('hidden');
     friendsListEl.classList.remove('hidden');
@@ -6179,34 +6168,9 @@ const moreMessagesBadgeEl = document.getElementById('moreMessagesBadge');
 const messagesSubnavEl = document.getElementById('messagesSubnav');
 let activeMessagesTab = 'inbox';
 
-const MESSAGE_THREADS = [
-  {
-    id: 1, name: 'Jamie Rivera', avatar: '🧑', unread: 1,
-    messages: [
-      { from: 'them', text: 'Hey! Saw your deadlift PR, huge congrats', time: '9:12 AM' },
-      { from: 'me', text: 'Thanks! Been chasing that number for weeks', time: '9:14 AM' },
-      { from: 'them', text: 'What program are you running right now?', time: '9:15 AM' }
-    ]
-  },
-  {
-    id: 2, name: 'Priya Natarajan', avatar: '👩', unread: 0,
-    messages: [
-      { from: 'them', text: 'Sending you my meal prep recipe doc', time: 'Yesterday' },
-      { from: 'me', text: 'Perfect, thank you!', time: 'Yesterday' }
-    ]
-  },
-  {
-    id: 3, name: 'Marcus Cole', avatar: '🧔', unread: 0,
-    messages: [{ from: 'me', text: 'Water logging tip really worked, thanks!', time: 'Mon' }]
-  },
-  {
-    id: 4, name: 'Sofia Alvarez', avatar: '👩', unread: 2,
-    messages: [
-      { from: 'them', text: 'Push group check-in is tomorrow', time: 'Sun' },
-      { from: 'them', text: 'Bring your updated numbers!', time: 'Sun' }
-    ]
-  }
-];
+// Starts empty — the registration welcome message (and any friend DMs) are
+// merged in by loadMessages() below, which pulls the real backend inbox.
+const MESSAGE_THREADS = [];
 let activeThreadId = null;
 
 function updateMessagesBadge() {

@@ -376,8 +376,8 @@ function welcomeMessage() {
   return {
     id: crypto.randomUUID(),
     sender: 'Pure Macros Team',
-    subject: 'Welcome to the Community!',
-    body: "Dear Pure Macros Member, welcome to your new structured nutrition journey. Let's hit those daily targets together!",
+    subject: 'Welcome to the Community',
+    body: "Welcome to the Pure Macros community! We built this space to be a safe, supportive place to share your nutrition journey — free of judgment, fad-diet pressure, or unsolicited advice.\n\nHere are a few tips to get the most out of it:\n• Add friends to see their streaks and cheer each other on.\n• Post a win in the community feed, no matter how small — consistency beats perfection.\n• Browse the Learn hub for nutrition basics, training tips, and real success stories from other members.\n\nBefore you dive in, please take a moment to review our Community Guidelines. They're what keep this space respectful and safe for everyone.\n\nWe're glad you're here. Let's hit those daily targets together!",
     date: new Date().toISOString(),
     read: false
   };

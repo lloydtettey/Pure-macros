@@ -4724,6 +4724,7 @@ html.has-session .auth-overlay {
   font-size: 13.5px;
   line-height: 1.4;
   border-radius: 16px;
+  white-space: pre-wrap;
 }
 .chat-bubble.incoming {
   align-self: flex-start;
