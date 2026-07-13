@@ -3292,15 +3292,30 @@ html.has-session .auth-overlay {
 .plan-macro-pill.fat .plan-macro-pill-value { color: var(--neon-pink); text-shadow: 0 0 8px rgba(255, 46, 159, 0.5); }
 
 /* ============================================================
-   Meal Planner 9-Step Wizard — forced clean light theme
-   Redefining the shared custom properties on this subtree means every
-   var(--x) reference below stays light regardless of the app's own
-   dark/light theme toggle (custom properties inherit from the nearest
-   ancestor, not just :root).
+   Meal Planner 9-Step Wizard — theme-aware surfaces
+   The wizard used to redefine the shared custom properties on this
+   subtree to hardcoded light values, which locked it to a white card
+   regardless of the app's dark/light toggle. It now falls through to
+   the same var(--x) tokens the rest of the app themes with; the block
+   below only reinstates this wizard's specific light-mode shades
+   (a hair off the generic light theme) so light mode stays pixel
+   identical to before.
    ============================================================ */
 .pw-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.pw-overlay.open { opacity: 1; pointer-events: auto; }
+:root[data-theme="light"] .pw-overlay {
   --bg: #ffffff;
-  --card-bg: #ffffff;
   --card-bg-raised: #f4f6f9;
   --card-border: #e4e7ee;
   --text-1: #14141a;
@@ -3308,19 +3323,7 @@ html.has-session .auth-overlay {
   --text-3: #8b8f9a;
   --input-bg: #f4f6f9;
   --shadow-card: 0 4px 14px rgba(20, 20, 40, 0.08);
-
-  position: fixed;
-  inset: 0;
-  z-index: 230;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  background: #ffffff;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
 }
-.pw-overlay.open { opacity: 1; pointer-events: auto; }
 
 .pw-panel {
   width: 100%;
