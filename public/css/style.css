@@ -4828,7 +4828,7 @@ html.has-session .auth-overlay {
 .logout-confirm-text { font-size: 14px; color: var(--text-2); line-height: 1.5; margin: 0 0 4px; }
 
 /* App Appearance — Light/Dark selector cards */
-.appearance-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.appearance-card-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 .appearance-card {
   position: relative;
   display: flex;
@@ -4852,6 +4852,7 @@ html.has-session .auth-overlay {
 }
 .appearance-card-swatch--light { background: linear-gradient(145deg, #f4f6fb, #d8dee8); }
 .appearance-card-swatch--dark { background: linear-gradient(145deg, #12151c, #05070b); }
+.appearance-card-swatch--system { background: linear-gradient(90deg, #f4f6fb 0%, #d8dee8 49%, #12151c 51%, #05070b 100%); }
 .appearance-card-label { font-size: 13px; font-weight: 700; color: var(--text-1); }
 .appearance-card-check {
   position: absolute;

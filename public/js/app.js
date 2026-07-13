@@ -657,29 +657,44 @@ async function handleLogout() {
 }
 
 // ---------- Theme ----------
-function getStoredTheme() {
-  return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+const systemDarkMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const themeColorMetaEl = document.getElementById('themeColorMeta');
+const THEME_COLOR_DARK = '#0a0a0c';
+const THEME_COLOR_LIGHT = '#ffffff';
+
+// Preference is what the user picked: 'light', 'dark', or 'system'.
+function getStoredThemePreference() {
+  const stored = localStorage.getItem(THEME_KEY);
+  return stored === 'light' || stored === 'system' ? stored : 'dark';
 }
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.body.classList.toggle('dark-theme', theme === 'dark');
+// Resolved is the actual surface to render: 'light' or 'dark'. For 'system'
+// this reads the live OS media query so it stays correct after e.g. sunset.
+function resolveTheme(preference) {
+  return preference === 'system' ? (systemDarkMediaQuery.matches ? 'dark' : 'light') : preference;
+}
+
+function applyTheme(preference) {
+  const resolved = resolveTheme(preference);
+  document.documentElement.setAttribute('data-theme', resolved);
+  document.body.classList.toggle('dark-theme', resolved === 'dark');
+  if (themeColorMetaEl) themeColorMetaEl.setAttribute('content', resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
   appearanceCardGridEl.querySelectorAll('.appearance-card').forEach((card) => {
-    card.classList.toggle('appearance-card--active', card.dataset.themeChoice === theme);
+    card.classList.toggle('appearance-card--active', card.dataset.themeChoice === preference);
   });
 }
 
-function setTheme(theme) {
+function setTheme(preference) {
   // Suspend transitions/animations for one tick so every themed element
   // swaps color instantly instead of animating in parallel — that parallel
   // recalculation is what was causing visible lag on phone GPUs.
   document.body.classList.add('no-transitions');
-  localStorage.setItem(THEME_KEY, theme);
-  applyTheme(theme);
+  localStorage.setItem(THEME_KEY, preference);
+  applyTheme(preference);
   setTimeout(() => document.body.classList.remove('no-transitions'), 50);
 }
 
-applyTheme(getStoredTheme());
+applyTheme(getStoredThemePreference());
 
 appearanceCardGridEl.addEventListener('click', (e) => {
   const card = e.target.closest('.appearance-card');
@@ -687,6 +702,12 @@ appearanceCardGridEl.addEventListener('click', (e) => {
   setTheme(card.dataset.themeChoice);
 });
 appAppearanceBackBtn.addEventListener('click', () => closeSubView(appAppearanceView));
+
+// Live-follows OS-level theme switches (e.g. iOS auto dark mode at sunset)
+// whenever the user's saved preference is 'system'.
+systemDarkMediaQuery.addEventListener('change', () => {
+  if (getStoredThemePreference() === 'system') applyTheme('system');
+});
 
 // ---------- Unit conversion (Weight kg/lbs, Height cm/ft-in) ----------
 function getWeightUnit() {
