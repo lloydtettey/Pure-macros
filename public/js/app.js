@@ -971,6 +971,24 @@ mealCards.forEach((card) => {
   customNameInput.addEventListener('input', runAutoMacroEstimate);
   customKcalInput.addEventListener('input', runAutoMacroEstimate);
 
+  // Automated Smart Nutrition Lookup Engine — once the user finishes typing a
+  // custom food name (on blur), ask the server for a per-100g estimate and
+  // auto-fill kcal/protein/carbs/fat, then recompute the preview so an
+  // already-entered weight immediately reflects the new density.
+  let nutritionLookupSeq = 0;
+  customNameInput.addEventListener('blur', async () => {
+    const name = customNameInput.value.trim();
+    if (!name) return;
+    const seq = ++nutritionLookupSeq;
+    const estimate = await fetchNutritionEstimate(name);
+    if (!estimate || seq !== nutritionLookupSeq) return;
+    customKcalInput.value = estimate.kcal;
+    customProteinInput.value = estimate.protein;
+    customCarbsInput.value = estimate.carbs;
+    customFatInput.value = estimate.fat;
+    updateFoodPreview(card);
+  });
+
   foodSelect.addEventListener('change', () => {
     const isCustom = foodSelect.value === CUSTOM_FOOD_ID;
     customFields.classList.toggle('hidden', !isCustom);
@@ -2270,6 +2288,25 @@ function autoEstimateMacros(name, kcal, grams) {
     carbs: Math.round(carbsG * 10) / 10,
     fat: Math.round(fatG * 10) / 10
   };
+}
+
+// Automated Smart Nutrition Lookup Engine — asks the server's
+// POST /api/estimate-nutrition for a per-100g { kcal, protein, carbs, fat }
+// estimate for a typed food name (staple dictionary match, or a generic
+// 4/4/9-balanced fallback). Returns null on any network/parse failure so
+// callers can silently skip auto-population rather than surface an error.
+async function fetchNutritionEstimate(foodName) {
+  try {
+    const res = await fetch(`${API}/estimate-nutrition`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ foodName })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
 }
 
 function readCustomFood(card) {

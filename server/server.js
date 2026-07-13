@@ -678,6 +678,64 @@ app.get('/api/foods/search', async (req, res) => {
   }
 });
 
+// ---------- Automated Smart Nutrition Lookup Engine ----------
+// A small high-accuracy reference dictionary for common staples (keyed by
+// keyword match against the typed food name), plus a keyword-classified
+// generic fallback for anything else. The fallback's protein/carbs/fat are
+// always derived from its kcal via the 4/4/9 calorie-per-gram rule, so the
+// macro split balances back to the calorie figure exactly.
+const NUTRITION_STAPLE_DICTIONARY = [
+  { keywords: ['chicken breast', 'chicken'], name: 'Chicken Breast', kcal: 165, protein: 31, carbs: 0, fat: 3.6 },
+  { keywords: ['white rice', 'cooked rice', 'rice'], name: 'Cooked White Rice', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3 },
+  { keywords: ['oatmeal', 'oats'], name: 'Oatmeal', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9 },
+  { keywords: ['egg'], name: 'Whole Egg', kcal: 155, protein: 13, carbs: 1.1, fat: 11 },
+  { keywords: ['banana'], name: 'Banana', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3 }
+];
+
+// kcal here is a rough per-100g density guess by food category; the macro
+// split (protein/carbs/fat fractions of kcal) always sums to 1.
+const NUTRITION_GENERIC_PROFILES = [
+  { keywords: ['chicken', 'beef', 'steak', 'turkey', 'pork', 'meat', 'fish', 'salmon', 'tuna', 'whey', 'protein', 'goat'], kcal: 165, protein: 0.5, carbs: 0.2, fat: 0.3 },
+  { keywords: ['rice', 'bread', 'oat', 'pasta', 'potato', 'flour', 'sugar', 'fruit', 'juice', 'yam', 'cassava'], kcal: 200, protein: 0.15, carbs: 0.7, fat: 0.15 },
+  { keywords: ['oil', 'butter', 'avocado', 'nuts', 'almond', 'peanut', 'cheese', 'mayo', 'dressing', 'lard'], kcal: 500, protein: 0.15, carbs: 0.15, fat: 0.7 }
+];
+const NUTRITION_GENERIC_DEFAULT = { kcal: 200, protein: 0.3, carbs: 0.4, fat: 0.3 };
+
+function findStapleNutrition(lowerName) {
+  return NUTRITION_STAPLE_DICTIONARY.find((entry) => entry.keywords.some((kw) => lowerName.includes(kw))) || null;
+}
+
+function estimateGenericNutrition(foodName, lowerName) {
+  const profile = NUTRITION_GENERIC_PROFILES.find((p) => p.keywords.some((kw) => lowerName.includes(kw))) || NUTRITION_GENERIC_DEFAULT;
+  const kcal = profile.kcal;
+  return {
+    name: foodName,
+    kcal,
+    protein: Math.round(((kcal * profile.protein) / 4) * 10) / 10,
+    carbs: Math.round(((kcal * profile.carbs) / 4) * 10) / 10,
+    fat: Math.round(((kcal * profile.fat) / 9) * 10) / 10,
+    source: 'generic'
+  };
+}
+
+// POST /api/estimate-nutrition — body: { foodName }. Returns a per-100g
+// { name, kcal, protein, carbs, fat, source } estimate for a typed food name:
+// a match against NUTRITION_STAPLE_DICTIONARY, or a generic 4/4/9-balanced
+// fallback otherwise. Used by the meal-logging forms' custom-food fields to
+// auto-populate macros as the user types a food name.
+app.post('/api/estimate-nutrition', (req, res) => {
+  const foodName = ((req.body && req.body.foodName) || '').toString().trim();
+  if (!foodName) {
+    return res.status(400).json({ error: 'foodName is required' });
+  }
+  const lowerName = foodName.toLowerCase();
+  const staple = findStapleNutrition(lowerName);
+  if (staple) {
+    return res.json({ name: staple.name, kcal: staple.kcal, protein: staple.protein, carbs: staple.carbs, fat: staple.fat, source: 'staple' });
+  }
+  res.json(estimateGenericNutrition(foodName, lowerName));
+});
+
 // POST /api/vision/scan — body: { image: "data:image/...;base64,...", filename? }
 // Simulated high-precision food detector. See detectFoodFromImage() above for
 // why this doesn't call an external vision API.
