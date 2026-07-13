@@ -367,10 +367,15 @@
       <section class="tab-view hidden" id="tab-plan" data-tab-view="plan">
         <!-- ---- Empty state: quiz not completed yet ---- -->
         <div class="plan-empty-state hidden" id="planEmptyState">
-          <span class="plan-empty-icon" aria-hidden="true">🍽️</span>
-          <h2 class="plan-empty-title">Build your Meal Plan</h2>
-          <p class="plan-empty-copy">Answer a quick 9-step questionnaire so we can tailor recipes to your goals, kitchen, and taste.</p>
-          <button type="button" class="btn-primary" id="planStartQuizBtn">Start the Quiz</button>
+          <img
+            class="plan-empty-hero"
+            src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80"
+            alt="A colorful, healthy grain bowl"
+            loading="lazy"
+          />
+          <h2 class="plan-empty-title">Dig in to Meal Planner</h2>
+          <p class="plan-empty-copy">Say goodbye to guesswork and hello to tasty, simple home cooking.</p>
+          <button type="button" class="btn-primary plan-empty-cta" id="planStartQuizBtn">Get started</button>
         </div>
 
         <!-- ---- Hub: quiz completed ---- -->

@@ -3231,11 +3231,27 @@ html.has-session .auth-overlay {
   align-items: center;
   text-align: center;
   gap: 10px;
-  padding: 48px 24px;
+  padding: 28px 24px 32px;
 }
-.plan-empty-icon { font-size: 44px; }
-.plan-empty-title { margin: 0; font-size: 19px; color: var(--text-1); }
-.plan-empty-copy { margin: 0 0 6px; font-size: 13px; color: var(--text-2); max-width: 280px; }
+.plan-empty-hero {
+  width: 100%;
+  max-width: 360px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 6px;
+}
+.plan-empty-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--text-1); }
+.plan-empty-copy { margin: 0 0 10px; font-size: 14px; color: var(--text-2); max-width: 300px; }
+.plan-empty-cta {
+  width: 100%;
+  max-width: 360px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 999px;
+}
 
 .plan-hub { display: flex; flex-direction: column; gap: var(--pad-lg); }
 .plan-hub-header {
@@ -3250,18 +3266,35 @@ html.has-session .auth-overlay {
 
 .plan-recipe-grid { display: flex; flex-direction: column; gap: var(--pad-sm); }
 .plan-recipe-card {
+  display: flex;
+  gap: 12px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  padding: 16px;
+  padding: 12px;
+}
+.plan-recipe-card-media { flex-shrink: 0; }
+.plan-recipe-thumb {
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  object-fit: cover;
+  display: block;
+}
+.plan-recipe-card-body {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
 }
 .plan-recipe-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
 }
 .plan-recipe-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
 .plan-recipe-kcal {
@@ -4656,24 +4689,12 @@ html.has-session .auth-overlay {
   border-radius: var(--radius);
 }
 .learn-card-banner {
-  height: 96px;
+  height: 140px;
   border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-}
-.learn-card-banner--green { background: #254923; }
-.learn-card-banner--cyan { background: #1a444d; }
-.learn-card-banner--violet { background: #37264d; }
-.learn-card-banner--pink { background: #48233c; }
-.learn-card-banner--amber { background: #483b25; }
-:root[data-theme="light"] .learn-card-banner--green { background: #dbffd5; }
-:root[data-theme="light"] .learn-card-banner--cyan { background: #d1faff; }
-:root[data-theme="light"] .learn-card-banner--violet { background: #eddcff; }
-:root[data-theme="light"] .learn-card-banner--pink { background: #ffd9ee; }
-:root[data-theme="light"] .learn-card-banner--amber { background: #fff1d7; }
-.learn-card-banner {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--card-bg-raised);
   margin-bottom: 10px;
 }
 .learn-card-tag {

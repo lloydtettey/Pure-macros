@@ -71,7 +71,10 @@
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,Path,StartTime\")",
       "Bash(cd \"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\")",
       "Bash(echo)",
-      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*server/server.js*'\\\\'' -and $_.CommandLine -like '\\\\''*3011*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')"
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*server/server.js*'\\\\'' -and $_.CommandLine -like '\\\\''*3011*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')",
+      "Bash(pkill -f \"server/server.js\")",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)"
     ]
   }
 }

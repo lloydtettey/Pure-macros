@@ -4769,11 +4769,11 @@ planRetakeQuizBtn.addEventListener('click', openPlanWizard);
 // Sample high-protein recipes shown in the hub once the quiz is complete —
 // carbs/protein/fat are rendered as high-contrast pills per the spec.
 const PLAN_SAMPLE_RECIPES = [
-  { name: 'Grilled Chicken & Quinoa Bowl', kcal: 420, protein: 38, carbs: 34, fat: 12 },
-  { name: 'Herb-Crusted Salmon with Asparagus', kcal: 390, protein: 34, carbs: 10, fat: 22 },
-  { name: 'Turkey & Sweet Potato Skillet', kcal: 410, protein: 36, carbs: 40, fat: 10 },
-  { name: 'High-Protein Beef Stir-Fry', kcal: 460, protein: 42, carbs: 30, fat: 16 },
-  { name: 'Cottage Cheese & Egg White Scramble', kcal: 320, protein: 40, carbs: 8, fat: 10 },
+  { name: 'Grilled Chicken & Quinoa Bowl', kcal: 420, protein: 38, carbs: 34, fat: 12, img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Herb-Crusted Salmon with Asparagus', kcal: 390, protein: 34, carbs: 10, fat: 22, img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Turkey & Sweet Potato Skillet', kcal: 410, protein: 36, carbs: 40, fat: 10, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80' },
+  { name: 'High-Protein Beef Stir-Fry', kcal: 460, protein: 42, carbs: 30, fat: 16, img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Cottage Cheese & Egg White Scramble', kcal: 320, protein: 40, carbs: 8, fat: 10, img: 'https://images.unsplash.com/photo-1687630433865-f86f07be989a?auto=format&fit=crop&w=800&q=80' },
   { name: 'Greek Yogurt Protein Parfait', kcal: 300, protein: 30, carbs: 28, fat: 6 }
 ];
 
@@ -4796,14 +4796,17 @@ function renderPlanHub() {
   planHubSubtitleEl.textContent = goalLabel ? `Focused on ${goalLabel} · high-protein picks` : 'High-protein picks for your goals';
   planRecipeGridEl.innerHTML = PLAN_SAMPLE_RECIPES.map((r) => `
     <div class="plan-recipe-card">
-      <div class="plan-recipe-card-top">
-        <span class="plan-recipe-name">${escapeHtml(r.name)}</span>
-        <span class="plan-recipe-kcal">${r.kcal} kcal</span>
-      </div>
-      <div class="plan-recipe-macros">
-        <div class="plan-macro-pill protein"><span class="plan-macro-pill-value">${r.protein}g</span><span class="plan-macro-pill-label">Protein</span></div>
-        <div class="plan-macro-pill carbs"><span class="plan-macro-pill-value">${r.carbs}g</span><span class="plan-macro-pill-label">Carbs</span></div>
-        <div class="plan-macro-pill fat"><span class="plan-macro-pill-value">${r.fat}g</span><span class="plan-macro-pill-label">Fat</span></div>
+      ${r.img ? `<div class="plan-recipe-card-media"><img class="plan-recipe-thumb" src="${r.img}" alt="${escapeHtml(r.name)}" loading="lazy" /></div>` : ''}
+      <div class="plan-recipe-card-body">
+        <div class="plan-recipe-card-top">
+          <span class="plan-recipe-name">${escapeHtml(r.name)}</span>
+          <span class="plan-recipe-kcal">${r.kcal} kcal</span>
+        </div>
+        <div class="plan-recipe-macros">
+          <div class="plan-macro-pill protein"><span class="plan-macro-pill-value">${r.protein}g</span><span class="plan-macro-pill-label">Protein</span></div>
+          <div class="plan-macro-pill carbs"><span class="plan-macro-pill-value">${r.carbs}g</span><span class="plan-macro-pill-label">Carbs</span></div>
+          <div class="plan-macro-pill fat"><span class="plan-macro-pill-value">${r.fat}g</span><span class="plan-macro-pill-label">Fat</span></div>
+        </div>
       </div>
     </div>
   `).join('');
@@ -4816,12 +4819,11 @@ function renderPlanTab() {
   if (onboarded) renderPlanHub();
 }
 
-// Entry point for the bottom-nav Plan button: renders whatever's behind the
-// wizard (empty state or hub) and, per spec, immediately launches the 9-step
-// questionnaire itself whenever the quiz hasn't been completed yet.
+// Entry point for the bottom-nav Plan button: shows the intro landing panel
+// (with its own "Get started" CTA) when no plan exists yet, or the recipe
+// hub immediately when the quiz has already been completed.
 function openPlanTabView() {
   renderPlanTab();
-  if (!state.mealPlan?.onboarded) openPlanWizard();
 }
 
 async function loadPlanPreferences() {
@@ -6063,21 +6065,20 @@ const learnChipsRowEl = document.getElementById('learnChipsRow');
 const learnGridEl = document.getElementById('learnGrid');
 
 const LEARN_ARTICLES = [
-  { id: 1, category: 'nutrition', title: 'Protein Timing: Does It Really Matter?', desc: 'What the research says about pre- and post-workout protein windows.', banner: '🥗', color: 'green', rd: true },
-  { id: 2, category: 'nutrition', title: 'Reading Nutrition Labels Like a Pro', desc: 'Spot hidden sugars and serving-size tricks in under a minute.', banner: '🏷️', color: 'cyan', rd: true },
-  { id: 3, category: 'training', title: 'Progressive Overload for Beginners', desc: 'The one principle that drives almost all strength gains.', banner: '🏋️', color: 'violet', rd: false },
-  { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', banner: '🏃', color: 'pink', rd: false },
-  { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', banner: '🎉', color: 'amber', rd: false },
-  { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', banner: '📲', color: 'cyan', rd: false },
-  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'green', rd: false },
+  { id: 1, category: 'nutrition', title: 'Protein Timing: Does It Really Matter?', desc: 'What the research says about pre- and post-workout protein windows.', img: 'https://images.unsplash.com/photo-1593079831268-3381b0db4a77?auto=format&fit=crop&w=800&q=80', rd: true },
+  { id: 2, category: 'nutrition', title: 'Reading Nutrition Labels Like a Pro', desc: 'Spot hidden sugars and serving-size tricks in under a minute.', img: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80', rd: true },
+  { id: 3, category: 'training', title: 'Progressive Overload for Beginners', desc: 'The one principle that drives almost all strength gains.', img: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80', rd: false },
+  { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', img: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80', rd: false },
+  { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', rd: false },
+  { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', img: 'https://images.unsplash.com/photo-1508962914676-134849a727f0?auto=format&fit=crop&w=800&q=80', rd: false },
+  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', img: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&w=800&q=80', rd: false },
   {
     id: 8,
     category: 'nutrition',
     tags: ['nutrition', 'gut-health', 'getting-started'],
     title: 'Benefits of Eating Whole Foods: Fuel Your Body Naturally',
     desc: 'Why single-ingredient, unprocessed foods are the ultimate secret weapon for stable energy, muscle recovery, and long-term gut health.',
-    banner: '🥑',
-    color: 'amber',
+    img: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80',
     rd: true,
     readTime: '6 minute read'
   }
@@ -6093,7 +6094,7 @@ function renderLearnGrid() {
     .map(
       (a) => `
         <div class="learn-card" data-article-id="${a.id}">
-          <div class="learn-card-banner learn-card-banner--${a.color}">${a.banner}</div>
+          <div class="learn-card-banner" style="background-image: url('${a.img}')"></div>
           ${a.rd ? '<span class="learn-card-tag">✅ RD Approved</span>' : ''}
           <h3 class="learn-card-title">${escapeHtml(a.title)}</h3>
           <p class="learn-card-desc">${escapeHtml(a.desc)}</p>
