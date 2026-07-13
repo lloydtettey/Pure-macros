@@ -1,3 +1,13 @@
+// Cache-first PWA service worker — registered after the page load event so it
+// never competes with the initial render for network/CPU time.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {
+      // Non-critical — the app still works fully online without it.
+    });
+  });
+}
+
 const API = '/api';
 const CUSTOM_FOOD_ID = '__custom__';
 // Foods surfaced by the live universal search (/api/foods/search) aren't part
@@ -2123,7 +2133,11 @@ function initApp() {
   loadProfile();
   refreshStreak();
   loadPlanPreferences();
-  loadMessages();
+  // Compiling the historical messages inbox isn't needed for the first paint
+  // of the dashboard, so it's pushed to idle time instead of competing with
+  // the loads above for the initial render.
+  const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+  scheduleIdle(() => loadMessages());
 }
 
 (async function bootstrapAuth() {
@@ -6055,12 +6069,26 @@ const LEARN_ARTICLES = [
   { id: 4, category: 'training', title: 'Zone 2 Cardio Explained', desc: 'Why easy runs build the biggest aerobic base.', banner: '🏃', color: 'pink', rd: false },
   { id: 5, category: 'success-stories', title: 'How Elena Lost 40lbs Without Giving Up Pizza', desc: 'A real member story on sustainable, flexible dieting.', banner: '🎉', color: 'amber', rd: false },
   { id: 6, category: 'app-101', title: 'Getting the Most Out of the Steps Hub', desc: 'Connect a device and auto-sync your daily activity.', banner: '📲', color: 'cyan', rd: false },
-  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'green', rd: false }
+  { id: 7, category: 'app-101', title: 'Setting Smarter Macro Goals', desc: 'A quick walkthrough of the Goals sub-page.', banner: '🎯', color: 'green', rd: false },
+  {
+    id: 8,
+    category: 'nutrition',
+    tags: ['nutrition', 'gut-health', 'getting-started'],
+    title: 'Benefits of Eating Whole Foods: Fuel Your Body Naturally',
+    desc: 'Why single-ingredient, unprocessed foods are the ultimate secret weapon for stable energy, muscle recovery, and long-term gut health.',
+    banner: '🥑',
+    color: 'amber',
+    rd: true,
+    readTime: '6 minute read'
+  }
 ];
 let learnActiveCategory = 'all';
 
 function renderLearnGrid() {
-  const filtered = learnActiveCategory === 'all' ? LEARN_ARTICLES : LEARN_ARTICLES.filter((a) => a.category === learnActiveCategory);
+  const filtered =
+    learnActiveCategory === 'all'
+      ? LEARN_ARTICLES
+      : LEARN_ARTICLES.filter((a) => a.category === learnActiveCategory || (a.tags && a.tags.includes(learnActiveCategory)));
   learnGridEl.innerHTML = filtered
     .map(
       (a) => `
@@ -6070,6 +6098,7 @@ function renderLearnGrid() {
           <h3 class="learn-card-title">${escapeHtml(a.title)}</h3>
           <p class="learn-card-desc">${escapeHtml(a.desc)}</p>
           <div class="learn-card-footer">
+            ${a.readTime ? `<span class="learn-card-readtime">${escapeHtml(a.readTime)}</span>` : ''}
             <button type="button" class="learn-card-cta" data-article-id="${a.id}">Read Article →</button>
           </div>
         </div>

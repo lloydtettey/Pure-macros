@@ -2843,12 +2843,13 @@ html.has-session .auth-overlay {
   box-shadow: var(--shadow-card-hover);
   display: flex;
   flex-direction: column;
-  transform: translateY(24px);
+  transform: translate3d(0, 24px, 0);
   transition: transform 0.35s ease;
+  will-change: transform, opacity;
   box-sizing: border-box;
   overflow: hidden;
 }
-.log-overlay.open .log-overlay-sheet { transform: translateY(0); }
+.log-overlay.open .log-overlay-sheet { transform: translate3d(0, 0, 0); }
 
 .log-overlay-scroll {
   flex: 1 1 auto;
@@ -3827,14 +3828,15 @@ html.has-session .auth-overlay {
   background: var(--bg);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(24px);
+  transform: translate3d(0, 24px, 0);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  will-change: transform, opacity;
   overflow-y: auto;
 }
 .utility-screen.open {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 @media (min-width: 431px) and (hover: hover) and (pointer: fine) {
   .utility-screen { position: absolute; border-radius: inherit; }
@@ -4703,7 +4705,8 @@ html.has-session .auth-overlay {
   padding: 0;
 }
 .learn-card-cta:hover { filter: brightness(1.15); }
-.learn-card-footer { display: flex; justify-content: flex-end; }
+.learn-card-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.learn-card-readtime { font-size: 11px; font-weight: 600; color: var(--text-2); margin-right: auto; }
 
 /* ---------- Friends Network Directory (More > Friends) ---------- */
 .friends-promo-banner {

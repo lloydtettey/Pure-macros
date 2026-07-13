@@ -1,0 +1,11 @@
+{
+  "name": "Pure Macros — Performance Nutrition Dashboard",
+  "short_name": "Pure Macros",
+  "description": "Track calories, macros, hydration, sleep, and progress with the Pure Macros performance nutrition dashboard.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait"
+}
