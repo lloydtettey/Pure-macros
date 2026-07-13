@@ -74,7 +74,10 @@
       "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*server/server.js*'\\\\'' -and $_.CommandLine -like '\\\\''*3011*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')",
       "Bash(pkill -f \"server/server.js\")",
       "WebSearch",
-      "WebFetch(domain:unsplash.com)"
+      "WebFetch(domain:unsplash.com)",
+      "Bash(npm config *)",
+      "Bash(export NODE_PATH=\"/c/Users/lloyd/AppData/Local/npm-cache/_npx/361ceb562f3b3235/node_modules\")",
+      "Bash(git add *)"
     ]
   }
 }
