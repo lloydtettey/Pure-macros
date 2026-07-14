@@ -595,8 +595,20 @@ function hideSplash() {
 }
 // Safety net — if some unexpected error keeps both the auth-resolved and
 // auth-failed paths below from ever running, don't leave the splash stuck
-// on screen forever.
-setTimeout(hideSplash, 4000);
+// on screen forever. Kept a beat above bootstrapAuth's own 25s cold-start
+// allowance so it never fires and hides the splash out from under a boot
+// that's still legitimately waiting on /auth/me.
+setTimeout(hideSplash, 26000);
+
+// Render's free tier can cold-start for several seconds; if the boot auth
+// check is still waiting past this point, let the user know the splash
+// isn't frozen — it's waiting on a sleeping server to spin back up.
+const appSplashStatusEl = document.getElementById('appSplashStatus');
+function showSplashWakingUp() {
+  if (appSplashStatusEl && appSplashEl && appSplashEl.isConnected) {
+    appSplashStatusEl.classList.add('show');
+  }
+}
 
 function handleSessionExpired() {
   clearToken();
@@ -2788,33 +2800,59 @@ function initApp() {
   // any real data loads or the app is revealed.
   const cachedUser = getCachedCurrentUser();
   if (cachedUser) state.user = cachedUser;
-  let data;
+
+  // Render's free tier can cold-start for tens of seconds; without this
+  // race, a slow/stalled /auth/me would leave the splash removed (its own
+  // 26s safety net above) but .has-session still hiding the login form —
+  // a blank screen the user can't get past. 25s comfortably covers a cold
+  // spin-up; the waking-up hint below keeps that wait from reading as frozen.
+  const wakingUpTimer = setTimeout(showSplashWakingUp, 3000);
+  let res = null;
   try {
-    // Render's free tier can cold-start for tens of seconds; without this
-    // race, a slow/stalled /auth/me would leave the splash removed (its own
-    // 4s safety net above) but .has-session still hiding the login form —
-    // a blank screen the user can't get past. Timing out here falls back to
-    // the same "show login" path as an outright failed request.
-    const res = await Promise.race([
+    res = await Promise.race([
       authFetch(`${API}/auth/me`),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 25000))
     ]);
-    if (!res.ok) throw new Error('invalid session');
-    data = await res.json();
   } catch {
+    res = null; // timeout, or the fetch itself failed outright (offline/DNS/reset)
+  }
+  clearTimeout(wakingUpTimer);
+
+  // A cold-start timeout or a generic connection failure means we never got
+  // a real answer from the server about this token — it's not proof the
+  // session is invalid, so leave it alone and let the user back into the
+  // app on their cached data rather than bouncing them to the login screen.
+  // Only an explicit 401/403 is the server actually telling us the token is
+  // no good, which is the one case that should clear it and force a re-login.
+  if (!res) {
+    hideSplash();
+    if (state.user) { revealApp(); initApp(); }
+    return;
+  }
+  if (res.status === 401 || res.status === 403) {
     state.user = null;
     clearToken();
     // The head script pre-hid the auth overlay on the assumption this token
-    // was valid — since it wasn't (or validating it timed out), undo that so
-    // the login form shows instead of leaving the app stuck behind a blank
-    // screen.
+    // was valid — since the server just told us it isn't, undo that so the
+    // login form shows instead of leaving the app stuck behind a blank screen.
     document.documentElement.classList.remove('has-session');
+    hideSplash();
     return;
   }
+  if (!res.ok) {
+    // Some other non-2xx (e.g. a 502/503 while the free-tier instance is
+    // still warming up) — same "don't touch the session" treatment as an
+    // outright network failure above.
+    hideSplash();
+    if (state.user) { revealApp(); initApp(); }
+    return;
+  }
+
   // Outside the try/catch above on purpose — the session is already confirmed
   // valid at this point, so an unrelated error in rendering the app shouldn't
   // be swallowed and misread as an invalid session (which would wrongly clear
   // a good token and bounce a signed-in user back to the login screen).
+  const data = await res.json();
   state.user = data;
   revealApp();
   initApp();

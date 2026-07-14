@@ -44,6 +44,44 @@
     0%, 100% { filter: drop-shadow(0 0 6px rgba(186, 255, 41, 0.35)); }
     50% { filter: drop-shadow(0 0 20px rgba(186, 255, 41, 0.95)); }
   }
+  /* Hidden until app.js decides /auth/me has taken long enough (free-tier
+     cold start) that the user deserves a "still working on it" signal. */
+  #app-splash .app-splash-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: max(12%, 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  #app-splash .app-splash-status.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #app-splash .app-splash-spinner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(244, 246, 251, 0.16);
+    border-top-color: #baff29;
+    animation: app-splash-spin 0.8s linear infinite;
+  }
+  #app-splash .app-splash-status-text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: rgba(244, 246, 251, 0.6);
+  }
+  @keyframes app-splash-spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" id="themeColorMeta" content="#000000" />
@@ -69,7 +107,13 @@
 </script>
 </head>
 <body>
-  <div id="app-splash"><div class="app-splash-mark"><span class="app-splash-bolt">⚡</span>PURE MACROS</div></div>
+  <div id="app-splash">
+    <div class="app-splash-mark"><span class="app-splash-bolt">⚡</span>PURE MACROS</div>
+    <div class="app-splash-status" id="appSplashStatus">
+      <div class="app-splash-spinner"></div>
+      <div class="app-splash-status-text">Waking up server, please wait…</div>
+    </div>
+  </div>
   <!-- Auth Gate -->
   <div class="auth-overlay" id="authOverlay">
     <div class="auth-panel">
