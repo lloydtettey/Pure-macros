@@ -263,6 +263,7 @@ const pushNotificationsView = document.getElementById('pushNotificationsView');
 const pushNotificationsBackBtn = document.getElementById('pushNotificationsBackBtn');
 const notifDisabledBanner = document.getElementById('notifDisabledBanner');
 const notifBannerSettingsLink = document.getElementById('notifBannerSettingsLink');
+const pushNotifRowsList = document.getElementById('pushNotifRowsList');
 const quietHoursTimeRow = document.getElementById('quietHoursTimeRow');
 const quietHoursStartInput = document.getElementById('quietHoursStartInput');
 const quietHoursEndInput = document.getElementById('quietHoursEndInput');
@@ -270,6 +271,12 @@ const quietHoursEndInput = document.getElementById('quietHoursEndInput');
 const mockDeviceSettingsOverlay = document.getElementById('mockDeviceSettingsOverlay');
 const closeMockDeviceSettings = document.getElementById('closeMockDeviceSettings');
 const mockAllowNotificationsSwitch = document.getElementById('mockAllowNotificationsSwitch');
+
+const healthKitConnectingOverlay = document.getElementById('healthKitConnectingOverlay');
+
+const iosTopToastEl = document.getElementById('iosTopToast');
+const iosTopToastIconEl = document.getElementById('iosTopToastIcon');
+const iosTopToastTextEl = document.getElementById('iosTopToastText');
 
 const iosWheelPickerSheet = document.getElementById('iosWheelPickerSheet');
 const iosWheelPickerBackdrop = document.getElementById('iosWheelPickerBackdrop');
@@ -1565,8 +1572,29 @@ function openEmailSettingsView() {
 function closeEmailSettingsView() { emailSettingsView.classList.remove('open'); }
 emailSettingsBackBtn.addEventListener('click', closeEmailSettingsView);
 
+let resendCooldownTimer;
 resendConfirmationBtn.addEventListener('click', () => {
-  showToast('Confirmation email sent');
+  if (resendConfirmationBtn.disabled) return;
+  resendConfirmationBtn.disabled = true;
+  resendConfirmationBtn.classList.add('is-loading');
+  resendConfirmationBtn.innerHTML = '<span class="email-resend-spinner" aria-hidden="true"></span>';
+  setTimeout(() => {
+    resendConfirmationBtn.classList.remove('is-loading');
+    showIosTopToast(`Verification email sent to ${emailTokenValueEl.textContent}`, '✓');
+    let secondsLeft = 60;
+    resendConfirmationBtn.textContent = `Sent (Resend in ${secondsLeft}s)`;
+    clearInterval(resendCooldownTimer);
+    resendCooldownTimer = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        clearInterval(resendCooldownTimer);
+        resendConfirmationBtn.disabled = false;
+        resendConfirmationBtn.textContent = 'Resend Confirmation';
+        return;
+      }
+      resendConfirmationBtn.textContent = `Sent (Resend in ${secondsLeft}s)`;
+    }, 1000);
+  }, 1200);
 });
 
 function bindEmailToggle(el, key) {
@@ -1607,12 +1635,39 @@ healthKitBackBtn.addEventListener('click', closeHealthKitSharingView);
 healthKitSyncSwitch.addEventListener('click', async () => {
   const next = healthKitSyncSwitch.getAttribute('aria-checked') !== 'true';
   healthKitSyncSwitch.setAttribute('aria-checked', String(next));
-  healthKitSubListEl.classList.toggle('healthkit-sublist-disabled', !next);
+
+  if (!next) {
+    healthKitSubListEl.classList.add('healthkit-sublist-disabled');
+    try {
+      await persistSharingPatch({ healthKitSync: false });
+    } catch (err) {
+      healthKitSyncSwitch.setAttribute('aria-checked', 'true');
+      healthKitSubListEl.classList.remove('healthkit-sublist-disabled');
+      showToast(err.message, true);
+    }
+    return;
+  }
+
+  healthKitConnectingOverlay.classList.add('open');
   try {
-    await persistSharingPatch({ healthKitSync: next });
+    await persistSharingPatch({
+      healthKitSync: true,
+      healthKitEnergyBurn: true,
+      healthKitMacros: true,
+      healthKitBodyWeight: true
+    });
+    setTimeout(() => {
+      healthKitConnectingOverlay.classList.remove('open');
+      healthKitEnergyBurnSwitch.setAttribute('aria-checked', 'true');
+      healthKitMacrosSwitch.setAttribute('aria-checked', 'true');
+      healthKitBodyWeightSwitch.setAttribute('aria-checked', 'true');
+      healthKitSubListEl.classList.remove('healthkit-sublist-disabled');
+      showIosTopToast('Apple Health connected successfully!', '✓');
+    }, 1500);
   } catch (err) {
-    healthKitSyncSwitch.setAttribute('aria-checked', String(!next));
-    healthKitSubListEl.classList.toggle('healthkit-sublist-disabled', next);
+    healthKitConnectingOverlay.classList.remove('open');
+    healthKitSyncSwitch.setAttribute('aria-checked', 'false');
+    healthKitSubListEl.classList.add('healthkit-sublist-disabled');
     showToast(err.message, true);
   }
 });
@@ -1803,11 +1858,29 @@ function renderPushNotifications() {
   const notifications = state.settings?.notifications || {};
   pushNotificationsView.querySelectorAll('[data-notif-key]').forEach((box) => {
     box.checked = Boolean(notifications[box.dataset.notifKey]);
+    box.disabled = !isPushNotificationsAllowed();
   });
   quietHoursTimeRow.hidden = !notifications.quietHours;
   quietHoursStartInput.value = localStorage.getItem('quiet_hours_start') || '22:00';
   quietHoursEndInput.value = localStorage.getItem('quiet_hours_end') || '07:00';
   notifDisabledBanner.hidden = isPushNotificationsAllowed();
+  pushNotifRowsList.classList.toggle('notif-rows-disabled', !isPushNotificationsAllowed());
+}
+
+// Scale-check "pop" animation cascading down the 6 notification rows once
+// push permission is granted from the mock system settings pane.
+function playNotifRowsEnableAnimation() {
+  const rows = pushNotifRowsList.querySelectorAll(':scope > .more-menu-item');
+  rows.forEach((row, i) => {
+    row.style.animationDelay = `${i * 45}ms`;
+    row.classList.add('notif-row-pop');
+  });
+  setTimeout(() => {
+    rows.forEach((row) => {
+      row.classList.remove('notif-row-pop');
+      row.style.animationDelay = '';
+    });
+  }, 400 + rows.length * 45);
 }
 
 async function openPushNotificationsView() {
@@ -1874,6 +1947,12 @@ mockAllowNotificationsSwitch.addEventListener('click', () => {
       notifDisabledBanner.hidden = true;
       notifDisabledBanner.classList.remove('fading-out');
     }, 350);
+    pushNotificationsView.querySelectorAll('[data-notif-key]').forEach((box) => { box.disabled = false; });
+    pushNotifRowsList.classList.remove('notif-rows-disabled');
+    playNotifRowsEnableAnimation();
+  } else {
+    pushNotificationsView.querySelectorAll('[data-notif-key]').forEach((box) => { box.disabled = true; });
+    pushNotifRowsList.classList.add('notif-rows-disabled');
   }
 });
 
@@ -7814,6 +7893,15 @@ function showToast(message, isError = false) {
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+}
+
+let iosTopToastTimer;
+function showIosTopToast(message, icon = '✓') {
+  iosTopToastIconEl.textContent = icon;
+  iosTopToastTextEl.textContent = message;
+  iosTopToastEl.classList.add('show');
+  clearTimeout(iosTopToastTimer);
+  iosTopToastTimer = setTimeout(() => iosTopToastEl.classList.remove('show'), 2800);
 }
 
 function escapeHtml(str) {

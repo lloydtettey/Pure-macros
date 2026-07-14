@@ -2351,7 +2351,7 @@
 
       <h2 class="notif-section-header">Send me a push notification when</h2>
       <section class="card more-menu-card">
-        <ul class="more-menu-list">
+        <ul class="more-menu-list" id="pushNotifRowsList">
           <li class="more-menu-item">
             <span class="more-menu-title">I receive a new message</span>
             <input type="checkbox" class="notif-toggle-circle" data-notif-key="newMessage" aria-label="Toggle notifications when I receive a new message" />
@@ -2412,6 +2412,14 @@
         </section>
         <p class="mock-settings-hint">This simulates your device's system notification permission for Pure Macros.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Simulated HealthKit connection progress overlay (HealthKit Sharing -> Enable HealthKit Sync) -->
+  <div class="modal-overlay healthkit-connecting-overlay" id="healthKitConnectingOverlay">
+    <div class="modal healthkit-connecting-modal">
+      <div class="healthkit-pulse-heart" aria-hidden="true">❤</div>
+      <p class="healthkit-connecting-text">Connecting to Apple Health...</p>
     </div>
   </div>
 
@@ -3358,6 +3366,10 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="ios-top-toast" id="iosTopToast" role="status" aria-live="polite">
+    <span class="ios-top-toast-icon" id="iosTopToastIcon" aria-hidden="true"></span>
+    <span class="ios-top-toast-text" id="iosTopToastText"></span>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
