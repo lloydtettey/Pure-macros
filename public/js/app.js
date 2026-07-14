@@ -812,6 +812,10 @@ const systemDarkMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 const themeColorMetaEl = document.getElementById('themeColorMeta');
 const THEME_COLOR_DARK = '#0a0a0c';
 const THEME_COLOR_LIGHT = '#ffffff';
+// Handle for the pending no-transitions release timer. Tracked at module
+// scope so a fresh setTheme() call can cancel a still-pending release from
+// an earlier call instead of letting both timers race to remove the class.
+let themeTimeout = null;
 
 // Preference is what the user picked: 'light', 'dark', or 'system'. Reading
 // localStorage can throw in iOS Safari private-browsing/low-storage states,
@@ -843,6 +847,11 @@ function applyTheme(preference) {
 }
 
 function setTheme(preference) {
+  // Cancel any still-pending release from a previous call so it can't fire
+  // mid-swap and remove 'no-transitions' out from under this one.
+  if (themeTimeout) {
+    clearTimeout(themeTimeout);
+  }
   // Suspend transitions/animations for one tick so every themed element
   // swaps color instantly instead of animating in parallel — that parallel
   // recalculation is what was causing visible lag on phone GPUs.
@@ -856,7 +865,10 @@ function setTheme(preference) {
   applyTheme(preference);
   // 250ms gives iOS Safari's WebKit engine time to fully finish its layout
   // and paint cycles for the swap before transitions are re-enabled.
-  setTimeout(() => document.body.classList.remove('no-transitions'), 250);
+  themeTimeout = setTimeout(() => {
+    document.body.classList.remove('no-transitions');
+    themeTimeout = null;
+  }, 250);
 }
 
 // Boot-time theme scan: never let a corrupt localStorage value or a thrown
