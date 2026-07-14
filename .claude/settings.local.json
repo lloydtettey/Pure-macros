@@ -100,7 +100,8 @@
       "Bash(rm -f \"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\shots\"/*.png)",
       "Bash(cp \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\e4734918-3095-42dc-9a60-b0567f6dfd99\\\\scratchpad\\\\smoke.js\" \"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\__smoke_test.js\")",
       "Bash(where playwright *)",
-      "Bash(SCRATCH_DIR=\"$SCRATCH\" PW_PATH=\"$PW_PATH\" node *)"
+      "Bash(SCRATCH_DIR=\"$SCRATCH\" PW_PATH=\"$PW_PATH\" node *)",
+      "Bash(NODE_PATH=./node_modules node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\b25d0d4a-f1cf-4b75-a7c4-8607d3d5b040\\\\scratchpad\\\\verify.js\")"
     ]
   }
 }

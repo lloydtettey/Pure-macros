@@ -1943,56 +1943,6 @@
     </div>
   </div>
 
-  <!-- Profile Settings Sub-View (full-screen, nested under Settings) -->
-  <div class="settings-view" id="profileSettingsView">
-    <header class="settings-view-header">
-      <button type="button" class="icon-btn settings-back-btn" id="profileSettingsBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">Profile Settings</h1>
-      <span class="settings-view-header-spacer" aria-hidden="true"></span>
-    </header>
-    <div class="settings-view-body">
-      <section class="card">
-        <form id="profileSettingsForm">
-          <label class="field">
-            <span>Display Name</span>
-            <input type="text" id="profileSettingsDisplayName" maxlength="80" placeholder="e.g. Jordan Blake" />
-          </label>
-          <label class="field">
-            <span>Current Weight (kg)</span>
-            <input type="number" id="profileSettingsCurrentWeight" min="1" step="0.1" placeholder="e.g. 78" />
-          </label>
-          <label class="field">
-            <span>Target Weight (kg)</span>
-            <input type="number" id="profileSettingsTargetWeight" min="1" step="0.1" placeholder="e.g. 72" />
-          </label>
-          <label class="field">
-            <span>Height (cm)</span>
-            <input type="number" id="profileSettingsHeight" min="50" max="272" step="0.1" placeholder="e.g. 175" />
-          </label>
-
-          <h2 class="card-title goals-section-title">Custom Variable Daily Calorie Targets</h2>
-          <label class="field">
-            <span>Target Day 1 — Rest</span>
-            <input type="number" id="profileSettingsCalorieRest" min="0" step="10" placeholder="2000" />
-          </label>
-          <label class="field">
-            <span>Target Day 2 — Moderate</span>
-            <input type="number" id="profileSettingsCalorieModerate" min="0" step="10" placeholder="2200" />
-          </label>
-          <label class="field">
-            <span>Target Day 3 — Active</span>
-            <input type="number" id="profileSettingsCalorieActive" min="0" step="10" placeholder="2500" />
-          </label>
-
-          <p class="form-error" id="profileSettingsError"></p>
-          <div class="modal-actions">
-            <button type="submit" class="btn-primary">Save Profile</button>
-          </div>
-        </form>
-      </section>
-    </div>
-  </div>
-
   <!-- App Appearance Sub-View (full-screen, nested under Settings) -->
   <div class="settings-view" id="appAppearanceView">
     <header class="settings-view-header">

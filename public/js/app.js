@@ -197,18 +197,6 @@ const settingsView = document.getElementById('settingsView');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const settingsMenuListEl = document.getElementById('settingsMenuList');
 
-const profileSettingsView = document.getElementById('profileSettingsView');
-const profileSettingsBackBtn = document.getElementById('profileSettingsBackBtn');
-const profileSettingsForm = document.getElementById('profileSettingsForm');
-const profileSettingsError = document.getElementById('profileSettingsError');
-const profileSettingsDisplayName = document.getElementById('profileSettingsDisplayName');
-const profileSettingsCurrentWeight = document.getElementById('profileSettingsCurrentWeight');
-const profileSettingsTargetWeight = document.getElementById('profileSettingsTargetWeight');
-const profileSettingsHeight = document.getElementById('profileSettingsHeight');
-const profileSettingsCalorieRest = document.getElementById('profileSettingsCalorieRest');
-const profileSettingsCalorieModerate = document.getElementById('profileSettingsCalorieModerate');
-const profileSettingsCalorieActive = document.getElementById('profileSettingsCalorieActive');
-
 const appAppearanceView = document.getElementById('appAppearanceView');
 const appAppearanceBackBtn = document.getElementById('appAppearanceBackBtn');
 const appearanceCardGridEl = document.getElementById('appearanceCardGrid');
@@ -1360,7 +1348,7 @@ function closeSettingsView() {
 settingsBackBtn.addEventListener('click', closeSettingsView);
 
 const SETTINGS_MENU_ACTIONS = {
-  'profile-settings': () => openProfileSettingsView(),
+  'profile-settings': () => openProfileDetailsView('settings'),
   'app-appearance': () => openSubView(appAppearanceView),
   'diary-settings': () => openDiarySettingsView(),
   'start-of-week': () => openStartOfWeekView(),
@@ -1376,56 +1364,6 @@ settingsMenuListEl.addEventListener('click', (e) => {
   const action = SETTINGS_MENU_ACTIONS[item.dataset.menuKey];
   if (action) action();
   else showToast('Coming soon');
-});
-
-// ---------- Profile Settings sub-view (Settings > Profile Settings) ----------
-function openProfileSettingsView() {
-  profileSettingsError.textContent = '';
-  const s = state.settings || {};
-  profileSettingsDisplayName.value = s.displayName || '';
-  profileSettingsCurrentWeight.value = s.currentWeightKg ?? '';
-  profileSettingsTargetWeight.value = s.targetWeightKg ?? '';
-  profileSettingsHeight.value = s.heightCm ?? '';
-  const targets = s.customCalorieTargets || { rest: 2000, moderate: 2200, active: 2500 };
-  profileSettingsCalorieRest.value = targets.rest ?? 2000;
-  profileSettingsCalorieModerate.value = targets.moderate ?? 2200;
-  profileSettingsCalorieActive.value = targets.active ?? 2500;
-  openSubView(profileSettingsView);
-}
-profileSettingsBackBtn.addEventListener('click', () => closeSubView(profileSettingsView));
-
-profileSettingsForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  profileSettingsError.textContent = '';
-
-  const payload = { displayName: profileSettingsDisplayName.value.trim() };
-  const currentWeightKg = parseFloat(profileSettingsCurrentWeight.value);
-  const targetWeightKg = parseFloat(profileSettingsTargetWeight.value);
-  const heightCm = parseFloat(profileSettingsHeight.value);
-  const rest = parseFloat(profileSettingsCalorieRest.value);
-  const moderate = parseFloat(profileSettingsCalorieModerate.value);
-  const active = parseFloat(profileSettingsCalorieActive.value);
-  if (!Number.isNaN(currentWeightKg)) payload.currentWeightKg = currentWeightKg;
-  if (!Number.isNaN(targetWeightKg)) payload.targetWeightKg = targetWeightKg;
-  if (!Number.isNaN(heightCm)) payload.heightCm = heightCm;
-  if (!Number.isNaN(rest) && !Number.isNaN(moderate) && !Number.isNaN(active)) {
-    payload.customCalorieTargets = { rest, moderate, active };
-  }
-
-  try {
-    const res = await authFetch(`${API}/settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to save profile');
-    state.settings = data;
-    showToast('Profile saved');
-    closeSubView(profileSettingsView);
-  } catch (err) {
-    profileSettingsError.textContent = err.message;
-  }
 });
 
 // ---------- Diary Settings sub-view (Settings > Diary Settings) ----------
@@ -5994,7 +5932,7 @@ function openProfileView() {
 }
 profileBackBtn.addEventListener('click', () => closeSubView(profileView));
 
-profileEditRowBtn.addEventListener('click', () => openProfileDetailsView());
+profileEditRowBtn.addEventListener('click', () => openProfileDetailsView('profile'));
 
 // ---------- Workout Routines ----------
 const workoutsView = document.getElementById('workoutsView');
@@ -8714,11 +8652,25 @@ function renderProfileDetailsList() {
   document.getElementById('profileDetailsUnits').textContent = details.units || PROFILE_DETAILS_FIELDS.units.default;
 }
 
-function openProfileDetailsView() {
+// History reference for smart back-navigation: records which screen opened
+// Personal Details so the back arrow can return there directly instead of
+// always falling back to one hardcoded screen — 'settings' when opened from
+// Settings > Profile Settings, 'profile' when opened from My Profile > Edit Profile.
+let profileDetailsOrigin = 'profile';
+
+function openProfileDetailsView(origin) {
+  profileDetailsOrigin = origin || profileDetailsOrigin || 'profile';
   renderProfileDetailsList();
   openSubView(profileDetailsView);
 }
-profileDetailsBackBtn.addEventListener('click', () => closeSubView(profileDetailsView));
+profileDetailsBackBtn.addEventListener('click', () => {
+  closeSubView(profileDetailsView);
+  if (profileDetailsOrigin === 'settings') {
+    if (!settingsView.classList.contains('open')) openSettingsView();
+  } else if (!profileView.classList.contains('open')) {
+    openProfileView();
+  }
+});
 
 let activeProfileField = null;
 
