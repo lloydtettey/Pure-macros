@@ -2059,16 +2059,85 @@
     </header>
     <div class="settings-view-body">
       <section class="card more-menu-card">
-        <ul class="more-menu-list">
-          <li class="more-menu-item">
+        <ul class="more-menu-list" id="sharingPrivacyMenuList">
+          <li class="more-menu-item" data-menu-key="diary-sharing">
             <span class="more-menu-icon" aria-hidden="true">📔</span>
             <span class="more-menu-title">Diary Sharing</span>
-            <select id="sharingDiarySelect" class="privacy-select">
-              <option value="private">Private</option>
-              <option value="friends">Friends</option>
-              <option value="public">Public</option>
-            </select>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
           </li>
+          <li class="more-menu-item" data-menu-key="email-settings">
+            <span class="more-menu-icon" aria-hidden="true">✉️</span>
+            <span class="more-menu-title">Email Settings</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="healthkit-sharing">
+            <span class="more-menu-icon" aria-hidden="true">❤️</span>
+            <span class="more-menu-title">HealthKit Sharing</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="facebook-settings">
+            <span class="more-menu-icon" aria-hidden="true">📘</span>
+            <span class="more-menu-title">Facebook Settings</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="google-settings">
+            <span class="more-menu-icon" aria-hidden="true">🌐</span>
+            <span class="more-menu-title">Google Settings</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="change-password">
+            <span class="more-menu-icon" aria-hidden="true">🔑</span>
+            <span class="more-menu-title">Change Password</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Diary Sharing Sub-View (nested one level deeper, under Sharing & Privacy) -->
+  <div class="settings-view settings-view--nested-privacy" id="diarySharingView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="diarySharingBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Diary Sharing</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <p class="privacy-warning-text">Choose who can see your food diary. You can change this at any time.</p>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list privacy-radio-list" id="diarySharingRadioList">
+          <li class="more-menu-item privacy-radio-row" data-diary-value="private">
+            <div class="more-menu-text">
+              <span class="more-menu-title">Private</span>
+              <span class="more-menu-desc">Only you can see your diary.</span>
+            </div>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-diary-value="public">
+            <div class="more-menu-text">
+              <span class="more-menu-title">Public</span>
+              <span class="more-menu-desc">Anyone using the app can view your diary.</span>
+            </div>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-diary-value="friends">
+            <div class="more-menu-text">
+              <span class="more-menu-title">Friends Only</span>
+              <span class="more-menu-desc">Only your confirmed friends can see your diary.</span>
+            </div>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-diary-value="locked">
+            <div class="more-menu-text">
+              <span class="more-menu-title">Locked</span>
+              <span class="more-menu-desc">Your diary is hidden from everyone, including friends.</span>
+            </div>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+        </ul>
+      </section>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
           <li class="more-menu-item">
             <span class="more-menu-icon" aria-hidden="true">🔎</span>
             <span class="more-menu-title">Profile Searchability</span>
@@ -2077,6 +2146,137 @@
             </button>
           </li>
         </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Email Settings Sub-View (nested one level deeper, under Sharing & Privacy) -->
+  <div class="settings-view settings-view--nested-privacy" id="emailSettingsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="emailSettingsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Email Settings</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card email-token-card">
+        <span class="more-menu-title">Account Email</span>
+        <span class="email-token-value" id="emailTokenValue">—</span>
+        <button type="button" class="btn-email-resend" id="resendConfirmationBtn">Resend Confirmation</button>
+      </section>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Announcements</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="emailAnnouncementsSwitch" role="switch" aria-checked="true" aria-label="Toggle announcement emails">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Health Tips</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="emailHealthTipsSwitch" role="switch" aria-checked="true" aria-label="Toggle health tip emails">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Weekly Digests</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="emailWeeklyDigestSwitch" role="switch" aria-checked="true" aria-label="Toggle weekly digest emails">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Find me by email</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="findMeByEmailSwitch" role="switch" aria-checked="false" aria-label="Toggle find me by email">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- HealthKit Sharing Sub-View (nested one level deeper, under Sharing & Privacy) -->
+  <div class="settings-view settings-view--nested-privacy" id="healthKitSharingView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="healthKitBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">HealthKit Sharing</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="healthkit-emblem" aria-hidden="true">❤️</div>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Enable HealthKit Sync</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="healthKitSyncSwitch" role="switch" aria-checked="false" aria-label="Toggle HealthKit sync">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list" id="healthKitSubList">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Energy Burn</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="healthKitEnergyBurnSwitch" role="switch" aria-checked="true" aria-label="Toggle energy burn sync">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Logged Macros (g)</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="healthKitMacrosSwitch" role="switch" aria-checked="true" aria-label="Toggle macro grams sync">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Body Weight</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="healthKitBodyWeightSwitch" role="switch" aria-checked="true" aria-label="Toggle body weight sync">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Social Connect Sub-View (nested one level deeper, under Sharing & Privacy;
+       shared destination for both the Facebook Settings and Google Settings rows) -->
+  <div class="settings-view settings-view--nested-privacy" id="socialConnectView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="socialConnectBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Social Connect</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <div class="auth-oauth-group">
+        <button type="button" class="btn-oauth btn-oauth-facebook" id="connectFacebookBtn">Connect to Facebook</button>
+        <button type="button" class="btn-oauth btn-oauth-google" id="connectGoogleBtn">Continue with Google</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Sub-View (nested one level deeper, under Sharing & Privacy) -->
+  <div class="settings-view settings-view--nested-privacy" id="changePasswordView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="changePasswordBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Change Password</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card">
+        <label class="field">
+          <span>Current Password</span>
+          <input type="password" id="currentPasswordInput" autocomplete="current-password" placeholder="Your current password" />
+        </label>
+        <label class="field">
+          <span>New Password</span>
+          <input type="password" id="newPasswordInput" autocomplete="new-password" placeholder="At least 10 characters" />
+        </label>
+        <label class="field">
+          <span>Re-enter Password</span>
+          <input type="password" id="confirmNewPasswordInput" autocomplete="new-password" placeholder="Re-enter new password" />
+        </label>
+        <p class="form-error" id="changePasswordError"></p>
+        <button type="button" class="btn-primary is-disabled" id="changePasswordSubmitBtn" disabled>CHANGE PASSWORD</button>
       </section>
     </div>
   </div>

@@ -5540,3 +5540,91 @@ select {
 .settings-view.open {
   transform: translate3d(0, 0, 0);
 }
+
+/* ---------- Sharing & Privacy nested sub-pages ---------- */
+/* Diary Sharing, Email Settings, HealthKit Sharing, Social Connect, and
+   Change Password all open from inside the Sharing & Privacy list
+   (.settings-view, z-index: 120), so they stack above it — same nested
+   pattern as #nutrientGoalsView — and use a full off-screen-to-onscreen
+   translate3d slide instead of the subtle 24px shift the rest of the More
+   tab ecosystem uses. Doubled-up class selectors keep this override winning
+   regardless of source order against the base .settings-view rules above. */
+.settings-view.settings-view--nested-privacy {
+  z-index: 125;
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+.settings-view.settings-view--nested-privacy.open {
+  transform: translate3d(0, 0, 0);
+}
+.settings-view.settings-view--nested-privacy.dragging {
+  transition: none;
+}
+
+/* Blue checkmark radio list (Diary Sharing: Private/Public/Friends Only/Locked) */
+.privacy-warning-text { font-size: 12px; color: var(--text-2); padding: 0 4px 10px; }
+.privacy-radio-row { cursor: pointer; }
+.privacy-radio-check {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-blue);
+  opacity: 0;
+  flex-shrink: 0;
+}
+.privacy-radio-row.active .privacy-radio-check { opacity: 1; }
+
+/* Green iOS-style toggles (Email Settings checklist, HealthKit master + sub-toggles) */
+.toggle-switch--green[aria-checked="true"] .toggle-switch-thumb {
+  background: var(--neon-green);
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.6);
+}
+.healthkit-sublist-disabled .toggle-switch { opacity: 0.4; pointer-events: none; }
+
+/* Email Settings token card */
+.email-token-card { display: flex; flex-direction: column; gap: 10px; }
+.email-token-value { font-family: ui-monospace, monospace; font-size: 13px; color: var(--text-2); word-break: break-all; }
+.btn-email-resend {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--neon-blue);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.btn-email-resend:hover { filter: brightness(1.08); }
+.btn-email-resend:active { transform: scale(0.97); }
+
+/* HealthKit Sharing heart emblem */
+.healthkit-emblem {
+  width: 72px;
+  height: 72px;
+  margin: 8px auto 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  border-radius: 50%;
+  background: rgba(255, 77, 77, 0.12);
+}
+
+/* Social Connect panels */
+.btn-oauth-facebook {
+  background: #1877f2;
+  border: 1px solid #1877f2;
+  color: #ffffff;
+}
+.btn-oauth-facebook:hover { background: #166fe0; }
+.btn-oauth.is-connected { opacity: 0.75; cursor: default; }
+
+/* Change Password validator button — gray/disabled until both fields match
+   and clear the length floor, then snaps to the brand accent (.btn-primary
+   is already var(--neon-cyan)) the instant is-disabled is lifted. */
+.btn-primary.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

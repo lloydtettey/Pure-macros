@@ -59,7 +59,7 @@ const FITNESS_GOALS = ['lose', 'maintain', 'gain'];
 const FASTING_PROTOCOLS = ['16:8', '18:6', 'custom'];
 const DEVICE_KEYS = ['appleHealth', 'googleFit', 'manualEntry', 'garmin', 'fitbit', 'strava', 'myFitnessPal'];
 const WEEK_START_OPTIONS = ['monday', 'sunday'];
-const DIARY_SHARING_OPTIONS = ['private', 'friends', 'public'];
+const DIARY_SHARING_OPTIONS = ['private', 'friends', 'public', 'locked'];
 const DAY_TYPES = ['rest', 'work', 'gym'];
 const DEFAULT_DAY_TYPE_TARGETS = {
   rest: { label: 'Rest Day', calories: 2000, protein: 130, carbs: 220, fat: 65 },
@@ -531,6 +531,38 @@ app.post('/api/auth/login', async (req, res) => {
   const token = createSession(db, user.id);
   await writeDb(db);
   res.json({ token, username: user.username });
+});
+
+// POST /api/auth/change-password — body: { currentPassword, newPassword }.
+// Requires the caller's existing password to re-verify identity (a stolen
+// session token alone isn't enough to lock the real owner out), unless the
+// account was created via OAuth and has never set one (user.hash === null),
+// in which case this doubles as "set a password" for that account.
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof newPassword !== 'string' || newPassword.length < 10) {
+    return res.status(400).json({ error: 'New password must be at least 10 characters' });
+  }
+
+  const user = req.db.users.find((u) => u.id === req.userId);
+  if (!user) {
+    return res.status(401).json({ error: 'Session expired, please log in again' });
+  }
+
+  if (user.hash) {
+    // 403, not 401 — authFetch() treats any 401 as "session expired" and
+    // force-logs the user out globally, which would boot them to the login
+    // screen just for mistyping their current password.
+    if (typeof currentPassword !== 'string' || !verifyPassword(currentPassword, user.salt, user.hash)) {
+      return res.status(403).json({ error: 'Current password is incorrect' });
+    }
+  }
+
+  const { salt, hash } = hashPassword(newPassword);
+  user.salt = salt;
+  user.hash = hash;
+  await writeDb(req.db);
+  res.json({ success: true });
 });
 
 // POST /api/auth/google — body: { code } (an authorization code from

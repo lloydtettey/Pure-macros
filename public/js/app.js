@@ -209,8 +209,42 @@ const startOfWeekSelect = document.getElementById('startOfWeekSelect');
 
 const sharingPrivacyView = document.getElementById('sharingPrivacyView');
 const sharingPrivacyBackBtn = document.getElementById('sharingPrivacyBackBtn');
-const sharingDiarySelect = document.getElementById('sharingDiarySelect');
+const sharingPrivacyMenuListEl = document.getElementById('sharingPrivacyMenuList');
 const sharingProfileSearchableSwitch = document.getElementById('sharingProfileSearchableSwitch');
+
+const diarySharingView = document.getElementById('diarySharingView');
+const diarySharingBackBtn = document.getElementById('diarySharingBackBtn');
+const diarySharingRadioListEl = document.getElementById('diarySharingRadioList');
+
+const emailSettingsView = document.getElementById('emailSettingsView');
+const emailSettingsBackBtn = document.getElementById('emailSettingsBackBtn');
+const emailTokenValueEl = document.getElementById('emailTokenValue');
+const resendConfirmationBtn = document.getElementById('resendConfirmationBtn');
+const emailAnnouncementsSwitch = document.getElementById('emailAnnouncementsSwitch');
+const emailHealthTipsSwitch = document.getElementById('emailHealthTipsSwitch');
+const emailWeeklyDigestSwitch = document.getElementById('emailWeeklyDigestSwitch');
+const findMeByEmailSwitch = document.getElementById('findMeByEmailSwitch');
+
+const healthKitSharingView = document.getElementById('healthKitSharingView');
+const healthKitBackBtn = document.getElementById('healthKitBackBtn');
+const healthKitSyncSwitch = document.getElementById('healthKitSyncSwitch');
+const healthKitSubListEl = document.getElementById('healthKitSubList');
+const healthKitEnergyBurnSwitch = document.getElementById('healthKitEnergyBurnSwitch');
+const healthKitMacrosSwitch = document.getElementById('healthKitMacrosSwitch');
+const healthKitBodyWeightSwitch = document.getElementById('healthKitBodyWeightSwitch');
+
+const socialConnectView = document.getElementById('socialConnectView');
+const socialConnectBackBtn = document.getElementById('socialConnectBackBtn');
+const connectFacebookBtn = document.getElementById('connectFacebookBtn');
+const connectGoogleBtn = document.getElementById('connectGoogleBtn');
+
+const changePasswordView = document.getElementById('changePasswordView');
+const changePasswordBackBtn = document.getElementById('changePasswordBackBtn');
+const currentPasswordInput = document.getElementById('currentPasswordInput');
+const newPasswordInput = document.getElementById('newPasswordInput');
+const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
+const changePasswordSubmitBtn = document.getElementById('changePasswordSubmitBtn');
+const changePasswordError = document.getElementById('changePasswordError');
 
 const myExercisesView = document.getElementById('myExercisesView');
 const myExercisesBackBtn = document.getElementById('myExercisesBackBtn');
@@ -1408,15 +1442,25 @@ startOfWeekSelect.addEventListener('change', async () => {
   }
 });
 
-// ---------- Sharing & Privacy sub-view (Settings > Sharing & Privacy) ----------
-function renderSharingPrivacy() {
-  const sharing = state.settings?.sharing || {};
-  sharingDiarySelect.value = sharing.diarySharing || 'private';
-  sharingProfileSearchableSwitch.setAttribute('aria-checked', String(Boolean(sharing.profileSearchable)));
-}
+// ---------- Sharing & Privacy ecosystem (Settings > Sharing & Privacy) ----------
+// Main list: 6 chevron rows, each opening its own full-screen sub-page
+// stacked above sharingPrivacyView (see .settings-view--nested-privacy).
+const SHARING_PRIVACY_MENU_ACTIONS = {
+  'diary-sharing': () => openDiarySharingView(),
+  'email-settings': () => openEmailSettingsView(),
+  'healthkit-sharing': () => openHealthKitSharingView(),
+  'facebook-settings': () => openSocialConnectView(),
+  'google-settings': () => openSocialConnectView(),
+  'change-password': () => openChangePasswordView()
+};
+sharingPrivacyMenuListEl.addEventListener('click', (e) => {
+  const item = e.target.closest('.more-menu-item');
+  if (!item) return;
+  const action = SHARING_PRIVACY_MENU_ACTIONS[item.dataset.menuKey];
+  if (action) action();
+});
 
 function openSharingPrivacyView() {
-  renderSharingPrivacy();
   openSubView(sharingPrivacyView);
 }
 sharingPrivacyBackBtn.addEventListener('click', () => closeSubView(sharingPrivacyView));
@@ -1432,11 +1476,46 @@ async function persistSharing(sharing) {
   state.settings = data;
 }
 
-sharingDiarySelect.addEventListener('change', async () => {
-  const sharing = { ...(state.settings.sharing || {}), diarySharing: sharingDiarySelect.value };
+// Every sub-page below patches its own slice onto the same sharing object
+// and PUTs the whole thing back, so any one screen's save can't clobber a
+// field owned by another (mirrors the diary/profile-searchable pattern this
+// view already used before the ecosystem grew to 6 destinations).
+async function persistSharingPatch(patch) {
+  const sharing = { ...(state.settings.sharing || {}), ...patch };
+  await persistSharing(sharing);
+}
+
+// ---------- Diary Sharing sub-page ----------
+function renderDiarySharingRadioActive(value) {
+  diarySharingRadioListEl.querySelectorAll('.privacy-radio-row').forEach((row) => {
+    row.classList.toggle('active', row.dataset.diaryValue === value);
+  });
+}
+
+function renderDiarySharingView() {
+  const sharing = state.settings?.sharing || {};
+  renderDiarySharingRadioActive(sharing.diarySharing || 'private');
+  sharingProfileSearchableSwitch.setAttribute('aria-checked', String(Boolean(sharing.profileSearchable)));
+}
+
+function openDiarySharingView() {
+  renderDiarySharingView();
+  diarySharingView.classList.add('open');
+}
+function closeDiarySharingView() { diarySharingView.classList.remove('open'); }
+diarySharingBackBtn.addEventListener('click', closeDiarySharingView);
+
+diarySharingRadioListEl.addEventListener('click', async (e) => {
+  const row = e.target.closest('.privacy-radio-row');
+  if (!row) return;
+  const previous = state.settings.sharing?.diarySharing || 'private';
+  const value = row.dataset.diaryValue;
+  if (value === previous) return;
+  renderDiarySharingRadioActive(value);
   try {
-    await persistSharing(sharing);
+    await persistSharingPatch({ diarySharing: value });
   } catch (err) {
+    renderDiarySharingRadioActive(previous);
     showToast(err.message, true);
   }
 });
@@ -1444,12 +1523,168 @@ sharingDiarySelect.addEventListener('change', async () => {
 sharingProfileSearchableSwitch.addEventListener('click', async () => {
   const next = sharingProfileSearchableSwitch.getAttribute('aria-checked') !== 'true';
   sharingProfileSearchableSwitch.setAttribute('aria-checked', String(next));
-  const sharing = { ...(state.settings.sharing || {}), profileSearchable: next };
   try {
-    await persistSharing(sharing);
+    await persistSharingPatch({ profileSearchable: next });
   } catch (err) {
     sharingProfileSearchableSwitch.setAttribute('aria-checked', String(!next));
     showToast(err.message, true);
+  }
+});
+
+// ---------- Email Settings sub-page ----------
+function renderEmailSettingsView() {
+  const sharing = state.settings?.sharing || {};
+  emailTokenValueEl.textContent = state.user?.username || '—';
+  emailAnnouncementsSwitch.setAttribute('aria-checked', String(sharing.emailAnnouncements !== false));
+  emailHealthTipsSwitch.setAttribute('aria-checked', String(sharing.emailHealthTips !== false));
+  emailWeeklyDigestSwitch.setAttribute('aria-checked', String(sharing.emailWeeklyDigest !== false));
+  findMeByEmailSwitch.setAttribute('aria-checked', String(Boolean(sharing.findMeByEmail)));
+}
+
+function openEmailSettingsView() {
+  renderEmailSettingsView();
+  emailSettingsView.classList.add('open');
+}
+function closeEmailSettingsView() { emailSettingsView.classList.remove('open'); }
+emailSettingsBackBtn.addEventListener('click', closeEmailSettingsView);
+
+resendConfirmationBtn.addEventListener('click', () => {
+  showToast('Confirmation email sent');
+});
+
+function bindEmailToggle(el, key) {
+  el.addEventListener('click', async () => {
+    const next = el.getAttribute('aria-checked') !== 'true';
+    el.setAttribute('aria-checked', String(next));
+    try {
+      await persistSharingPatch({ [key]: next });
+    } catch (err) {
+      el.setAttribute('aria-checked', String(!next));
+      showToast(err.message, true);
+    }
+  });
+}
+bindEmailToggle(emailAnnouncementsSwitch, 'emailAnnouncements');
+bindEmailToggle(emailHealthTipsSwitch, 'emailHealthTips');
+bindEmailToggle(emailWeeklyDigestSwitch, 'emailWeeklyDigest');
+bindEmailToggle(findMeByEmailSwitch, 'findMeByEmail');
+
+// ---------- HealthKit Sharing sub-page ----------
+function renderHealthKitSharingView() {
+  const sharing = state.settings?.sharing || {};
+  const syncOn = Boolean(sharing.healthKitSync);
+  healthKitSyncSwitch.setAttribute('aria-checked', String(syncOn));
+  healthKitEnergyBurnSwitch.setAttribute('aria-checked', String(sharing.healthKitEnergyBurn !== false));
+  healthKitMacrosSwitch.setAttribute('aria-checked', String(sharing.healthKitMacros !== false));
+  healthKitBodyWeightSwitch.setAttribute('aria-checked', String(sharing.healthKitBodyWeight !== false));
+  healthKitSubListEl.classList.toggle('healthkit-sublist-disabled', !syncOn);
+}
+
+function openHealthKitSharingView() {
+  renderHealthKitSharingView();
+  healthKitSharingView.classList.add('open');
+}
+function closeHealthKitSharingView() { healthKitSharingView.classList.remove('open'); }
+healthKitBackBtn.addEventListener('click', closeHealthKitSharingView);
+
+healthKitSyncSwitch.addEventListener('click', async () => {
+  const next = healthKitSyncSwitch.getAttribute('aria-checked') !== 'true';
+  healthKitSyncSwitch.setAttribute('aria-checked', String(next));
+  healthKitSubListEl.classList.toggle('healthkit-sublist-disabled', !next);
+  try {
+    await persistSharingPatch({ healthKitSync: next });
+  } catch (err) {
+    healthKitSyncSwitch.setAttribute('aria-checked', String(!next));
+    healthKitSubListEl.classList.toggle('healthkit-sublist-disabled', next);
+    showToast(err.message, true);
+  }
+});
+
+function bindHealthKitToggle(el, key) {
+  el.addEventListener('click', async () => {
+    if (healthKitSubListEl.classList.contains('healthkit-sublist-disabled')) return;
+    const next = el.getAttribute('aria-checked') !== 'true';
+    el.setAttribute('aria-checked', String(next));
+    try {
+      await persistSharingPatch({ [key]: next });
+    } catch (err) {
+      el.setAttribute('aria-checked', String(!next));
+      showToast(err.message, true);
+    }
+  });
+}
+bindHealthKitToggle(healthKitEnergyBurnSwitch, 'healthKitEnergyBurn');
+bindHealthKitToggle(healthKitMacrosSwitch, 'healthKitMacros');
+bindHealthKitToggle(healthKitBodyWeightSwitch, 'healthKitBodyWeight');
+
+// ---------- Social Connect sub-page (Facebook Settings + Google Settings) ----------
+function renderSocialConnectView() {
+  const sharing = state.settings?.sharing || {};
+  connectFacebookBtn.textContent = sharing.facebookConnected ? 'Connected to Facebook ✓' : 'Connect to Facebook';
+  connectFacebookBtn.classList.toggle('is-connected', Boolean(sharing.facebookConnected));
+  connectGoogleBtn.textContent = sharing.googleConnected ? 'Connected with Google ✓' : 'Continue with Google';
+  connectGoogleBtn.classList.toggle('is-connected', Boolean(sharing.googleConnected));
+}
+
+function openSocialConnectView() {
+  renderSocialConnectView();
+  socialConnectView.classList.add('open');
+}
+function closeSocialConnectView() { socialConnectView.classList.remove('open'); }
+socialConnectBackBtn.addEventListener('click', closeSocialConnectView);
+
+function bindSocialConnectButton(el, key) {
+  el.addEventListener('click', async () => {
+    const next = !(state.settings.sharing || {})[key];
+    try {
+      await persistSharingPatch({ [key]: next });
+      renderSocialConnectView();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+}
+bindSocialConnectButton(connectFacebookBtn, 'facebookConnected');
+bindSocialConnectButton(connectGoogleBtn, 'googleConnected');
+
+// ---------- Change Password sub-page ----------
+function updateChangePasswordButtonState() {
+  const valid = newPasswordInput.value.length >= 10 && newPasswordInput.value === confirmNewPasswordInput.value;
+  changePasswordSubmitBtn.classList.toggle('is-disabled', !valid);
+  changePasswordSubmitBtn.disabled = !valid;
+  return valid;
+}
+newPasswordInput.addEventListener('input', updateChangePasswordButtonState);
+confirmNewPasswordInput.addEventListener('input', updateChangePasswordButtonState);
+
+function openChangePasswordView() {
+  currentPasswordInput.value = '';
+  newPasswordInput.value = '';
+  confirmNewPasswordInput.value = '';
+  changePasswordError.textContent = '';
+  updateChangePasswordButtonState();
+  changePasswordView.classList.add('open');
+}
+function closeChangePasswordView() { changePasswordView.classList.remove('open'); }
+changePasswordBackBtn.addEventListener('click', closeChangePasswordView);
+
+changePasswordSubmitBtn.addEventListener('click', async () => {
+  if (!updateChangePasswordButtonState()) return;
+  changePasswordError.textContent = '';
+  changePasswordSubmitBtn.disabled = true;
+  try {
+    const res = await authFetch(`${API}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: currentPasswordInput.value, newPassword: newPasswordInput.value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to change password');
+    showToast('Password updated');
+    closeChangePasswordView();
+  } catch (err) {
+    changePasswordError.textContent = err.message;
+    changePasswordSubmitBtn.disabled = false;
   }
 });
 
