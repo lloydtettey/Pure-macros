@@ -3390,38 +3390,43 @@ function renderWeightChart() {
   weightChartAxisEl.classList.toggle('hidden', !hasEnoughData);
   if (!hasEnoughData) return;
 
-  const unit = getWeightUnit();
-  const values = chronological.map((w) => (unit === 'lbs' ? kgToLbs(w.weight) : w.weight));
-  const maxVal = Math.max(...values);
-  const minVal = Math.min(...values);
-  const ceiling = maxVal === minVal ? maxVal + 1 : maxVal;
-  const floor = maxVal === minVal ? Math.max(0, minVal - 1) : minVal;
+  // The point/gridline math + SVG markup write is deferred a frame so it
+  // never lands in the middle of a scroll or gesture's own layout work.
+  requestAnimationFrame(() => {
+    const unit = getWeightUnit();
+    const values = chronological.map((w) => (unit === 'lbs' ? kgToLbs(w.weight) : w.weight));
+    const maxVal = Math.max(...values);
+    const minVal = Math.min(...values);
+    const ceiling = maxVal === minVal ? maxVal + 1 : maxVal;
+    const floor = maxVal === minVal ? Math.max(0, minVal - 1) : minVal;
 
-  for (let i = 4; i >= 0; i--) {
-    const span = document.createElement('span');
-    span.textContent = Math.round(floor + ((ceiling - floor) / 4) * i);
-    weightChartAxisEl.appendChild(span);
-  }
+    weightChartAxisEl.innerHTML = '';
+    for (let i = 4; i >= 0; i--) {
+      const span = document.createElement('span');
+      span.textContent = Math.round(floor + ((ceiling - floor) / 4) * i);
+      weightChartAxisEl.appendChild(span);
+    }
 
-  const width = 300;
-  const height = 140;
-  const padY = 6;
-  const plotHeight = height - padY * 2;
-  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
-  const points = values
-    .map((v, i) => {
-      const x = values.length > 1 ? i * stepX : width / 2;
-      const y = padY + plotHeight - ((v - floor) / (ceiling - floor)) * plotHeight;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-  const gridLines = [0, 1, 2, 3, 4]
-    .map((i) => {
-      const y = (padY + (plotHeight / 4) * i).toFixed(1);
-      return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
-    })
-    .join('');
-  weightChartSvgEl.innerHTML = `${gridLines}<polyline class="macro-history-line cyan" points="${points}" />`;
+    const width = 300;
+    const height = 140;
+    const padY = 6;
+    const plotHeight = height - padY * 2;
+    const stepX = values.length > 1 ? width / (values.length - 1) : 0;
+    const points = values
+      .map((v, i) => {
+        const x = values.length > 1 ? i * stepX : width / 2;
+        const y = padY + plotHeight - ((v - floor) / (ceiling - floor)) * plotHeight;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    const gridLines = [0, 1, 2, 3, 4]
+      .map((i) => {
+        const y = (padY + (plotHeight / 4) * i).toFixed(1);
+        return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
+      })
+      .join('');
+    weightChartSvgEl.innerHTML = `${gridLines}<polyline class="macro-history-line cyan" points="${points}" />`;
+  });
 }
 
 function buildWeightEntry(entry) {
@@ -5311,6 +5316,7 @@ onboardingGenerateBtn.addEventListener('click', async () => {
     document.getElementById('onboardingGoalCarbs').textContent = `${data.macroGoals?.carbs ?? 0}g`;
     document.getElementById('onboardingGoalFat').textContent = `${data.macroGoals?.fat ?? 0}g`;
     setOnboardingStep(3);
+    seedProfileDetailsFromOnboarding(payload);
     await Promise.all([loadDay(), loadWeights()]);
   } catch (err) {
     onboardingStep2Error.textContent = err.message;
@@ -8938,6 +8944,7 @@ updateMessagesBadge();
 const privacyView = document.getElementById('privacyView');
 const privacyBackBtn = document.getElementById('privacyBackBtn');
 const privacyProfileVisibilitySwitch = document.getElementById('privacyProfileVisibilitySwitch');
+const privacyAdvertisingSwitch = document.getElementById('privacyAdvertisingSwitch');
 const privacyDirectMessagingSwitch = document.getElementById('privacyDirectMessagingSwitch');
 const privacyCrashReportsSwitch = document.getElementById('privacyCrashReportsSwitch');
 const privacyDiarySharingSelect = document.getElementById('privacyDiarySharingSelect');
@@ -8946,7 +8953,7 @@ const privacyDeleteAccountBtn = document.getElementById('privacyDeleteAccountBtn
 
 // Client-only preferences — there is no privacy-settings endpoint on the
 // server, so these hold for the current session rather than persisting.
-const privacyPrefs = { profileVisibility: true, directMessaging: true, crashReports: true, diarySharing: 'friends' };
+const privacyPrefs = { profileVisibility: true, advertising: false, directMessaging: true, crashReports: true, diarySharing: 'friends' };
 
 function bindToggleSwitch(el, key) {
   el.addEventListener('click', () => {
@@ -8955,6 +8962,7 @@ function bindToggleSwitch(el, key) {
   });
 }
 bindToggleSwitch(privacyProfileVisibilitySwitch, 'profileVisibility');
+bindToggleSwitch(privacyAdvertisingSwitch, 'advertising');
 bindToggleSwitch(privacyDirectMessagingSwitch, 'directMessaging');
 bindToggleSwitch(privacyCrashReportsSwitch, 'crashReports');
 
@@ -8968,6 +8976,7 @@ function csvEscape(value) {
 }
 
 async function exportDataHistoryCsv() {
+  if (!window.confirm('Request a full export of your data history as a CSV file?')) return;
   privacyExportBtn.disabled = true;
   privacyExportBtn.textContent = 'Preparing export…';
   try {
@@ -9064,11 +9073,19 @@ function renderHelpFaq(topic) {
   if (!data) return;
   helpFaqTitleEl.textContent = data.title;
   helpFaqListEl.innerHTML = data.items
-    .map((f) => `<li class="help-faq-item"><p class="help-faq-q">${escapeHtml(f.q)}</p><p class="help-faq-a">${escapeHtml(f.a)}</p></li>`)
+    .map((f) => `<li class="help-faq-item"><button type="button" class="help-faq-q-btn"><span class="help-faq-q">${escapeHtml(f.q)}</span><span class="help-faq-caret" aria-hidden="true">›</span></button><p class="help-faq-a">${escapeHtml(f.a)}</p></li>`)
     .join('');
   helpFaqPanel.classList.remove('hidden');
   helpGridEl.querySelectorAll('.help-card').forEach((c) => c.classList.toggle('active', c.dataset.topic === topic));
 }
+
+// Accordion — tapping a question toggles just that row's answer open/closed;
+// other rows stay however the user left them.
+helpFaqListEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.help-faq-q-btn');
+  if (!btn) return;
+  btn.closest('.help-faq-item').classList.toggle('open');
+});
 
 helpGridEl.addEventListener('click', (e) => {
   const card = e.target.closest('.help-card');
@@ -9132,6 +9149,10 @@ function formatSyncTimestamp(date) {
   return `Last Successful Cloud Sync: ${isToday ? 'Today' : date.toLocaleDateString()} at ${time}`;
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function updateSyncHardwareStatus() {
   const connectedCount = state.devices ? Object.values(state.devices).filter(Boolean).length : 0;
   syncHardwareStatusEl.textContent = connectedCount > 0 ? `${connectedCount} device${connectedCount > 1 ? 's' : ''} connected` : 'No devices';
@@ -9140,6 +9161,7 @@ function updateSyncHardwareStatus() {
 async function openSyncView() {
   if (!state.lastSyncAt) state.lastSyncAt = new Date();
   syncTimestampEl.textContent = formatSyncTimestamp(state.lastSyncAt);
+  syncTimestampEl.classList.remove('sync-timestamp--synced');
   openSubView(syncView);
   await loadDevices();
   updateSyncHardwareStatus();
@@ -9147,11 +9169,15 @@ async function openSyncView() {
 
 syncForceBtn.addEventListener('click', async () => {
   syncWheelWrapEl.classList.add('syncing');
+  syncTimestampEl.classList.remove('sync-timestamp--synced');
   syncForceBtn.disabled = true;
   try {
-    await Promise.all([loadDay(), loadWeights(), loadProfile(), loadDevices()]);
+    // Always run the full 1.5s wheel animation even when the real requests
+    // resolve faster, so the loader never flickers past too quickly to read.
+    await Promise.all([loadDay(), loadWeights(), loadProfile(), loadDevices(), wait(1500)]);
     state.lastSyncAt = new Date();
-    syncTimestampEl.textContent = formatSyncTimestamp(state.lastSyncAt);
+    syncTimestampEl.textContent = '✅ Last Synced: Just Now';
+    syncTimestampEl.classList.add('sync-timestamp--synced');
     updateSyncHardwareStatus();
     showToast('Synced');
   } catch (err) {
@@ -9231,6 +9257,40 @@ function getProfileDetails() {
   } catch {
     return {};
   }
+}
+
+// Age comes in as a whole-year count with no month/day, so a birthdate can
+// only be approximated — anchoring to Jan 1 of (current year - age) is the
+// same convention onboarding already uses for the age math elsewhere.
+function computeDobFromAge(ageYears) {
+  const year = new Date().getFullYear() - ageYears;
+  return `${year}-01-01`;
+}
+
+function formatHeightForUnits(cm, unitsValue) {
+  if (unitsValue === UNITS_OPTIONS[1]) return `${Math.round(cm * 10) / 10} cm`;
+  const { ft, inch } = cmToFtIn(cm);
+  return `${ft} ft, ${inch} in`;
+}
+
+// Registration (the Coach onboarding wizard) only collects height/weight/age,
+// not a full Personal Details profile. Once it succeeds, backfill the dob/
+// height rows from that data — but only ones the user hasn't already set by
+// hand in Personal Details, so a later edit there is never clobbered.
+function seedProfileDetailsFromOnboarding(payload) {
+  const details = getProfileDetails();
+  let changed = false;
+  if (!details.dob && payload.ageYears) {
+    details.dob = computeDobFromAge(payload.ageYears);
+    changed = true;
+  }
+  if (!details.height && payload.heightCm) {
+    details.height = formatHeightForUnits(payload.heightCm, details.units || PROFILE_DETAILS_FIELDS.units.default);
+    changed = true;
+  }
+  if (!changed) return;
+  localStorage.setItem(PROFILE_DETAILS_KEY, JSON.stringify(details));
+  renderProfileDetailsList();
 }
 
 // 'YYYY-MM-DD' (the <input type="date"> storage format) -> 'DD Mon YYYY'
@@ -9348,6 +9408,33 @@ function closeProfileFieldSheet() {
 profileFieldCloseBtn.addEventListener('click', closeProfileFieldSheet);
 profileFieldSheetBackdrop.addEventListener('click', closeProfileFieldSheet);
 
+// The Personal Details "Units" row is the one user-facing control meant to
+// govern every unit-aware surface in the app, but weight logs/chart, height
+// fields, and workout weights each keep their own independent preference key
+// (older, narrower toggles that predate this row). Saving "Units" here fans
+// out to all three so those linked components recalibrate immediately
+// instead of silently drifting out of sync with what the profile now says.
+function applyProfileUnitsPreference(unitsValue) {
+  const isMetric = unitsValue === UNITS_OPTIONS[1];
+  const weightUnit = isMetric ? 'kg' : 'lbs';
+  const heightUnit = isMetric ? 'cm' : 'ftin';
+  const systemPref = isMetric ? 'metric' : 'imperial';
+
+  if (getWeightUnit() !== weightUnit) {
+    const currentTargetKg = readTargetWeightKgFromField();
+    localStorage.setItem(WEIGHT_UNIT_KEY, weightUnit);
+    applyWeightUnitUI();
+    writeTargetWeightFieldFromKg(currentTargetKg);
+  }
+  if (getHeightUnit() !== heightUnit) {
+    const currentCm = readHeightCmFromFields();
+    localStorage.setItem(HEIGHT_UNIT_KEY, heightUnit);
+    applyHeightUnitUI();
+    writeHeightFieldsFromCm(currentCm);
+  }
+  if (userUnitPreference !== systemPref) setUnitSystemPreference(systemPref);
+}
+
 profileFieldSaveBtn.addEventListener('click', () => {
   if (!activeProfileField) return;
   const config = PROFILE_DETAILS_FIELDS[activeProfileField];
@@ -9356,6 +9443,7 @@ profileFieldSaveBtn.addEventListener('click', () => {
   if (value) details[activeProfileField] = value;
   else delete details[activeProfileField];
   localStorage.setItem(PROFILE_DETAILS_KEY, JSON.stringify(details));
+  if (activeProfileField === 'units' && value) applyProfileUnitsPreference(value);
   renderProfileDetailsList();
   closeProfileFieldSheet();
 });

@@ -15,7 +15,7 @@
     align-items: center;
     justify-content: center;
     background: radial-gradient(ellipse at 50% 40%, #12141c 0%, #05060a 68%, #020203 100%);
-    transition: opacity 0.5s ease;
+    transition: opacity 0.3s ease;
   }
   #app-splash.app-splash-hide { opacity: 0; pointer-events: none; }
   #app-splash .app-splash-mark {
@@ -3447,6 +3447,13 @@
             <span class="more-menu-icon" aria-hidden="true">👁️</span>
             <span class="more-menu-title">Profile Visibility</span>
             <button type="button" class="toggle-switch" id="privacyProfileVisibilitySwitch" role="switch" aria-checked="true" aria-label="Toggle profile visibility">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-icon" aria-hidden="true">📢</span>
+            <span class="more-menu-title">Advertising Preferences</span>
+            <button type="button" class="toggle-switch" id="privacyAdvertisingSwitch" role="switch" aria-checked="false" aria-label="Toggle personalized advertising">
               <span class="toggle-switch-thumb"></span>
             </button>
           </li>

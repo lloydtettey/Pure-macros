@@ -1,3 +1,10 @@
+/* Very first rule in the stylesheet on purpose — a solid dark background +
+   white text painted the instant style.css parses, before any custom
+   property or component rule below it. Belt-and-suspenders alongside the
+   inline #app-splash styles in index.html's <head>, which cover the earlier
+   pre-stylesheet paint window; this covers the stylesheet-loaded window. */
+html, body { background: #0f0f12; color: #fff; }
+
 :root {
   --bg: #000000;
   --card-bg: #16171a;
@@ -5917,8 +5924,12 @@ html.has-session .auth-overlay {
 .help-card-title { font-size: 12.5px; font-weight: 700; color: var(--text-1); }
 .help-faq-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .help-faq-item { padding: 10px 12px; background: var(--card-bg-raised); border: 1px solid var(--card-border); border-radius: var(--radius); }
-.help-faq-q { font-size: 13px; font-weight: 700; color: var(--text-1); margin: 0 0 4px; }
-.help-faq-a { font-size: 12.5px; color: var(--text-2); margin: 0; line-height: 1.5; }
+.help-faq-q-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; background: none; border: none; padding: 0; margin: 0; cursor: pointer; text-align: left; font: inherit; }
+.help-faq-q { font-size: 13px; font-weight: 700; color: var(--text-1); margin: 0; }
+.help-faq-caret { flex-shrink: 0; color: var(--text-2); font-size: 16px; transition: transform 0.2s ease; }
+.help-faq-item.open .help-faq-caret { transform: rotate(90deg); color: var(--neon-cyan); }
+.help-faq-a { font-size: 12.5px; color: var(--text-2); margin: 0; line-height: 1.5; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease; }
+.help-faq-item.open .help-faq-a { max-height: 240px; opacity: 1; margin-top: 6px; }
 .help-contact-toggle-btn { width: 100%; }
 
 /* ---------- Sync Status (More > Sync) ---------- */
@@ -5932,7 +5943,8 @@ html.has-session .auth-overlay {
   animation: sync-wheel-spin 1.6s linear infinite;
   transform-origin: 80px 80px;
 }
-.sync-wheel-wrap.syncing .sync-wheel-progress { animation-duration: 0.7s; }
+.sync-wheel-wrap.syncing .sync-wheel-progress { animation-duration: 1.5s; }
+.sync-timestamp--synced { color: var(--neon-green); }
 @keyframes sync-wheel-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
