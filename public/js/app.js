@@ -59,7 +59,6 @@ const state = {
   savedMeals: [],
   savedRecipes: [],
   savedFoods: [],
-  discoverCatalog: null,
   customExercises: []
 };
 
@@ -176,9 +175,24 @@ const pwServingsValueEl = document.getElementById('pwServingsValue');
 const profileForm = document.getElementById('profileForm');
 const profileError = document.getElementById('profileError');
 const profileUsernameEl = document.getElementById('profileUsername');
-const moreStreakValueEl = document.getElementById('moreStreakValue');
-const moreProgressValueEl = document.getElementById('moreProgressValue');
 const moreMenuListEl = document.getElementById('moreMenuList');
+const moreProfileHeaderCard = document.getElementById('moreProfileHeaderCard');
+const mfpLastSyncEl = document.getElementById('mfpLastSync');
+const mfpMetricCurrentEl = document.getElementById('mfpMetricCurrent');
+const mfpMetricStartEl = document.getElementById('mfpMetricStart');
+const mfpMetricLostEl = document.getElementById('mfpMetricLost');
+
+const profileDetailsView = document.getElementById('profileDetailsView');
+const profileDetailsBackBtn = document.getElementById('profileDetailsBackBtn');
+const profileDetailsListEl = document.getElementById('profileDetailsList');
+
+const profileFieldSheet = document.getElementById('profileFieldSheet');
+const profileFieldSheetBackdrop = document.getElementById('profileFieldSheetBackdrop');
+const profileFieldCloseBtn = document.getElementById('profileFieldCloseBtn');
+const profileFieldSaveBtn = document.getElementById('profileFieldSaveBtn');
+const profileFieldTitleEl = document.getElementById('profileFieldTitle');
+const profileFieldTextInput = document.getElementById('profileFieldTextInput');
+const profileFieldSelectInput = document.getElementById('profileFieldSelectInput');
 const settingsView = document.getElementById('settingsView');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const settingsMenuListEl = document.getElementById('settingsMenuList');
@@ -202,6 +216,15 @@ const appearanceCardGridEl = document.getElementById('appearanceCardGrid');
 const diarySettingsView = document.getElementById('diarySettingsView');
 const diarySettingsBackBtn = document.getElementById('diarySettingsBackBtn');
 const diarySettingsListEl = document.getElementById('diarySettingsList');
+const defaultSearchTabValueLabelEl = document.getElementById('defaultSearchTabValueLabel');
+
+const defaultSearchTabView = document.getElementById('defaultSearchTabView');
+const defaultSearchTabBackBtn = document.getElementById('defaultSearchTabBackBtn');
+const defaultSearchTabRadioListEl = document.getElementById('defaultSearchTabRadioList');
+
+const customizeMealNamesView = document.getElementById('customizeMealNamesView');
+const customizeMealNamesBackBtn = document.getElementById('customizeMealNamesBackBtn');
+const customizeMealNamesListEl = document.getElementById('customizeMealNamesList');
 
 const startOfWeekView = document.getElementById('startOfWeekView');
 const startOfWeekBackBtn = document.getElementById('startOfWeekBackBtn');
@@ -1015,6 +1038,7 @@ progressSubnavBtns.forEach((btn) => {
 buildDateStrip();
 buildWaterCups();
 loadFoods();
+applyCustomMealNames();
 
 macrosSwapBtn.addEventListener('click', () => {
   macroCardMode = macroCardMode === 'percent' ? 'grams' : 'percent';
@@ -1410,6 +1434,7 @@ function renderDiarySettings() {
   diarySettingsListEl.querySelectorAll('[data-diary-toggle]').forEach((btn) => {
     btn.setAttribute('aria-checked', String(Boolean(diary[btn.dataset.diaryToggle])));
   });
+  defaultSearchTabValueLabelEl.textContent = SEARCH_TAB_LABELS[diary.defaultSearchTab] || 'All';
 }
 
 function openDiarySettingsView() {
@@ -1439,6 +1464,102 @@ diarySettingsListEl.addEventListener('click', async (e) => {
     btn.setAttribute('aria-checked', String(!next));
     showToast(err.message, true);
   }
+});
+
+diarySettingsListEl.addEventListener('click', (e) => {
+  const item = e.target.closest('.more-menu-item[data-menu-key]');
+  if (!item) return;
+  if (item.dataset.menuKey === 'default-search-tab') openDefaultSearchTabView();
+  else if (item.dataset.menuKey === 'customize-meal-names') openCustomizeMealNamesView();
+});
+
+// ---------- Default Search Tab sub-page (Diary Settings > Default Search Tab) ----------
+const SEARCH_TAB_LABELS = { all: 'All', 'my-foods': 'My Foods', meals: 'Meals', recipes: 'Recipes' };
+
+function renderDefaultSearchTabRadio(value) {
+  defaultSearchTabRadioListEl.querySelectorAll('.privacy-radio-row').forEach((row) => {
+    row.classList.toggle('active', row.dataset.searchTabValue === value);
+  });
+  defaultSearchTabValueLabelEl.textContent = SEARCH_TAB_LABELS[value] || 'All';
+}
+
+function openDefaultSearchTabView() {
+  renderDefaultSearchTabRadio(state.settings?.diary?.defaultSearchTab || 'all');
+  defaultSearchTabView.classList.add('open');
+}
+function closeDefaultSearchTabView() { defaultSearchTabView.classList.remove('open'); }
+defaultSearchTabBackBtn.addEventListener('click', closeDefaultSearchTabView);
+
+defaultSearchTabRadioListEl.addEventListener('click', async (e) => {
+  const row = e.target.closest('.privacy-radio-row');
+  if (!row) return;
+  const previous = state.settings.diary?.defaultSearchTab || 'all';
+  const value = row.dataset.searchTabValue;
+  if (value === previous) return;
+  renderDefaultSearchTabRadio(value);
+  const diary = { ...(state.settings.diary || {}), defaultSearchTab: value };
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diary })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update default search tab');
+    state.settings = data;
+  } catch (err) {
+    renderDefaultSearchTabRadio(previous);
+    showToast(err.message, true);
+  }
+});
+
+// ---------- Customize Meal Names sub-page (Diary Settings > Customize Meal Names) ----------
+// Client-only override of the diary's meal-card headers; persisted to
+// localStorage (not the server settings object) since it's purely a display
+// preference for this device, same tier as THEME_KEY/UNIT_SYSTEM_KEY.
+const MEAL_NAMES_KEY = 'pure_macros_meal_names';
+
+function getCustomMealNames() {
+  try {
+    return JSON.parse(localStorage.getItem(MEAL_NAMES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function applyCustomMealNames() {
+  const names = getCustomMealNames();
+  document.querySelectorAll('.meal-card[data-meal]').forEach((card) => {
+    const titleEl = card.querySelector('.meal-title');
+    if (!titleEl) return;
+    if (!titleEl.dataset.defaultLabel) titleEl.dataset.defaultLabel = titleEl.textContent;
+    titleEl.textContent = names[card.dataset.meal] || titleEl.dataset.defaultLabel;
+  });
+}
+
+function renderCustomizeMealNames() {
+  const names = getCustomMealNames();
+  customizeMealNamesListEl.querySelectorAll('[data-meal-name-slot]').forEach((input) => {
+    input.value = names[input.dataset.mealNameSlot] || '';
+  });
+}
+
+function openCustomizeMealNamesView() {
+  renderCustomizeMealNames();
+  customizeMealNamesView.classList.add('open');
+}
+function closeCustomizeMealNamesView() { customizeMealNamesView.classList.remove('open'); }
+customizeMealNamesBackBtn.addEventListener('click', closeCustomizeMealNamesView);
+
+customizeMealNamesListEl.addEventListener('input', (e) => {
+  const input = e.target.closest('[data-meal-name-slot]');
+  if (!input) return;
+  const names = getCustomMealNames();
+  const value = input.value.trim();
+  if (value) names[input.dataset.mealNameSlot] = value;
+  else delete names[input.dataset.mealNameSlot];
+  localStorage.setItem(MEAL_NAMES_KEY, JSON.stringify(names));
+  applyCustomMealNames();
 });
 
 // ---------- Start of the Week sub-view (Settings > Start of the Week) ----------
@@ -5560,6 +5681,13 @@ const recipeModalCarbsEl = document.getElementById('recipeModalCarbs');
 const recipeModalFatEl = document.getElementById('recipeModalFat');
 const recipeModalIngredientsEl = document.getElementById('recipeModalIngredients');
 const recipeModalInstructionsEl = document.getElementById('recipeModalInstructions');
+const recipeModalPrepTimeEl = document.getElementById('recipeModalPrepTime');
+const recipeModalFiberEl = document.getElementById('recipeModalFiber');
+const recipeModalTabsEl = document.getElementById('recipeModalTabs');
+const recipeModalIngredientsSectionEl = document.getElementById('recipeModalIngredientsSection');
+const recipeModalInstructionsSectionEl = document.getElementById('recipeModalInstructionsSection');
+const recipeModalMealSelectEl = document.getElementById('recipeModalMealSelect');
+const recipeModalAddToDiaryBtn = document.getElementById('recipeModalAddToDiaryBtn');
 
 // Tracks whichever recipe is currently open in the modal so the Unit System
 // toggle can re-render its ingredient/instruction lines in place without
@@ -5572,6 +5700,17 @@ function renderRecipeModalUnits() {
   recipeModalInstructionsEl.innerHTML = getRecipeInstructionLines(currentRecipeModalRecipe).map((s) => `<li>${escapeHtml(s)}</li>`).join('');
 }
 
+function setRecipeModalTab(tab) {
+  recipeModalTabsEl.querySelectorAll('.recipe-modal-tab-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.recipeTab === tab));
+  recipeModalIngredientsSectionEl.classList.toggle('hidden', tab !== 'ingredients');
+  recipeModalInstructionsSectionEl.classList.toggle('hidden', tab !== 'directions');
+}
+
+recipeModalTabsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.recipe-modal-tab-btn');
+  if (btn) setRecipeModalTab(btn.dataset.recipeTab);
+});
+
 function openRecipeModal(recipe) {
   currentRecipeModalRecipe = recipe;
   recipeModalImgEl.src = recipe.img || '';
@@ -5581,6 +5720,13 @@ function openRecipeModal(recipe) {
   recipeModalProteinEl.textContent = `${recipe.protein}g`;
   recipeModalCarbsEl.textContent = `${recipe.carbs}g`;
   recipeModalFatEl.textContent = `${recipe.fat}g`;
+
+  recipeModalPrepTimeEl.classList.toggle('hidden', recipe.prep_time === undefined);
+  if (recipe.prep_time !== undefined) recipeModalPrepTimeEl.textContent = `⏱ ${recipe.prep_time} min`;
+  recipeModalFiberEl.classList.toggle('hidden', recipe.fiber === undefined);
+  if (recipe.fiber !== undefined) recipeModalFiberEl.textContent = `🌾 ${recipe.fiber}g fiber`;
+
+  setRecipeModalTab('ingredients');
   renderRecipeModalUnits();
   recipeModalEl.classList.remove('hidden');
   // Force a reflow before adding .open so the translate3d transition plays
@@ -5616,6 +5762,37 @@ planRecipeGridEl.addEventListener('keydown', (e) => {
 });
 recipeModalCloseBtn.addEventListener('click', closeRecipeModal);
 recipeModalBackdropEl.addEventListener('click', closeRecipeModal);
+
+recipeModalAddToDiaryBtn.addEventListener('click', async () => {
+  const recipe = currentRecipeModalRecipe;
+  if (!recipe) return;
+  const kcal = recipe.calories ?? recipe.kcal ?? 0;
+  recipeModalAddToDiaryBtn.disabled = true;
+  try {
+    const res = await authFetch(`${API}/entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: state.date,
+        meal: recipeModalMealSelectEl.value,
+        foodId: CUSTOM_FOOD_ID,
+        grams: 100,
+        customFood: { name: recipe.name, kcal, protein: recipe.protein || 0, carbs: recipe.carbs || 0, fat: recipe.fat || 0 }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add recipe to diary');
+    state.entries.push(data);
+    render();
+    refreshStreak();
+    showToast(`Added ${data.name} to diary`);
+    closeRecipeModal();
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    recipeModalAddToDiaryBtn.disabled = false;
+  }
+});
 
 function renderPlanTab() {
   const onboarded = Boolean(state.mealPlan?.onboarded);
@@ -6830,61 +7007,307 @@ function openRemindersView() {
 }
 remindersBackBtn.addEventListener('click', () => closeSubView(remindersView));
 
-// ---------- Discovery / Learn Feed ----------
+// ---------- Recipe Discovery Engine (25-recipe matrix) ----------
+// Purely client-side catalog — id, name, calories/protein/carbs/fat/fiber,
+// prep_time, ingredients, directions, category, and an Unsplash photo
+// placeholder — rendered as horizontally scrolling category carousels
+// (reusing the Workout Routines .wr-carousel/.wr-card pattern) with a
+// "View More" grid per category and a shared detail sheet (#recipe-modal).
+const RECIPE_DB = [
+  // ---- High Protein ----
+  {
+    id: 'hp1', category: 'High Protein', name: 'Grilled Chicken & Quinoa Power Bowl',
+    calories: 480, protein: 42, carbs: 38, fat: 14, fiber: 6, prep_time: 25,
+    ingredients: ['6oz grilled chicken breast', '1 cup cooked quinoa', '1/2 cup black beans', '1/2 avocado, sliced', 'Cherry tomatoes', 'Lime-cilantro dressing'],
+    directions: ['Season and grill the chicken breast until cooked through, then slice.', 'Fluff the cooked quinoa into a bowl.', 'Top with black beans, avocado, and cherry tomatoes.', 'Drizzle with lime-cilantro dressing and serve.'],
+    photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'hp2', category: 'High Protein', name: 'Egg White Veggie Scramble',
+    calories: 320, protein: 36, carbs: 14, fat: 10, fiber: 4, prep_time: 12,
+    ingredients: ['1 cup egg whites', '2 whole eggs', 'Spinach', 'Bell peppers', 'Onion', 'Feta cheese'],
+    directions: ['Whisk egg whites and whole eggs together.', 'Sauté spinach, bell peppers, and onion until soft.', 'Pour in eggs and scramble over medium heat.', 'Top with crumbled feta and serve hot.'],
+    photo: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'hp3', category: 'High Protein', name: 'Baked Salmon with Asparagus',
+    calories: 450, protein: 40, carbs: 12, fat: 26, fiber: 4, prep_time: 25,
+    ingredients: ['6oz salmon fillet', '1 bunch asparagus', 'Olive oil', 'Lemon', 'Garlic', 'Salt & pepper'],
+    directions: ['Preheat oven to 400°F (200°C).', 'Arrange salmon and asparagus on a sheet pan, drizzle with olive oil and garlic.', 'Bake for 15-18 minutes until salmon flakes easily.', 'Finish with fresh lemon juice before serving.'],
+    photo: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'hp4', category: 'High Protein', name: 'Turkey Meatballs over Zoodles',
+    calories: 410, protein: 38, carbs: 16, fat: 20, fiber: 5, prep_time: 30,
+    ingredients: ['1 lb ground turkey', '1 egg', 'Breadcrumbs', 'Marinara sauce', '2 zucchini, spiralized', 'Parmesan'],
+    directions: ['Mix ground turkey, egg, and breadcrumbs; form into meatballs.', 'Bake or pan-sear meatballs until cooked through.', 'Simmer meatballs in marinara sauce.', 'Serve over spiralized zucchini noodles, topped with Parmesan.'],
+    photo: 'https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'hp5', category: 'High Protein', name: 'Greek Yogurt Protein Parfait',
+    calories: 340, protein: 32, carbs: 30, fat: 9, fiber: 5, prep_time: 8,
+    ingredients: ['1.5 cups Greek yogurt', 'Mixed berries', 'Granola', 'Honey', 'Chia seeds'],
+    directions: ['Layer Greek yogurt and mixed berries in a glass.', 'Add a layer of granola.', 'Repeat layers until the glass is full.', 'Top with chia seeds and a drizzle of honey.'],
+    photo: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Gut Health ----
+  {
+    id: 'gh1', category: 'Gut Health', name: 'Kimchi Fried Rice Bowl',
+    calories: 390, protein: 16, carbs: 52, fat: 13, fiber: 5, prep_time: 20,
+    ingredients: ['2 cups cooked rice', '1 cup kimchi, chopped', '2 eggs', 'Green onion', 'Sesame oil', 'Soy sauce'],
+    directions: ['Sauté chopped kimchi in sesame oil until fragrant.', 'Add cooked rice and soy sauce, stir-fry until heated through.', 'Fry the eggs sunny-side up separately.', 'Top the rice with fried eggs and sliced green onion.'],
+    photo: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'gh2', category: 'Gut Health', name: 'Overnight Oats with Chia & Berries',
+    calories: 360, protein: 14, carbs: 54, fat: 10, fiber: 10, prep_time: 5,
+    ingredients: ['1/2 cup rolled oats', '1 tbsp chia seeds', '1 cup almond milk', 'Mixed berries', 'Honey'],
+    directions: ['Combine oats, chia seeds, and almond milk in a jar.', 'Stir well and refrigerate overnight.', 'Top with mixed berries and a drizzle of honey before eating.'],
+    photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'gh3', category: 'Gut Health', name: 'Probiotic Yogurt & Granola Bowl',
+    calories: 330, protein: 18, carbs: 42, fat: 9, fiber: 6, prep_time: 5,
+    ingredients: ['1.5 cups probiotic yogurt', 'Granola', 'Banana slices', 'Flaxseed', 'Honey'],
+    directions: ['Spoon probiotic yogurt into a bowl.', 'Top with granola and sliced banana.', 'Sprinkle with flaxseed and drizzle with honey.'],
+    photo: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'gh4', category: 'Gut Health', name: 'Miso Soup with Tofu & Seaweed',
+    calories: 210, protein: 14, carbs: 18, fat: 9, fiber: 4, prep_time: 15,
+    ingredients: ['4 cups dashi broth', '3 tbsp miso paste', 'Silken tofu, cubed', 'Wakame seaweed', 'Green onion'],
+    directions: ['Warm the dashi broth over medium heat.', 'Whisk miso paste with a ladle of warm broth, then stir back in.', 'Add tofu cubes and rehydrated wakame; simmer gently.', 'Garnish with sliced green onion and serve.'],
+    photo: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'gh5', category: 'Gut Health', name: 'Fermented Veggie Buddha Bowl',
+    calories: 400, protein: 15, carbs: 48, fat: 16, fiber: 11, prep_time: 20,
+    ingredients: ['1 cup cooked brown rice', 'Sauerkraut', 'Roasted sweet potato', 'Chickpeas', 'Kale', 'Tahini dressing'],
+    directions: ['Arrange brown rice, roasted sweet potato, and chickpeas in a bowl.', 'Add a handful of massaged kale and a scoop of sauerkraut.', 'Drizzle with tahini dressing and serve.'],
+    photo: 'https://images.unsplash.com/photo-1600335895229-6e75511892c8?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Mediterranean ----
+  {
+    id: 'med1', category: 'Mediterranean', name: 'Classic Greek Salad',
+    calories: 300, protein: 9, carbs: 16, fat: 23, fiber: 4, prep_time: 12,
+    ingredients: ['Cucumber', 'Tomatoes', 'Red onion', 'Kalamata olives', 'Feta cheese', 'Olive oil & oregano'],
+    directions: ['Chop cucumber, tomatoes, and red onion into chunks.', 'Combine in a bowl with olives and cubed feta.', 'Dress with olive oil, oregano, salt, and pepper.'],
+    photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'med2', category: 'Mediterranean', name: 'Hummus & Veggie Wrap',
+    calories: 380, protein: 14, carbs: 46, fat: 16, fiber: 9, prep_time: 10,
+    ingredients: ['Whole wheat wrap', '1/2 cup hummus', 'Cucumber', 'Shredded carrot', 'Spinach', 'Bell pepper strips'],
+    directions: ['Spread hummus evenly over the wrap.', 'Layer cucumber, carrot, spinach, and bell pepper.', 'Roll tightly and slice in half to serve.'],
+    photo: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'med3', category: 'Mediterranean', name: 'Grilled Halloumi & Chickpea Bowl',
+    calories: 460, protein: 22, carbs: 38, fat: 24, fiber: 9, prep_time: 20,
+    ingredients: ['Halloumi cheese, sliced', 'Chickpeas', 'Cherry tomatoes', 'Cucumber', 'Mixed greens', 'Lemon-olive oil dressing'],
+    directions: ['Grill halloumi slices until golden on both sides.', 'Toss chickpeas, tomatoes, cucumber, and greens in a bowl.', 'Top with grilled halloumi and lemon-olive oil dressing.'],
+    photo: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'med4', category: 'Mediterranean', name: 'Mediterranean Baked Cod',
+    calories: 350, protein: 34, carbs: 14, fat: 17, fiber: 4, prep_time: 25,
+    ingredients: ['6oz cod fillet', 'Cherry tomatoes', 'Kalamata olives', 'Capers', 'Garlic', 'Olive oil'],
+    directions: ['Preheat oven to 400°F (200°C).', 'Place cod in a baking dish and surround with tomatoes, olives, capers, and garlic.', 'Drizzle with olive oil and bake for 15-20 minutes.', 'Serve warm with pan juices spooned over the top.'],
+    photo: 'https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'med5', category: 'Mediterranean', name: 'Tabbouleh with Grilled Chicken',
+    calories: 420, protein: 33, carbs: 36, fat: 15, fiber: 7, prep_time: 25,
+    ingredients: ['Bulgur wheat', 'Parsley, chopped', 'Tomatoes', 'Grilled chicken breast', 'Lemon juice', 'Olive oil'],
+    directions: ['Cook bulgur according to package directions and cool.', 'Toss with chopped parsley, tomatoes, lemon juice, and olive oil.', 'Slice grilled chicken and serve over the tabbouleh.'],
+    photo: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- GLP-1 Lunches (light, high-protein/fiber, satiating) ----
+  {
+    id: 'glp1-1', category: 'GLP-1 Lunches', name: 'Lentil & Spinach Soup',
+    calories: 280, protein: 18, carbs: 40, fat: 5, fiber: 12, prep_time: 30,
+    ingredients: ['1 cup red lentils', 'Vegetable broth', 'Spinach', 'Carrot', 'Onion', 'Cumin'],
+    directions: ['Sauté onion and carrot until softened.', 'Add lentils, broth, and cumin; simmer 20 minutes until lentils are tender.', 'Stir in spinach until wilted.', 'Blend partially for a creamier texture, if desired.'],
+    photo: 'https://images.unsplash.com/photo-1493770348161-369560ae357d?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'glp1-2', category: 'GLP-1 Lunches', name: 'Grilled Chicken Lettuce Wraps',
+    calories: 300, protein: 34, carbs: 12, fat: 12, fiber: 4, prep_time: 20,
+    ingredients: ['Butter lettuce leaves', '6oz grilled chicken, diced', 'Shredded carrot', 'Cucumber', 'Peanut-lime sauce'],
+    directions: ['Dice grilled chicken into small pieces.', 'Fill lettuce leaves with chicken, carrot, and cucumber.', 'Drizzle with peanut-lime sauce and wrap to eat.'],
+    photo: 'https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'glp1-3', category: 'GLP-1 Lunches', name: 'Cottage Cheese & Berry Bowl',
+    calories: 260, protein: 26, carbs: 24, fat: 6, fiber: 5, prep_time: 5,
+    ingredients: ['1.5 cups cottage cheese', 'Mixed berries', 'Sliced almonds', 'Cinnamon'],
+    directions: ['Spoon cottage cheese into a bowl.', 'Top with mixed berries and sliced almonds.', 'Finish with a dusting of cinnamon.'],
+    photo: 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'glp1-4', category: 'GLP-1 Lunches', name: 'Turkey & Veggie Lettuce Cups',
+    calories: 290, protein: 30, carbs: 14, fat: 12, fiber: 5, prep_time: 20,
+    ingredients: ['Ground turkey', 'Water chestnuts', 'Bell pepper', 'Garlic-ginger sauce', 'Butter lettuce leaves'],
+    directions: ['Brown ground turkey in a skillet with garlic-ginger sauce.', 'Stir in diced water chestnuts and bell pepper; cook until tender.', 'Spoon the mixture into lettuce cups to serve.'],
+    photo: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'glp1-5', category: 'GLP-1 Lunches', name: 'High-Protein Broccoli Cheddar Soup',
+    calories: 310, protein: 24, carbs: 18, fat: 15, fiber: 6, prep_time: 25,
+    ingredients: ['Broccoli florets', 'Chicken broth', 'Reduced-fat cheddar', 'Greek yogurt', 'Onion', 'Garlic'],
+    directions: ['Simmer broccoli, onion, and garlic in chicken broth until tender.', 'Blend until mostly smooth, leaving some texture.', 'Stir in cheddar and Greek yogurt until melted and creamy.'],
+    photo: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Low Carb ----
+  {
+    id: 'lc1', category: 'Low Carb', name: 'Zucchini Noodle Alfredo with Chicken',
+    calories: 420, protein: 36, carbs: 11, fat: 25, fiber: 3, prep_time: 20,
+    ingredients: ['2 zucchini, spiralized', '6oz grilled chicken, sliced', 'Heavy cream', 'Parmesan', 'Garlic', 'Butter'],
+    directions: ['Sauté garlic in butter, then whisk in cream and Parmesan for the sauce.', 'Toss spiralized zucchini in the sauce over low heat for 2-3 minutes.', 'Top with sliced grilled chicken and serve immediately.'],
+    photo: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'lc2', category: 'Low Carb', name: 'Cauliflower Fried Rice',
+    calories: 320, protein: 20, carbs: 13, fat: 20, fiber: 6, prep_time: 20,
+    ingredients: ['1 head cauliflower, riced', '2 eggs', 'Diced carrot & peas', 'Soy sauce', 'Sesame oil', 'Green onion'],
+    directions: ['Rice the cauliflower in a food processor.', 'Scramble eggs in a hot pan, then push to the side.', 'Add cauliflower rice and vegetables; stir-fry until tender.', 'Mix in the eggs, soy sauce, and sesame oil; garnish with green onion.'],
+    photo: 'https://images.unsplash.com/photo-1580013759032-c96505e24c1f?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'lc3', category: 'Low Carb', name: 'Baked Chicken Thighs with Broccoli',
+    calories: 470, protein: 38, carbs: 9, fat: 31, fiber: 4, prep_time: 35,
+    ingredients: ['4 bone-in chicken thighs', 'Broccoli florets', 'Olive oil', 'Garlic powder', 'Paprika'],
+    directions: ['Preheat oven to 425°F (220°C).', 'Season chicken thighs with garlic powder and paprika.', 'Roast thighs and broccoli on a sheet pan for 30-35 minutes until crispy and cooked through.'],
+    photo: 'https://images.unsplash.com/photo-1600628421066-f6bda6a7b976?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'lc4', category: 'Low Carb', name: 'Egg & Avocado Salad',
+    calories: 380, protein: 18, carbs: 10, fat: 30, fiber: 7, prep_time: 15,
+    ingredients: ['4 hard-boiled eggs', '1 avocado', 'Celery', 'Red onion', 'Mayo or Greek yogurt', 'Mixed greens'],
+    directions: ['Chop hard-boiled eggs and mash avocado together.', 'Fold in celery, red onion, and mayo or Greek yogurt.', 'Serve over a bed of mixed greens.'],
+    photo: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=500&q=80'
+  },
+  {
+    id: 'lc5', category: 'Low Carb', name: 'Beef & Pepper Stir-Fry (No Rice)',
+    calories: 440, protein: 37, carbs: 13, fat: 26, fiber: 4, prep_time: 20,
+    ingredients: ['1 lb sliced beef sirloin', 'Bell peppers', 'Onion', 'Soy sauce', 'Ginger', 'Sesame oil'],
+    directions: ['Sear sliced beef in a hot wok until browned; set aside.', 'Stir-fry bell peppers and onion until crisp-tender.', 'Return beef to the wok with soy sauce, ginger, and sesame oil; toss to combine.'],
+    photo: 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?auto=format&fit=crop&w=500&q=80'
+  }
+];
+
+// ---------- Recipe Discovery / Learn Feed ----------
 const discoveryView = document.getElementById('discoveryView');
 const discoveryBackBtn = document.getElementById('discoveryBackBtn');
-const discoveryChipsRowEl = document.getElementById('discoveryChipsRow');
-const discoveryCardsListEl = document.getElementById('discoveryCardsList');
-let discoveryActiveCategory = 'all';
+const recipeCategoryRowsEl = document.getElementById('recipeCategoryRows');
+const recipeGridView = document.getElementById('recipeGridView');
+const recipeGridBackBtn = document.getElementById('recipeGridBackBtn');
+const recipeGridTitleEl = document.getElementById('recipeGridTitle');
+const recipeGridSearchInput = document.getElementById('recipeGridSearchInput');
+const recipeGridChipsRowEl = document.getElementById('recipeGridChipsRow');
+const recipeGridListEl = document.getElementById('recipeGridList');
 
-function renderDiscoveryCards() {
-  const catalog = state.discoverCatalog || [];
-  const filtered = discoveryActiveCategory === 'all' ? catalog : catalog.filter((r) => r.category === discoveryActiveCategory);
-  discoveryCardsListEl.innerHTML = '';
-  for (const r of filtered) {
-    const totalMacroCals = r.protein * 4 + r.carbs * 4 + r.fat * 9;
-    const pPct = totalMacroCals ? (r.protein * 4 / totalMacroCals) * 100 : 0;
-    const cPct = totalMacroCals ? (r.carbs * 4 / totalMacroCals) * 100 : 0;
-    const fPct = totalMacroCals ? (r.fat * 9 / totalMacroCals) * 100 : 0;
-    const card = document.createElement('div');
-    card.className = 'discovery-card';
-    card.innerHTML = `
-      <div class="discovery-card-top">
-        <span class="discovery-card-name">${escapeHtml(r.name)}</span>
-        <span class="discovery-card-prep">${r.prepMinutes} min</span>
+const RECIPE_CATEGORIES = [...new Set(RECIPE_DB.map((r) => r.category))];
+let recipeGridCategory = 'all';
+
+function renderRecipeDiscovery() {
+  if (recipeCategoryRowsEl.childElementCount > 0) return;
+  recipeCategoryRowsEl.innerHTML = RECIPE_CATEGORIES.map((cat) => `
+    <section class="recipe-category-row">
+      <div class="recipe-category-row-header">
+        <h2 class="wr-category-title">${escapeHtml(cat)}</h2>
+        <button type="button" class="recipe-view-more-btn" data-category="${escapeHtml(cat)}">View More ›</button>
       </div>
-      <span class="discovery-card-cals">${r.calories} cal</span>
-      <div class="discovery-macro-bar">
-        <span style="width:${pPct}%"></span><span style="width:${cPct}%"></span><span style="width:${fPct}%"></span>
+      <div class="wr-carousel">
+        ${RECIPE_DB.filter((r) => r.category === cat).map((r) => `
+          <article class="wr-card recipe-carousel-card" data-recipe-id="${r.id}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)} details">
+            <img class="wr-card-thumb" src="${r.photo}" alt="${escapeHtml(r.name)}" loading="lazy" />
+            <span class="wr-card-meta">⏱ ${r.prep_time} min · ${r.calories} cal</span>
+            <h3 class="wr-card-title">${escapeHtml(r.name)}</h3>
+          </article>
+        `).join('')}
       </div>
-    `;
-    discoveryCardsListEl.appendChild(card);
-  }
+    </section>
+  `).join('');
 }
 
-discoveryChipsRowEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('.progress-subnav-btn');
-  if (!btn) return;
-  discoveryActiveCategory = btn.dataset.category;
-  discoveryChipsRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
-  renderDiscoveryCards();
+function findRecipeById(id) {
+  return RECIPE_DB.find((r) => r.id === id);
+}
+
+// Adapts a RECIPE_DB entry onto the field names the shared #recipe-modal
+// expects (img/kcal/instructions), keeping the original fields (calories,
+// fiber, prep_time) alongside so the modal's extra meta pills can read them.
+function openRecipeFromDb(recipe) {
+  openRecipeModal({ ...recipe, img: recipe.photo, kcal: recipe.calories, instructions: recipe.directions });
+}
+
+recipeCategoryRowsEl.addEventListener('click', (e) => {
+  const moreBtn = e.target.closest('.recipe-view-more-btn');
+  if (moreBtn) { openRecipeGridView(moreBtn.dataset.category); return; }
+  const card = e.target.closest('.recipe-carousel-card');
+  if (!card) return;
+  const recipe = findRecipeById(card.dataset.recipeId);
+  if (recipe) openRecipeFromDb(recipe);
+});
+recipeCategoryRowsEl.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.recipe-carousel-card');
+  if (!card) return;
+  e.preventDefault();
+  const recipe = findRecipeById(card.dataset.recipeId);
+  if (recipe) openRecipeFromDb(recipe);
 });
 
 async function openDiscoveryView() {
-  if (!state.discoverCatalog) {
-    try {
-      const res = await fetch(`${API}/recipes/discover`);
-      if (!res.ok) throw new Error('Failed to load recipes');
-      state.discoverCatalog = await res.json();
-    } catch (err) {
-      showToast(err.message, true);
-      state.discoverCatalog = [];
-    }
-  }
-  renderDiscoveryCards();
+  renderRecipeDiscovery();
   openSubView(discoveryView);
 }
 discoveryBackBtn.addEventListener('click', () => closeSubView(discoveryView));
+
+function renderRecipeGrid() {
+  const q = recipeGridSearchInput.value.trim().toLowerCase();
+  const filtered = RECIPE_DB.filter((r) => {
+    const matchesCategory = recipeGridCategory === 'all' || r.category === recipeGridCategory;
+    const matchesQuery = !q || r.name.toLowerCase().includes(q);
+    return matchesCategory && matchesQuery;
+  });
+  recipeGridListEl.innerHTML = filtered.length
+    ? filtered.map((r) => `
+        <article class="recipe-grid-card" data-recipe-id="${r.id}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)} details">
+          <img class="recipe-grid-card-thumb" src="${r.photo}" alt="${escapeHtml(r.name)}" loading="lazy" />
+          <span class="recipe-grid-card-name">${escapeHtml(r.name)}</span>
+          <span class="recipe-grid-card-meta">${r.calories} cal · ${r.prep_time} min</span>
+        </article>
+      `).join('')
+    : '<p class="empty-state">No recipes match your search.</p>';
+}
+
+function openRecipeGridView(category) {
+  recipeGridCategory = category || 'all';
+  recipeGridTitleEl.textContent = recipeGridCategory === 'all' ? 'All Recipes' : recipeGridCategory;
+  recipeGridSearchInput.value = '';
+  recipeGridChipsRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b.dataset.category === recipeGridCategory));
+  renderRecipeGrid();
+  recipeGridView.classList.add('open');
+}
+function closeRecipeGridView() { recipeGridView.classList.remove('open'); }
+recipeGridBackBtn.addEventListener('click', closeRecipeGridView);
+
+recipeGridSearchInput.addEventListener('input', renderRecipeGrid);
+recipeGridChipsRowEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.progress-subnav-btn');
+  if (!btn) return;
+  recipeGridCategory = btn.dataset.category;
+  recipeGridChipsRowEl.querySelectorAll('.progress-subnav-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderRecipeGrid();
+});
+recipeGridListEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.recipe-grid-card');
+  if (!card) return;
+  const recipe = findRecipeById(card.dataset.recipeId);
+  if (recipe) openRecipeFromDb(recipe);
+});
 
 // ---------- Apps & Devices ----------
 const appsDevicesView = document.getElementById('appsDevicesView');
@@ -7243,7 +7666,8 @@ learnChipsRowEl.addEventListener('click', (e) => {
 learnGridEl.addEventListener('click', (e) => {
   const btn = e.target.closest('.learn-card-cta');
   if (!btn) return;
-  showToast('Article coming soon');
+  const article = LEARN_ARTICLES.find((a) => a.id === Number(btn.dataset.articleId));
+  if (article) openArticleReader(article);
 });
 
 function openLearnView() {
@@ -7251,6 +7675,133 @@ function openLearnView() {
   openSubView(learnView);
 }
 learnBackBtn.addEventListener('click', () => closeSubView(learnView));
+
+// ---------- Article Reader Mode (fullscreen overlay) ----------
+// Structural body content for each LEARN_ARTICLES entry (matched by id) —
+// kept as its own array, separate from the teaser metadata above, so the
+// grid's card copy and the full reader body can evolve independently.
+const ARTICLES_DB = [
+  { id: 1, blocks: [
+    { type: 'p', text: "Protein timing gets a lot of hype, but the research paints a more relaxed picture than most fitness influencers let on." },
+    { type: 'h2', text: 'The "Anabolic Window" Myth' },
+    { type: 'p', text: 'For decades, lifters raced to down a shake within 30 minutes of finishing a workout. More recent research shows that window is far wider than once believed — closer to several hours, not minutes.' },
+    { type: 'h3', text: 'What actually matters' },
+    { type: 'bullets', items: ['Total daily protein intake', 'Consistent intake spread across meals', 'Getting enough protein per meal (roughly 25-40g)'] },
+    { type: 'h2', text: 'So Should You Ignore Timing Completely?' },
+    { type: 'p', text: 'Not entirely. If you train fasted or go many hours between meals, having protein reasonably close to your session is still a sensible default — just don’t stress over the clock.' }
+  ]},
+  { id: 2, blocks: [
+    { type: 'p', text: 'Nutrition labels are designed to be skimmed — which is exactly why hidden sugars and inflated serving sizes slip past so many shoppers.' },
+    { type: 'h2', text: 'Start With the Serving Size' },
+    { type: 'p', text: 'Every number on the label is scaled to the serving size at the top — and it’s often smaller than what you’d actually eat in one sitting.' },
+    { type: 'h3', text: 'Spotting Hidden Sugar' },
+    { type: 'bullets', items: ['Check "Added Sugars", not just "Total Sugars"', 'Watch for syrup, dextrose, and maltose in the ingredient list', 'Ingredients are listed by weight — sugar near the top is a red flag'] },
+    { type: 'h2', text: 'The 5-Second Label Check' },
+    { type: 'p', text: 'Glance at serving size, added sugar, and fiber — in that order — and you’ll catch 90% of what actually matters before you’ve even reached the aisle’s end.' }
+  ]},
+  { id: 3, blocks: [
+    { type: 'p', text: 'If there’s one principle that explains almost all long-term strength gains, it’s progressive overload.' },
+    { type: 'h2', text: 'What Progressive Overload Actually Means' },
+    { type: 'p', text: 'It’s the gradual increase of stress placed on the body during training — more weight, more reps, more sets, or better form over time.' },
+    { type: 'h3', text: 'Simple Ways to Apply It' },
+    { type: 'bullets', items: ['Add small amounts of weight week to week', 'Add one extra rep before adding weight', 'Slow down the eccentric (lowering) portion of a lift', 'Reduce rest time between sets'] },
+    { type: 'h2', text: 'Avoiding the Common Mistake' },
+    { type: 'p', text: 'Beginners often chase overload too fast and sacrifice form. Track your lifts, aim for small consistent increases, and let strength build session over session, not workout over workout.' }
+  ]},
+  { id: 4, blocks: [
+    { type: 'p', text: 'Zone 2 cardio — the easy, conversational-pace training zone — quietly does more for your aerobic engine than most people expect.' },
+    { type: 'h2', text: 'What Is Zone 2?' },
+    { type: 'p', text: 'It’s a heart-rate zone (roughly 60-70% of max heart rate) where you can still hold a conversation, but not sing comfortably.' },
+    { type: 'h3', text: 'Why It Builds the Biggest Base' },
+    { type: 'bullets', items: ['Trains your body to burn fat more efficiently for fuel', 'Increases mitochondrial density over time', 'Low enough intensity to recover quickly and train often'] },
+    { type: 'h2', text: 'How Much Is Enough?' },
+    { type: 'p', text: 'Most endurance athletes spend 70-80% of their total training volume in this easy zone — it’s the unglamorous foundation the harder workouts are built on top of.' }
+  ]},
+  { id: 5, blocks: [
+    { type: 'p', text: "Elena’s story isn’t about willpower — it’s about building a system flexible enough to survive real life, pizza night included." },
+    { type: 'h2', text: 'The Turning Point' },
+    { type: 'p', text: 'After years of all-or-nothing diets, Elena switched to tracking her food instead of eliminating entire food groups — and started losing weight without the burnout.' },
+    { type: 'h3', text: 'What Changed' },
+    { type: 'bullets', items: ['Logged meals daily instead of "starting over" each Monday', 'Built a calorie budget flexible enough for social meals', 'Prioritized protein and fiber to stay full on fewer calories'] },
+    { type: 'h2', text: 'Her Advice For Anyone Starting Out' },
+    { type: 'p', text: '"Consistency beats perfection. I still eat pizza — I just plan around it instead of feeling guilty afterward."' }
+  ]},
+  { id: 6, blocks: [
+    { type: 'p', text: 'The Steps Hub becomes far more useful once it’s syncing automatically instead of relying on manual entries.' },
+    { type: 'h2', text: 'Connecting a Device' },
+    { type: 'p', text: 'Head to More › Apps & Devices and connect a supported wearable or phone pedometer to start auto-syncing your daily step count.' },
+    { type: 'h3', text: 'What You Unlock' },
+    { type: 'bullets', items: ['Automatic daily step totals, no manual typing', 'Step-based calorie adjustments on high-activity days', 'A longer history to spot activity trends over time'] },
+    { type: 'h2', text: 'Troubleshooting Sync Issues' },
+    { type: 'p', text: 'If steps stop updating, try forcing a manual sync from the Sync Status screen — most gaps are resolved by simply reconnecting the device.' }
+  ]},
+  { id: 7, blocks: [
+    { type: 'p', text: 'Calorie goals only tell half the story — macro goals decide whether those calories come from muscle-preserving protein or just empty carbs.' },
+    { type: 'h2', text: 'Where to Set Macro Goals' },
+    { type: 'p', text: 'Open More › Goals › Additional Nutrient Goals to set specific gram targets for protein, carbs, and fat instead of relying on the default split.' },
+    { type: 'h3', text: 'A Reasonable Starting Split' },
+    { type: 'bullets', items: ['Protein: about 0.7-1g per pound of bodyweight', 'Fat: about 25-30% of total calories', 'Carbs: fill in the remainder based on activity level'] },
+    { type: 'h2', text: 'Adjust as You Go' },
+    { type: 'p', text: 'Treat your first split as a starting point — revisit it every few weeks based on hunger, energy, and progress toward your goal.' }
+  ]},
+  { id: 8, blocks: [
+    { type: 'p', text: 'Whole, single-ingredient foods do more than fill you up — they’re quietly responsible for stable energy, faster recovery, and a healthier gut.' },
+    { type: 'h2', text: 'What Counts as a Whole Food?' },
+    { type: 'p', text: 'Foods close to their natural state — vegetables, fruit, whole grains, lean meats, legumes — with little to no processing or added ingredients.' },
+    { type: 'h3', text: 'The Gut Health Connection' },
+    { type: 'bullets', items: ['Fiber from whole foods feeds beneficial gut bacteria', 'Fewer additives means less irritation for sensitive digestive systems', 'Diverse plant foods support a more diverse gut microbiome'] },
+    { type: 'h2', text: 'Easy Swaps to Start With' },
+    { type: 'bullets', items: ['Swap fruit juice for whole fruit', 'Swap white bread for 100% whole grain', 'Swap flavored yogurt for plain yogurt plus fresh fruit'] },
+    { type: 'h2', text: 'The Takeaway' },
+    { type: 'p', text: 'You don’t need to overhaul every meal overnight — a handful of whole-food swaps each week compounds into real, lasting change.' }
+  ]}
+];
+
+const articleReaderModal = document.getElementById('articleReaderModal');
+const articleReaderSheetEl = document.getElementById('articleReaderSheet');
+const articleReaderBackdropEl = document.getElementById('articleReaderBackdrop');
+const articleReaderCloseBtn = document.getElementById('articleReaderCloseBtn');
+const articleReaderImgEl = document.getElementById('articleReaderImg');
+const articleReaderTagEl = document.getElementById('articleReaderTag');
+const articleReaderTitleEl = document.getElementById('articleReaderTitle');
+const articleReaderReadTimeEl = document.getElementById('articleReaderReadTime');
+const articleReaderContentEl = document.getElementById('articleReaderContent');
+
+function renderArticleReaderBlock(block) {
+  if (block.type === 'h2') return `<h2>${escapeHtml(block.text)}</h2>`;
+  if (block.type === 'h3') return `<h3>${escapeHtml(block.text)}</h3>`;
+  if (block.type === 'bullets') return `<ul>${block.items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+  return `<p>${escapeHtml(block.text)}</p>`;
+}
+
+function openArticleReader(article) {
+  const entry = ARTICLES_DB.find((a) => a.id === article.id);
+  articleReaderImgEl.src = article.img || '';
+  articleReaderImgEl.alt = article.title;
+  articleReaderTagEl.classList.toggle('hidden', !article.rd);
+  articleReaderTitleEl.textContent = article.title;
+  articleReaderReadTimeEl.classList.toggle('hidden', !article.readTime);
+  articleReaderReadTimeEl.textContent = article.readTime || '';
+  articleReaderContentEl.innerHTML = entry ? entry.blocks.map(renderArticleReaderBlock).join('') : `<p>${escapeHtml(article.desc)}</p>`;
+  articleReaderSheetEl.scrollTop = 0;
+
+  articleReaderModal.classList.remove('hidden');
+  void articleReaderSheetEl.offsetHeight;
+  requestAnimationFrame(() => articleReaderModal.classList.add('open'));
+}
+
+function closeArticleReader() {
+  if (articleReaderModal.classList.contains('hidden')) return;
+  articleReaderModal.classList.remove('open');
+  const onEnd = (e) => {
+    if (e.target !== articleReaderSheetEl || e.propertyName !== 'transform') return;
+    articleReaderSheetEl.removeEventListener('transitionend', onEnd);
+    articleReaderModal.classList.add('hidden');
+  };
+  articleReaderSheetEl.addEventListener('transitionend', onEnd);
+}
+articleReaderCloseBtn.addEventListener('click', closeArticleReader);
+articleReaderBackdropEl.addEventListener('click', closeArticleReader);
 
 // ---------- Friends Network Directory ----------
 const friendsView = document.getElementById('friendsView');
@@ -7794,34 +8345,138 @@ syncForceBtn.addEventListener('click', async () => {
 syncBackBtn.addEventListener('click', () => closeSubView(syncView));
 
 // ---------- More tab (profile header, menu, body metrics, theme, logout) ----------
-// Logging streak = consecutive days with logged calories, counted backward
-// from the most recent day in a 60-day history window.
-function computeLoggingStreak(days) {
-  let streak = 0;
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (days[i].calories > 0) streak++;
-    else break;
-  }
-  return streak;
-}
-
-// Weight-loss progress (always shown in lbs, matching the header spec)
-// = earliest logged weight minus most recent, floored at 0 for weight gain.
-function computeLbsLost() {
-  if (!state.weights || state.weights.length === 0) return 0;
+// Weight-loss progress = earliest logged weight minus most recent weight,
+// floored at 0 for weight gain. Values are stored in kg; display converts to
+// the user's chosen unit via getWeightUnit()/kgToLbs().
+function computeWeightSummary() {
+  if (!state.weights || state.weights.length === 0) return null;
   const chronological = [...state.weights].sort((a, b) => a.date.localeCompare(b.date));
   const start = chronological[0].weight;
   const current = chronological[chronological.length - 1].weight;
-  return Math.max(0, Math.round(kgToLbs(start - current)));
+  return { start, current, lost: Math.max(0, start - current) };
+}
+
+function formatWeightBadge(kg) {
+  const unit = getWeightUnit();
+  const value = unit === 'lbs' ? kgToLbs(kg) : kg;
+  return `${value.toFixed(1)} ${unit}`;
+}
+
+function formatMfpLastSync(date) {
+  if (!date) return 'Last Sync: Just now';
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMin < 1) return 'Last Sync: Just now';
+  if (diffMin < 60) return `Last Sync: ${diffMin} min ago`;
+  return `Last Sync: ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 }
 
 async function openMoreTab() {
   profileUsernameEl.textContent = state.user?.username || '—';
+  mfpLastSyncEl.textContent = formatMfpLastSync(state.lastSyncAt);
 
-  moreProgressValueEl.textContent = `${computeLbsLost()} lbs`;
-  const history = await loadHistory({ days: 60 });
-  moreStreakValueEl.textContent = String(history ? computeLoggingStreak(history.days) : 0);
+  const summary = computeWeightSummary();
+  mfpMetricCurrentEl.textContent = summary ? formatWeightBadge(summary.current) : '— kg';
+  mfpMetricStartEl.textContent = summary ? formatWeightBadge(summary.start) : '— kg';
+  mfpMetricLostEl.textContent = summary ? formatWeightBadge(summary.lost) : '— kg';
 }
+
+moreProfileHeaderCard.addEventListener('click', () => openProfileDetailsView());
+moreProfileHeaderCard.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProfileDetailsView(); }
+});
+
+// ---------- Profile Details sub-view (tap the MFP-style profile card) ----------
+// Purely a client-side display profile — independent from the account
+// username/email used for auth (see Email Settings, which already treats
+// that as read-only) — so every row here reads/writes one localStorage blob.
+const PROFILE_DETAILS_KEY = 'pure_macros_profile_details';
+const PROFILE_DETAILS_FIELDS = {
+  username: { label: 'Username', type: 'text', placeholder: 'Enter a username' },
+  height: { label: 'Height', type: 'text', placeholder: 'e.g. 175 cm' },
+  sex: { label: 'Sex', type: 'select', options: ['Male', 'Female', 'Other'] },
+  dob: { label: 'Date of Birth', type: 'date' },
+  location: { label: 'Location', type: 'text', placeholder: 'City, Country' },
+  zipCode: { label: 'Zip Code', type: 'text', placeholder: 'e.g. 10001' },
+  email: { label: 'Email', type: 'text', placeholder: 'you@example.com' }
+};
+
+function getProfileDetails() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_DETAILS_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function renderProfileDetailsList() {
+  const details = getProfileDetails();
+  document.getElementById('profileDetailsUsername').textContent = details.username || state.user?.username || '—';
+  document.getElementById('profileDetailsHeight').textContent = details.height || '—';
+  document.getElementById('profileDetailsSex').textContent = details.sex || '—';
+  document.getElementById('profileDetailsDob').textContent = details.dob || '—';
+  document.getElementById('profileDetailsLocation').textContent = details.location || '—';
+  document.getElementById('profileDetailsZipCode').textContent = details.zipCode || '—';
+  document.getElementById('profileDetailsEmail').textContent = details.email || '—';
+}
+
+function openProfileDetailsView() {
+  renderProfileDetailsList();
+  openSubView(profileDetailsView);
+}
+profileDetailsBackBtn.addEventListener('click', () => closeSubView(profileDetailsView));
+
+let activeProfileField = null;
+
+function openProfileFieldSheet(field) {
+  const config = PROFILE_DETAILS_FIELDS[field];
+  if (!config) return;
+  activeProfileField = field;
+  const details = getProfileDetails();
+  profileFieldTitleEl.textContent = config.label;
+
+  if (config.type === 'select') {
+    profileFieldSelectInput.innerHTML = config.options
+      .map((opt) => `<option value="${opt}">${opt}</option>`)
+      .join('');
+    profileFieldSelectInput.value = details[field] || config.options[0];
+    profileFieldSelectInput.classList.remove('hidden');
+    profileFieldTextInput.classList.add('hidden');
+  } else {
+    profileFieldTextInput.type = config.type === 'date' ? 'date' : 'text';
+    profileFieldTextInput.placeholder = config.placeholder || '';
+    profileFieldTextInput.value = details[field] || '';
+    profileFieldTextInput.classList.remove('hidden');
+    profileFieldSelectInput.classList.add('hidden');
+  }
+
+  profileFieldSheet.classList.add('open');
+  if (config.type !== 'select') profileFieldTextInput.focus();
+}
+
+function closeProfileFieldSheet() {
+  profileFieldSheet.classList.remove('open');
+  activeProfileField = null;
+}
+profileFieldCloseBtn.addEventListener('click', closeProfileFieldSheet);
+profileFieldSheetBackdrop.addEventListener('click', closeProfileFieldSheet);
+
+profileFieldSaveBtn.addEventListener('click', () => {
+  if (!activeProfileField) return;
+  const config = PROFILE_DETAILS_FIELDS[activeProfileField];
+  const value = config.type === 'select' ? profileFieldSelectInput.value : profileFieldTextInput.value.trim();
+  const details = getProfileDetails();
+  if (value) details[activeProfileField] = value;
+  else delete details[activeProfileField];
+  localStorage.setItem(PROFILE_DETAILS_KEY, JSON.stringify(details));
+  renderProfileDetailsList();
+  closeProfileFieldSheet();
+});
+
+profileDetailsListEl.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-profile-field]');
+  if (!row) return;
+  openProfileFieldSheet(row.dataset.profileField);
+});
 
 // Menu rows that map onto functionality already elsewhere in the app; every
 // other row is a placeholder for a not-yet-built feature and just toasts.

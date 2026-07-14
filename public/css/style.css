@@ -1625,6 +1625,63 @@ body {
 
 .profile-header-username { font-size: 15px; font-weight: 700; color: var(--text-1); }
 
+/* ---------- More tab: MFP-style profile card (avatar, premium badge, metrics) ---------- */
+.mfp-profile-card { display: flex; flex-direction: column; gap: 14px; cursor: pointer; transition: background 0.2s ease; }
+.mfp-profile-card:hover, .mfp-profile-card:active { background: var(--card-bg-raised); }
+
+.mfp-profile-top { display: flex; align-items: center; gap: 12px; }
+.mfp-profile-avatar { width: 56px; height: 56px; font-size: 26px; flex-shrink: 0; }
+.mfp-profile-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.mfp-profile-name-row { display: flex; align-items: center; gap: 8px; }
+.mfp-profile-name-row .profile-header-username { font-size: 16px; }
+.mfp-last-sync { font-size: 12px; color: var(--text-3); }
+.mfp-profile-chevron { font-size: 18px; color: var(--text-3); flex-shrink: 0; }
+
+.mfp-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #ad8a2c;
+  border: 1px solid #d4af37;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.16), rgba(212, 175, 55, 0.05));
+  flex-shrink: 0;
+}
+
+.mfp-metric-badges { display: flex; gap: 8px; }
+.mfp-metric-badge {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: var(--radius);
+  background: var(--card-bg-raised);
+  border: 1px solid var(--card-border);
+}
+.mfp-metric-value { font-size: 15px; font-weight: 800; color: var(--neon-cyan); font-variant-numeric: tabular-nums; }
+.mfp-metric-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* ---------- Profile Details slide-up field editor ---------- */
+.profile-field-sheet-body { padding: 20px var(--pad-lg) calc(20px + env(safe-area-inset-bottom)); }
+.profile-field-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg-raised);
+  color: var(--text-1);
+  font-size: 15px;
+  box-sizing: border-box;
+}
+.profile-field-input:focus { outline: none; border-color: var(--neon-cyan); }
+
 /* ---------- More tab: high-density premium menu list ---------- */
 .more-menu-card { padding: 0; overflow: hidden; }
 
@@ -1667,6 +1724,22 @@ body {
 }
 
 .more-menu-chevron { font-size: 16px; color: var(--text-3); flex-shrink: 0; }
+.more-menu-value { font-size: 13px; color: var(--text-2); flex-shrink: 0; }
+
+.meal-name-input {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  font-family: inherit;
+}
+.meal-name-input::placeholder { color: var(--text-3); font-weight: 500; }
 
 .more-menu-item--logout .more-menu-title { color: var(--danger); }
 .more-menu-item.active-protocol { background: var(--card-bg-raised); }
@@ -3430,6 +3503,7 @@ html.has-session .auth-overlay {
 
 .recipe-modal-body { padding: 18px 20px 28px; }
 .recipe-modal-title { margin: 0 0 10px; font-size: 22px; font-weight: 800; color: var(--text-1); }
+.recipe-modal-badge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
 .recipe-modal-kcal-badge {
   display: inline-flex;
   align-items: center;
@@ -3440,9 +3514,47 @@ html.has-session .auth-overlay {
   padding: 4px 12px;
   border-radius: 999px;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
-  margin-bottom: 14px;
+}
+.recipe-modal-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  background: var(--card-bg-raised);
+  border: 1px solid var(--card-border);
+  padding: 4px 10px;
+  border-radius: 999px;
 }
 .recipe-modal-macros { display: flex; gap: 10px; margin-bottom: 22px; }
+
+.recipe-modal-tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--card-bg-raised); border-radius: 10px; padding: 4px; }
+.recipe-modal-tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.recipe-modal-tab-btn.active { background: var(--card-bg); color: var(--neon-cyan); box-shadow: var(--shadow-card); }
+
+.recipe-modal-add-row { display: flex; gap: 10px; margin-top: 22px; }
+.recipe-modal-meal-select {
+  flex: 1;
+  height: 46px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg-raised);
+  color: var(--text-1);
+  font-size: 14px;
+}
+.recipe-modal-add-btn { flex: 2; height: 46px; }
 .recipe-modal-section { margin-bottom: 22px; }
 .recipe-modal-section:last-child { margin-bottom: 0; }
 .recipe-modal-section-title { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-1); }
@@ -3619,6 +3731,108 @@ html.has-session .auth-overlay {
 .workout-modal-timeline-copy { display: flex; flex-direction: column; gap: 2px; }
 .workout-modal-timeline-move { font-size: 13.5px; font-weight: 700; color: var(--text-1); }
 .workout-modal-timeline-cue { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+
+/* ---------- Article Reader Mode (fullscreen overlay, Learn hub) ----------
+   Unlike the recipe/workout bottom sheets, this is a true fullscreen
+   takeover (edge-to-edge, no rounded top) since Reader Mode is meant to be
+   an immersive full-page read, not a partial glanceable sheet. */
+.article-reader-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 270;
+  display: flex;
+  justify-content: center;
+}
+.article-reader-modal.hidden { display: none; }
+
+.article-reader-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.article-reader-modal.open .article-reader-backdrop { opacity: 1; }
+
+.article-reader-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--card-bg-raised);
+  will-change: transform, opacity;
+  transform: translate3d(0, 24px, 0);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.3s ease;
+}
+.article-reader-modal.open .article-reader-sheet {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.article-reader-banner { position: relative; width: 100%; height: 240px; overflow: hidden; background: var(--input-bg); }
+.article-reader-banner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.article-reader-banner-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 34%, rgba(0, 0, 0, 0.1) 64%, var(--card-bg-raised) 100%);
+}
+.article-reader-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.article-reader-body { padding: 6px 22px 44px; }
+.article-reader-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--neon-green);
+  margin-bottom: 8px;
+}
+.article-reader-title { margin: 0 0 8px; font-size: 24px; font-weight: 800; line-height: 1.25; color: var(--text-1); }
+.article-reader-readtime { display: block; font-size: 12px; color: var(--text-3); margin-bottom: 20px; }
+
+.article-reader-content { display: flex; flex-direction: column; gap: 14px; }
+.article-reader-content p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+.article-reader-content h2 { margin: 10px 0 0; font-size: 19px; font-weight: 800; color: var(--text-1); line-height: 1.3; }
+.article-reader-content h3 { margin: 6px 0 0; font-size: 16px; font-weight: 700; color: var(--text-1); line-height: 1.3; }
+.article-reader-content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.article-reader-content ul li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  padding: 9px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+}
+.article-reader-content ul li::before { content: '•'; color: var(--neon-cyan); font-weight: 800; }
 
 /* ============================================================
    Meal Planner 9-Step Wizard — theme-aware surfaces
@@ -4878,6 +5092,55 @@ html.has-session .auth-overlay {
 .wr-card-title { margin: 0; font-size: 13.5px; font-weight: 800; color: var(--text-1); line-height: 1.3; }
 .wr-card-desc { margin: 0; font-size: 11.5px; color: var(--text-2); line-height: 1.4; }
 
+/* Recipe Discovery: category carousels + View More grid (reuses .wr-carousel/.wr-card) */
+.recipe-category-row-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.recipe-category-row-header .wr-category-title { margin: 0; }
+.recipe-view-more-btn {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--neon-cyan);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.recipe-grid-search {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg-raised);
+  color: var(--text-1);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.recipe-grid-search:focus { outline: none; border-color: var(--neon-cyan); }
+
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+.recipe-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 10px;
+  cursor: pointer;
+}
+.recipe-grid-card-thumb { width: 100%; height: 100px; border-radius: 12px; object-fit: cover; display: block; }
+.recipe-grid-card-name { font-size: 13px; font-weight: 800; color: var(--text-1); line-height: 1.3; }
+.recipe-grid-card-meta { font-size: 11px; color: var(--text-3); }
+
 .wr-log-card { display: flex; flex-direction: column; gap: 10px; }
 .wr-log-meta { display: flex; gap: 10px; font-size: 12px; font-weight: 700; color: var(--neon-cyan); }
 .wr-cta-card { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
@@ -4906,26 +5169,6 @@ html.has-session .auth-overlay {
   width: calc(100% - 28px);
 }
 .mrf-create-btn:active { transform: scale(0.97); }
-
-/* Discovery / Learn feed */
-.discovery-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
-.discovery-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: var(--pad-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.discovery-card-top { display: flex; align-items: center; justify-content: space-between; }
-.discovery-card-name { font-size: 14px; font-weight: 700; color: var(--text-1); }
-.discovery-card-prep { font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.discovery-card-cals { font-size: 12px; color: var(--neon-amber); font-weight: 700; }
-.discovery-macro-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: var(--track-bg); }
-.discovery-macro-bar span:nth-child(1) { background: var(--neon-green); }
-.discovery-macro-bar span:nth-child(2) { background: var(--neon-violet); }
-.discovery-macro-bar span:nth-child(3) { background: var(--neon-pink); }
 
 /* Apps & Devices 2x2 grid */
 .apps-devices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }

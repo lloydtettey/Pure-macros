@@ -699,19 +699,30 @@
 
       <!-- ============ MORE TAB ============ -->
       <section class="tab-view hidden" id="tab-more" data-tab-view="more">
-        <section class="card profile-header-card">
-          <div class="profile-header-row">
-            <div class="profile-header-stat">
-              <span class="profile-header-stat-value" id="moreStreakValue">0</span>
-              <span class="profile-header-stat-label">days</span>
+        <section class="card profile-header-card mfp-profile-card" id="moreProfileHeaderCard" role="button" tabindex="0" aria-haspopup="dialog">
+          <div class="mfp-profile-top">
+            <span class="profile-avatar mfp-profile-avatar" aria-hidden="true">👤</span>
+            <div class="mfp-profile-info">
+              <div class="mfp-profile-name-row">
+                <span class="profile-header-username" id="profileUsername">—</span>
+                <span class="mfp-premium-badge" id="mfpPremiumBadge">★ PREMIUM</span>
+              </div>
+              <span class="mfp-last-sync" id="mfpLastSync">Last Sync: Just now</span>
             </div>
-            <div class="profile-header-center">
-              <span class="profile-avatar" aria-hidden="true">👤</span>
-              <span class="profile-header-username" id="profileUsername">—</span>
+            <span class="mfp-profile-chevron" aria-hidden="true">›</span>
+          </div>
+          <div class="mfp-metric-badges">
+            <div class="mfp-metric-badge">
+              <span class="mfp-metric-value" id="mfpMetricCurrent">— kg</span>
+              <span class="mfp-metric-label">Current</span>
             </div>
-            <div class="profile-header-stat">
-              <span class="profile-header-stat-value" id="moreProgressValue">0 lbs</span>
-              <span class="profile-header-stat-label">lost</span>
+            <div class="mfp-metric-badge">
+              <span class="mfp-metric-value" id="mfpMetricStart">— kg</span>
+              <span class="mfp-metric-label">Start</span>
+            </div>
+            <div class="mfp-metric-badge">
+              <span class="mfp-metric-value" id="mfpMetricLost">— kg</span>
+              <span class="mfp-metric-label">Lost</span>
             </div>
           </div>
         </section>
@@ -2041,6 +2052,92 @@
               <span class="toggle-switch-thumb"></span>
             </button>
           </li>
+          <li class="more-menu-item" data-menu-key="default-search-tab">
+            <span class="more-menu-title">Default Search Tab</span>
+            <span class="more-menu-value" id="defaultSearchTabValueLabel">All</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item" data-menu-key="customize-meal-names">
+            <span class="more-menu-title">Customize Meal Names</span>
+            <span class="more-menu-chevron" aria-hidden="true">›</span>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Suggest Recent Meals</span>
+            <button type="button" class="toggle-switch toggle-switch--green" data-diary-toggle="suggestRecentMeals" role="switch" aria-checked="false" aria-label="Toggle suggest recent meals">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Default Search Tab Sub-View (nested one level deeper, under Diary Settings) -->
+  <div class="settings-view settings-view--nested-privacy" id="defaultSearchTabView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="defaultSearchTabBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Default Search Tab</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card more-menu-card">
+        <ul class="more-menu-list privacy-radio-list" id="defaultSearchTabRadioList">
+          <li class="more-menu-item privacy-radio-row" data-search-tab-value="all">
+            <span class="more-menu-title">All</span>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-search-tab-value="my-foods">
+            <span class="more-menu-title">My Foods</span>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-search-tab-value="meals">
+            <span class="more-menu-title">Meals</span>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+          <li class="more-menu-item privacy-radio-row" data-search-tab-value="recipes">
+            <span class="more-menu-title">Recipes</span>
+            <span class="privacy-radio-check" aria-hidden="true">✓</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Customize Meal Names Sub-View (nested one level deeper, under Diary Settings) -->
+  <div class="settings-view settings-view--nested-privacy" id="customizeMealNamesView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="customizeMealNamesBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Customize Meal Names</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <p class="privacy-warning-text">These names replace the meal headers on your Diary page.</p>
+      <section class="card more-menu-card">
+        <ul class="more-menu-list" id="customizeMealNamesList">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 1</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="breakfast" maxlength="24" placeholder="Breakfast" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 2</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="lunch" maxlength="24" placeholder="Lunch" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 3</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="dinner" maxlength="24" placeholder="Dinner" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 4</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="snack" maxlength="24" placeholder="Snack" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 5</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="snack2" maxlength="24" placeholder="Snack 2" />
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Meal 6</span>
+            <input type="text" class="meal-name-input" data-meal-name-slot="snack3" maxlength="24" placeholder="Snack 3" />
+          </li>
         </ul>
       </section>
     </div>
@@ -2570,6 +2667,65 @@
     </div>
   </div>
 
+  <!-- Profile Details Sub-View (full-screen, opened by tapping the MFP-style profile card) -->
+  <div class="settings-view" id="profileDetailsView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="profileDetailsBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title">Profile Details</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card">
+        <div class="profile-details" id="profileDetailsList">
+          <div class="profile-row profile-row--clickable" data-profile-field="username">
+            <span class="profile-label">Username</span>
+            <span class="profile-value" id="profileDetailsUsername">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="height">
+            <span class="profile-label">Height</span>
+            <span class="profile-value" id="profileDetailsHeight">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="sex">
+            <span class="profile-label">Sex</span>
+            <span class="profile-value" id="profileDetailsSex">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="dob">
+            <span class="profile-label">Date of Birth</span>
+            <span class="profile-value" id="profileDetailsDob">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="location">
+            <span class="profile-label">Location</span>
+            <span class="profile-value" id="profileDetailsLocation">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="zipCode">
+            <span class="profile-label">Zip Code</span>
+            <span class="profile-value" id="profileDetailsZipCode">—</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="email">
+            <span class="profile-label">Email</span>
+            <span class="profile-value" id="profileDetailsEmail">—</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Generic slide-up picker for editing a single Profile Details row -->
+  <div class="wheel-sheet" id="profileFieldSheet">
+    <div class="wheel-sheet-backdrop" id="profileFieldSheetBackdrop"></div>
+    <div class="wheel-sheet-panel">
+      <div class="wheel-sheet-bar">
+        <button type="button" class="icon-btn" id="profileFieldCloseBtn" aria-label="Close">✕</button>
+        <span class="wheel-sheet-title" id="profileFieldTitle">—</span>
+        <button type="button" class="icon-btn utility-screen-save" id="profileFieldSaveBtn" aria-label="Save">✓</button>
+      </div>
+      <div class="profile-field-sheet-body">
+        <input type="text" class="profile-field-input" id="profileFieldTextInput" />
+        <select class="profile-field-input privacy-select hidden" id="profileFieldSelectInput"></select>
+      </div>
+    </div>
+  </div>
+
   <!-- Workout Routines Sub-View (full-screen, nested under the More tab) -->
   <div class="settings-view" id="workoutsView">
     <header class="settings-view-header">
@@ -2904,17 +3060,30 @@
   <div class="settings-view" id="discoveryView">
     <header class="settings-view-header">
       <button type="button" class="icon-btn settings-back-btn" id="discoveryBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">Discover</h1>
+      <h1 class="settings-view-title">Recipe Discovery</h1>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body wr-category-list" id="recipeCategoryRows"></div>
+  </div>
+
+  <!-- Recipe Grid Sub-View (nested one level deeper, opened via "View More" from Recipe Discovery) -->
+  <div class="settings-view settings-view--nested-privacy" id="recipeGridView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="recipeGridBackBtn" aria-label="Back">←</button>
+      <h1 class="settings-view-title" id="recipeGridTitle">Recipes</h1>
       <span class="settings-view-header-spacer" aria-hidden="true"></span>
     </header>
     <div class="settings-view-body">
-      <div class="progress-subnav" id="discoveryChipsRow">
+      <input type="search" class="recipe-grid-search" id="recipeGridSearchInput" placeholder="Search recipes…" />
+      <div class="progress-subnav" id="recipeGridChipsRow">
         <button type="button" class="progress-subnav-btn active" data-category="all">All</button>
-        <button type="button" class="progress-subnav-btn" data-category="high-protein">High Protein</button>
-        <button type="button" class="progress-subnav-btn" data-category="under-15">Under 15 Mins</button>
-        <button type="button" class="progress-subnav-btn" data-category="meal-prep">Meal Prep</button>
+        <button type="button" class="progress-subnav-btn" data-category="High Protein">High Protein</button>
+        <button type="button" class="progress-subnav-btn" data-category="Gut Health">Gut Health</button>
+        <button type="button" class="progress-subnav-btn" data-category="Mediterranean">Mediterranean</button>
+        <button type="button" class="progress-subnav-btn" data-category="GLP-1 Lunches">GLP-1 Lunches</button>
+        <button type="button" class="progress-subnav-btn" data-category="Low Carb">Low Carb</button>
       </div>
-      <div class="discovery-cards" id="discoveryCardsList"></div>
+      <div class="recipe-grid" id="recipeGridList"></div>
     </div>
   </div>
 
@@ -3321,20 +3490,35 @@
       </div>
       <div class="recipe-modal-body">
         <h2 class="recipe-modal-title" id="recipeModalTitle">Recipe</h2>
-        <div class="recipe-modal-kcal-badge" id="recipeModalKcal">0 kcal</div>
+        <div class="recipe-modal-badge-row">
+          <div class="recipe-modal-kcal-badge" id="recipeModalKcal">0 kcal</div>
+          <span class="recipe-modal-meta-pill hidden" id="recipeModalPrepTime">⏱ 0 min</span>
+          <span class="recipe-modal-meta-pill hidden" id="recipeModalFiber">🌾 0g fiber</span>
+        </div>
         <div class="recipe-modal-macros">
           <div class="plan-macro-pill protein"><span class="plan-macro-pill-value" id="recipeModalProtein">0g</span><span class="plan-macro-pill-label">Protein</span></div>
           <div class="plan-macro-pill carbs"><span class="plan-macro-pill-value" id="recipeModalCarbs">0g</span><span class="plan-macro-pill-label">Carbs</span></div>
           <div class="plan-macro-pill fat"><span class="plan-macro-pill-value" id="recipeModalFat">0g</span><span class="plan-macro-pill-label">Fat</span></div>
         </div>
-        <section class="recipe-modal-section">
-          <h3 class="recipe-modal-section-title">Ingredients</h3>
+        <div class="recipe-modal-tabs" id="recipeModalTabs">
+          <button type="button" class="recipe-modal-tab-btn active" data-recipe-tab="ingredients">Ingredients</button>
+          <button type="button" class="recipe-modal-tab-btn" data-recipe-tab="directions">Directions</button>
+        </div>
+        <section class="recipe-modal-section" id="recipeModalIngredientsSection">
           <ul class="recipe-modal-ingredients" id="recipeModalIngredients"></ul>
         </section>
-        <section class="recipe-modal-section">
-          <h3 class="recipe-modal-section-title">Instructions</h3>
+        <section class="recipe-modal-section hidden" id="recipeModalInstructionsSection">
           <ol class="recipe-modal-instructions" id="recipeModalInstructions"></ol>
         </section>
+        <div class="recipe-modal-add-row">
+          <select class="recipe-modal-meal-select" id="recipeModalMealSelect">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+          <button type="button" class="btn-primary recipe-modal-add-btn" id="recipeModalAddToDiaryBtn">Add to Diary</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3361,6 +3545,24 @@
           <h3 class="workout-modal-section-title">Exercise Timeline</h3>
           <ul class="workout-modal-timeline" id="workoutModalTimeline"></ul>
         </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ARTICLE READER MODE (fullscreen overlay, Learn hub) ============ -->
+  <div class="article-reader-modal hidden" id="articleReaderModal" aria-hidden="true">
+    <div class="article-reader-backdrop" id="articleReaderBackdrop"></div>
+    <div class="article-reader-sheet" id="articleReaderSheet">
+      <div class="article-reader-banner">
+        <img class="article-reader-banner-img" id="articleReaderImg" src="" alt="" />
+        <div class="article-reader-banner-vignette" aria-hidden="true"></div>
+        <button type="button" class="article-reader-close" id="articleReaderCloseBtn" aria-label="Close article">✕</button>
+      </div>
+      <div class="article-reader-body">
+        <span class="article-reader-tag hidden" id="articleReaderTag">✅ RD Approved</span>
+        <h1 class="article-reader-title" id="articleReaderTitle">Article</h1>
+        <span class="article-reader-readtime hidden" id="articleReaderReadTime"></span>
+        <div class="article-reader-content" id="articleReaderContent"></div>
       </div>
     </div>
   </div>

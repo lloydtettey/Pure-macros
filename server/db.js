@@ -180,7 +180,7 @@ async function readDb() {
       };
     }
     if (settings && settings.activeDayType === undefined) settings.activeDayType = null;
-    if (settings && !settings.diary) settings.diary = { showDecimalMacros: false, quickAddEnabled: false, multiAddDefault: false };
+    if (settings && !settings.diary) settings.diary = { showDecimalMacros: false, quickAddEnabled: false, multiAddDefault: false, suggestRecentMeals: false, defaultSearchTab: 'all' };
     if (settings && settings.weekStart === undefined) settings.weekStart = 'monday';
     if (settings && !settings.sharing) settings.sharing = { diarySharing: 'private', profileSearchable: false };
     // Push Notifications sub-view (Settings > Push Notifications) — MyFitnessPal-style
