@@ -108,7 +108,11 @@
       "Bash(mkdir -p 'C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\05352e00-0b71-4af2-bbba-9cc8271955c1\\\\scratchpad')",
       "Bash(tail -5 /tmp_install.log)",
       "Bash(./node_modules/.bin/playwright --version)",
-      "Bash(pkill -f \"find /\")"
+      "Bash(pkill -f \"find /\")",
+      "Bash(ls \"$\\(node -e \"console.log\\(require\\('os'\\).homedir\\(\\)\\)\"\\)/AppData/Local/ms-playwright\")",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify.js\")",
+      "Bash(cat)",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify2.js\")"
     ]
   }
 }
