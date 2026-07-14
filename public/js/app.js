@@ -863,7 +863,12 @@ function setTheme(preference) {
     // still applies for this session, it just won't persist across reloads.
   }
   applyTheme(preference);
-  // 250ms gives iOS Safari's WebKit engine time to fully finish its layout
+  // Force a synchronous layout flush so the data-theme/class mutation above
+  // is fully computed and painted while 'no-transitions' is still active,
+  // instead of potentially landing in the same frame as the transition
+  // re-enable below.
+  document.body.offsetHeight;
+  // 300ms gives iOS Safari's WebKit engine time to fully finish its layout
   // and paint cycles for the swap before transitions are re-enabled. The
   // toggle lock releases here too, so taps stay blocked for exactly as long
   // as the paint cycle they're waiting on, instead of a second guessed timer.
@@ -871,7 +876,7 @@ function setTheme(preference) {
     document.body.classList.remove('no-transitions');
     themeTimeout = null;
     themeToggleLocked = false;
-  }, 250);
+  }, 300);
 }
 
 // Boot-time theme scan: never let a corrupt localStorage value or a thrown
@@ -889,7 +894,10 @@ try {
 // which is what let repeated taps stack up and stutter on iOS Safari.
 let themeToggleLocked = false;
 appearanceCardGridEl.addEventListener('click', (e) => {
-  if (themeToggleLocked) return;
+  if (themeToggleLocked) {
+    console.warn('Theme toggle locked: swap already in progress, ignoring tap.');
+    return;
+  }
   const card = e.target.closest('.appearance-card');
   if (!card) return;
   themeToggleLocked = true;
