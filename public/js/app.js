@@ -855,10 +855,17 @@ try {
   document.body.classList.add('dark-theme');
 }
 
+// Guards against rapid-fire taps re-triggering setTheme() (and its
+// no-transitions/localStorage work) before the previous swap has settled,
+// which is what let repeated taps stack up and stutter on iOS Safari.
+let themeToggleLocked = false;
 appearanceCardGridEl.addEventListener('click', (e) => {
+  if (themeToggleLocked) return;
   const card = e.target.closest('.appearance-card');
   if (!card) return;
+  themeToggleLocked = true;
   setTheme(card.dataset.themeChoice);
+  setTimeout(() => { themeToggleLocked = false; }, 350);
 });
 appAppearanceBackBtn.addEventListener('click', () => closeSubView(appAppearanceView));
 
@@ -2783,14 +2790,24 @@ function initApp() {
   if (cachedUser) state.user = cachedUser;
   let data;
   try {
-    const res = await authFetch(`${API}/auth/me`);
+    // Render's free tier can cold-start for tens of seconds; without this
+    // race, a slow/stalled /auth/me would leave the splash removed (its own
+    // 4s safety net above) but .has-session still hiding the login form —
+    // a blank screen the user can't get past. Timing out here falls back to
+    // the same "show login" path as an outright failed request.
+    const res = await Promise.race([
+      authFetch(`${API}/auth/me`),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000))
+    ]);
     if (!res.ok) throw new Error('invalid session');
     data = await res.json();
   } catch {
     state.user = null;
     clearToken();
     // The head script pre-hid the auth overlay on the assumption this token
-    // was valid — since it wasn't, undo that so the login form shows.
+    // was valid — since it wasn't (or validating it timed out), undo that so
+    // the login form shows instead of leaving the app stuck behind a blank
+    // screen.
     document.documentElement.classList.remove('has-session');
     return;
   }

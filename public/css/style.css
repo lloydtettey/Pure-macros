@@ -324,7 +324,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .icon-btn:hover {
   background: #3a3a3d;
@@ -343,7 +343,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .pill-btn:hover {
   background: #3a3a3d;
@@ -689,7 +689,7 @@ body {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 .day-type-btn.active {
   color: #fff;
@@ -815,7 +815,7 @@ body {
   background: var(--card-bg);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .week-pill:hover { border-color: rgba(0, 229, 255, 0.4); }
 
@@ -880,7 +880,7 @@ body {
   padding: 4px;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 .macros-swap-btn:hover { color: var(--neon-cyan); background: var(--card-bg-raised); }
 .macros-swap-btn.active { color: var(--neon-cyan); transform: rotate(180deg); }
@@ -952,7 +952,7 @@ body {
   align-items: center;
   justify-content: center;
   filter: grayscale(1) opacity(0.45);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, filter 0.3s ease, transform 0.3s ease;
 }
 .cup-btn:hover {
   transform: translateY(-2px);
@@ -1004,7 +1004,7 @@ body {
   color: var(--text-1);
   font-size: 13px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .weight-form input:focus {
   border-color: var(--neon-cyan);
@@ -1035,7 +1035,7 @@ body {
   background: var(--card-bg-raised);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .weight-entry:last-child { margin-bottom: 0; }
 .weight-date { font-size: 12px; color: var(--text-2); }
@@ -1226,7 +1226,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .scan-plate-btn:hover {
   background: #0b3034;
@@ -1309,7 +1309,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .delete-btn:hover { background: #311717; color: var(--danger); }
 :root[data-theme="light"] .delete-btn:hover { background: #ffeaea; color: var(--danger); }
@@ -1480,7 +1480,7 @@ body {
   font-size: 13px;
   outline: none;
   min-width: 0;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .inline-add-form input::placeholder { color: var(--text-3); }
 .inline-add-form input:focus,
@@ -1498,7 +1498,7 @@ body {
   font-weight: 800;
   cursor: pointer;
   padding: 10px 14px;
-  transition: all 0.3s ease;
+  transition: filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .btn-add-inline:hover {
   filter: brightness(1.1);
@@ -1598,7 +1598,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .target-profile-section .field input:focus {
   border-color: var(--neon-cyan);
@@ -1629,7 +1629,7 @@ body {
   background: var(--track-bg);
   outline: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 .field input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1640,7 +1640,7 @@ body {
   background: var(--neon-cyan);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   border: 2px solid #001318;
 }
 .field input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
@@ -1652,7 +1652,7 @@ body {
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
   cursor: pointer;
   border: 2px solid #001318;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .field select {
@@ -1664,7 +1664,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .field select:focus {
   border-color: var(--neon-cyan);
@@ -1702,7 +1702,7 @@ body {
   padding: 7px 14px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   min-height: 32px;
 }
 .unit-toggle-btn.active {
@@ -2082,7 +2082,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .btn-primary {
@@ -2147,7 +2147,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .scan-modal .field input[type="number"]:focus {
   border-color: var(--neon-cyan);
@@ -2351,7 +2351,7 @@ html.has-session .auth-overlay {
   border-radius: 6px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 .auth-tab.active {
   background: var(--neon-cyan);
@@ -2370,7 +2370,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .auth-form .field input:focus {
   border-color: var(--neon-cyan);
@@ -2500,7 +2500,7 @@ html.has-session .auth-overlay {
   height: 7px;
   border-radius: 50%;
   background: var(--card-border);
-  transition: all 0.3s ease;
+  transition: width 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
 }
 .onboarding-dot.active {
   width: 18px;
@@ -2520,7 +2520,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .onboarding-step .field input:focus {
   border-color: var(--neon-cyan);
@@ -2542,7 +2542,7 @@ html.has-session .auth-overlay {
   box-shadow: var(--shadow-card-hover);
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
   z-index: 100;
 }
 .toast.show {
@@ -2577,7 +2577,7 @@ html.has-session .auth-overlay {
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 .progress-subnav-btn:hover { border-color: rgba(0, 229, 255, 0.4); color: var(--text-1); }
 .progress-subnav-btn.active {
@@ -2929,7 +2929,7 @@ html.has-session .auth-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .sleep-step-btn:hover { color: var(--neon-violet); border-color: rgba(157, 59, 255, 0.4); }
 .sleep-step-btn:active { transform: scale(0.92); }
@@ -2988,7 +2988,7 @@ html.has-session .auth-overlay {
   border-radius: 6px;
   cursor: pointer;
   min-height: 36px;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 .state-toggle-btn.active {
   background: var(--neon-violet);
@@ -3176,7 +3176,7 @@ html.has-session .auth-overlay {
   white-space: nowrap;
   text-align: center;
   border-bottom: 2px solid var(--card-border);
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 .log-subtab-btn:hover { color: var(--text-1); }
 .log-subtab-btn.active {
@@ -3274,7 +3274,7 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .log-food-add-btn:hover {
   background: var(--neon-cyan);
@@ -3301,7 +3301,7 @@ html.has-session .auth-overlay {
   border-radius: 12px;
   background: var(--card-bg-raised);
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
   min-width: 0;
 }
 .log-feature-card:hover {
@@ -3391,7 +3391,7 @@ html.has-session .auth-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .log-filter-btn:hover { border-color: rgba(0, 229, 255, 0.4); box-shadow: 0 0 8px rgba(0, 229, 255, 0.2); }
 .log-filter-icon {
@@ -4080,7 +4080,7 @@ html.has-session .auth-overlay {
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 .pw-option-list--compact .pw-option { flex: 1 1 auto; text-align: center; }
 .pw-option:hover { border-color: var(--neon-cyan); }
@@ -4129,7 +4129,7 @@ html.has-session .auth-overlay {
   font-weight: 700;
   text-align: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .pw-tier-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--card-border); }
 .pw-tier-notch.selected {
@@ -4159,7 +4159,7 @@ html.has-session .auth-overlay {
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .pw-diet-card:hover { border-color: var(--neon-cyan); }
 .pw-diet-card.selected {
@@ -4270,7 +4270,7 @@ html.has-session .auth-overlay {
   background: var(--bg);
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .pw-ld-btn.selected[data-mood="love"] { border-color: var(--neon-green); background: #122a0e; }
 .pw-ld-btn.selected[data-mood="dislike"] { border-color: var(--danger); background: #2a1515; }
@@ -4289,7 +4289,7 @@ html.has-session .auth-overlay {
   background: var(--card-bg-raised);
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .pw-desc-title { font-size: 13.5px; font-weight: 700; color: var(--text-1); }
 .pw-desc-copy { font-size: 11.5px; color: var(--text-2); }
@@ -4307,7 +4307,7 @@ html.has-session .auth-overlay {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .pw-chip-option.selected { border-color: var(--neon-green); background: #112513; color: #1c7a0d; }
 :root[data-theme="light"] .pw-chip-option.selected { background: #ebffe8; }
@@ -4406,7 +4406,7 @@ html.has-session .auth-overlay {
   background: var(--card-bg-raised);
   font-size: 22px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .pw-swipe-action-btn:active { transform: scale(0.9); }
 .pw-swipe-action-btn:disabled { opacity: 0.4; cursor: default; }
@@ -4600,7 +4600,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 .water-quickadd-btn:hover { box-shadow: 0 0 12px rgba(46, 159, 255, 0.35); transform: translateY(-1px); }
 .water-quickadd-btn:active { transform: scale(0.95); }
@@ -4624,7 +4624,7 @@ html.has-session .auth-overlay {
   padding: 6px 0;
   border-radius: calc(var(--radius) - 3px);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 .water-unit-btn.active {
   background: var(--neon-blue);
@@ -4648,7 +4648,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: all 0.25s ease;
+  transition: box-shadow 0.25s ease;
   margin-top: auto;
 }
 .utility-settings-row:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.2); }
@@ -4668,7 +4668,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: all 0.25s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
   position: relative;
 }
 .utility-config-row:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.2); }
@@ -4886,7 +4886,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: all 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .exercise-block:hover { box-shadow: 0 0 14px rgba(0, 229, 255, 0.2); transform: translateY(-1px); }
 .exercise-block:active { transform: scale(0.97); }
@@ -4910,7 +4910,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .utility-screen-body .field select:focus,
 .utility-screen-body .field input:focus {
@@ -4975,7 +4975,7 @@ html.has-session .auth-overlay {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .voice-log-mic-btn:active { transform: scale(0.95); }
 .voice-log-mic-btn.listening {
@@ -5007,7 +5007,7 @@ html.has-session .auth-overlay {
   color: var(--text-1);
   font-size: 13px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .exercise-quick-form select:focus,
 .exercise-quick-form input:focus {
@@ -5154,7 +5154,7 @@ html.has-session .auth-overlay {
   font-size: 16px;
   outline: none;
   min-height: 44px;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .community-connect-form .field input:focus,
 .community-connect-form .field select:focus {
@@ -5174,7 +5174,7 @@ html.has-session .auth-overlay {
   font-weight: 800;
   cursor: pointer;
   margin-top: 4px;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .btn-solid-blue:hover { background: #1c86e8; box-shadow: 0 0 14px rgba(46, 159, 255, 0.4); }
 .btn-solid-blue:active { transform: scale(0.97); }
@@ -5251,7 +5251,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   min-height: 44px;
   box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
-  transition: all 0.2s ease;
+  transition: filter 0.2s ease, transform 0.2s ease;
 }
 .routine-start-btn:hover { filter: brightness(1.05); }
 .routine-start-btn:active { transform: scale(0.97); }
@@ -5406,7 +5406,7 @@ html.has-session .auth-overlay {
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 .apps-device-icon { font-size: 26px; }
 .apps-device-name { font-size: 13px; font-weight: 700; color: var(--text-1); }
@@ -5746,7 +5746,7 @@ html.has-session .auth-overlay {
   padding: 9px 22px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 .btn-outline-blue:hover { background: rgba(46, 159, 255, 0.12); }
 .btn-outline-blue:active { transform: scale(0.96); }
@@ -5767,7 +5767,7 @@ html.has-session .auth-overlay {
   padding: 7px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: filter 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .friend-request-accept-btn { border: none; background: var(--neon-cyan); color: #001318; }
 .friend-request-accept-btn:hover { filter: brightness(1.1); }
@@ -5944,7 +5944,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 .privacy-danger-row:hover { background: #391919; }
 :root[data-theme="light"] .privacy-danger-row { background: #ffeaea; }
@@ -5965,7 +5965,7 @@ html.has-session .auth-overlay {
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .help-card:hover { border-color: rgba(0, 229, 255, 0.4); }
 .help-card.active { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12); }
@@ -6034,7 +6034,7 @@ html.has-session .auth-overlay {
   border: 2px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .appearance-card:hover { border-color: var(--text-2); }
 .appearance-card--active { border-color: var(--neon-cyan); box-shadow: 0 0 14px rgba(0, 229, 255, 0.35); }
