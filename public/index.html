@@ -2646,8 +2646,6 @@
           </div>
         </div>
 
-        <button type="button" class="profile-premium-banner-btn" id="profileGoPremiumBtn">Go Premium</button>
-
         <button type="button" class="profile-edit-row-btn" id="profileEditRowBtn">
           <span>Edit Profile</span>
           <span aria-hidden="true">›</span>
@@ -3066,8 +3064,10 @@
   <div class="settings-view" id="discoveryView">
     <header class="settings-view-header">
       <button type="button" class="icon-btn settings-back-btn" id="discoveryBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">Recipe Discovery</h1>
-      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+      <h1 class="settings-view-title">Recipes</h1>
+      <button type="button" class="icon-btn recipe-bookmark-filter-btn" id="recipeBookmarkFilterBtn" aria-label="Show bookmarked recipes" aria-pressed="false">
+        <svg viewBox="0 0 24 24" class="bookmark-ribbon-icon" aria-hidden="true"><path d="M6 3.5c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v17l-6-4-6 4v-17z"/></svg>
+      </button>
     </header>
     <div class="settings-view-body wr-category-list" id="recipeCategoryRows"></div>
   </div>

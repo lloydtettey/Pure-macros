@@ -5977,7 +5977,6 @@ const profileHeroNameEl = document.getElementById('profileHeroName');
 const profileHeroSynclineEl = profileView.querySelector('.profile-hero-syncline');
 const profileScoreWeightLostEl = document.getElementById('profileScoreWeightLost');
 const profileScoreFriendsEl = document.getElementById('profileScoreFriends');
-const profileGoPremiumBtn = document.getElementById('profileGoPremiumBtn');
 const profileEditRowBtn = document.getElementById('profileEditRowBtn');
 
 function openProfileView() {
@@ -5995,7 +5994,6 @@ function openProfileView() {
 }
 profileBackBtn.addEventListener('click', () => closeSubView(profileView));
 
-profileGoPremiumBtn.addEventListener('click', () => showToast('Coming soon'));
 profileEditRowBtn.addEventListener('click', () => openProfileDetailsView());
 
 // ---------- Workout Routines ----------
@@ -7415,26 +7413,83 @@ const recipeGridListEl = document.getElementById('recipeGridList');
 const RECIPE_CATEGORIES = RECIPE_CATEGORY_ORDER;
 let recipeGridCategory = 'all';
 
+// ---------- Recipe bookmarks (localStorage-backed) ----------
+const RECIPE_BOOKMARKS_KEY = 'recipeBookmarks';
+const recipeBookmarkFilterBtn = document.getElementById('recipeBookmarkFilterBtn');
+let recipeBookmarkFilterActive = false;
+
+function getBookmarkedRecipeIds() {
+  try {
+    return JSON.parse(localStorage.getItem(RECIPE_BOOKMARKS_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+function isRecipeBookmarked(id) {
+  return getBookmarkedRecipeIds().includes(id);
+}
+function toggleRecipeBookmark(id) {
+  const ids = getBookmarkedRecipeIds();
+  const idx = ids.indexOf(id);
+  const nowSaved = idx === -1;
+  if (nowSaved) ids.push(id);
+  else ids.splice(idx, 1);
+  localStorage.setItem(RECIPE_BOOKMARKS_KEY, JSON.stringify(ids));
+  return nowSaved;
+}
+function bookmarkButtonHtml(id) {
+  const saved = isRecipeBookmarked(id);
+  return `
+    <button type="button" class="recipe-card-bookmark-btn${saved ? ' saved' : ''}" data-bookmark-id="${id}" aria-label="${saved ? 'Remove bookmark' : 'Bookmark recipe'}" aria-pressed="${saved}">
+      <svg viewBox="0 0 24 24" class="bookmark-ribbon-icon" aria-hidden="true"><path d="M6 3.5c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v17l-6-4-6 4v-17z"/></svg>
+    </button>
+  `;
+}
+function handleBookmarkBtnClick(btn, onToggled) {
+  const saved = toggleRecipeBookmark(btn.dataset.bookmarkId);
+  if (recipeBookmarkFilterActive) {
+    onToggled();
+    return;
+  }
+  btn.classList.toggle('saved', saved);
+  btn.setAttribute('aria-pressed', String(saved));
+  btn.setAttribute('aria-label', saved ? 'Remove bookmark' : 'Bookmark recipe');
+}
+
 function renderRecipeDiscovery() {
-  if (recipeCategoryRowsEl.childElementCount > 0) return;
-  recipeCategoryRowsEl.innerHTML = RECIPE_CATEGORIES.map((cat) => `
+  const rows = RECIPE_CATEGORIES.map((cat) => {
+    const recipes = FULL_RECIPE_DB.filter((r) => r.category === cat && (!recipeBookmarkFilterActive || isRecipeBookmarked(r.id)));
+    if (!recipes.length) return '';
+    return `
     <section class="recipe-category-row">
       <div class="recipe-category-row-header">
         <h2 class="wr-category-title">${escapeHtml(cat)}</h2>
         <button type="button" class="recipe-view-more-btn" data-category="${escapeHtml(cat)}">View More ›</button>
       </div>
       <div class="wr-carousel">
-        ${FULL_RECIPE_DB.filter((r) => r.category === cat).map((r) => `
+        ${recipes.map((r) => `
           <article class="wr-card recipe-carousel-card" data-recipe-id="${r.id}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)} details">
             <img class="wr-card-thumb" src="${r.photo}" alt="${escapeHtml(r.name)}" loading="lazy" />
-            <span class="wr-card-meta">⏱ ${r.prep_time} min · ${r.calories} cal</span>
             <h3 class="wr-card-title">${escapeHtml(r.name)}</h3>
+            <div class="recipe-card-footer-row">
+              <span class="wr-card-meta">⏱ ${r.prep_time} min · ${r.calories} Cal</span>
+              ${bookmarkButtonHtml(r.id)}
+            </div>
           </article>
         `).join('')}
       </div>
     </section>
-  `).join('');
+  `;
+  }).join('');
+  recipeCategoryRowsEl.innerHTML = rows || '<p class="empty-state">No bookmarked recipes yet.</p>';
 }
+
+recipeBookmarkFilterBtn.addEventListener('click', () => {
+  recipeBookmarkFilterActive = !recipeBookmarkFilterActive;
+  recipeBookmarkFilterBtn.classList.toggle('active', recipeBookmarkFilterActive);
+  recipeBookmarkFilterBtn.setAttribute('aria-pressed', String(recipeBookmarkFilterActive));
+  renderRecipeDiscovery();
+});
 
 function findRecipeById(id) {
   return FULL_RECIPE_DB.find((r) => r.id === id);
@@ -7448,6 +7503,8 @@ function openRecipeFromDb(recipe) {
 }
 
 recipeCategoryRowsEl.addEventListener('click', (e) => {
+  const bookmarkBtn = e.target.closest('.recipe-card-bookmark-btn');
+  if (bookmarkBtn) { handleBookmarkBtnClick(bookmarkBtn, renderRecipeDiscovery); return; }
   const moreBtn = e.target.closest('.recipe-view-more-btn');
   if (moreBtn) { openRecipeGridView(moreBtn.dataset.category); return; }
   const card = e.target.closest('.recipe-carousel-card');
@@ -7457,6 +7514,7 @@ recipeCategoryRowsEl.addEventListener('click', (e) => {
 });
 recipeCategoryRowsEl.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.target.closest('.recipe-card-bookmark-btn')) return;
   const card = e.target.closest('.recipe-carousel-card');
   if (!card) return;
   e.preventDefault();
@@ -7486,15 +7544,19 @@ function renderRecipeGrid() {
     const matchesQuery = !q || r.name.toLowerCase().includes(q);
     return matchesCategory && matchesQuery;
   });
-  recipeGridListEl.innerHTML = filtered.length
-    ? filtered.map((r) => `
+  const visible = recipeBookmarkFilterActive ? filtered.filter((r) => isRecipeBookmarked(r.id)) : filtered;
+  recipeGridListEl.innerHTML = visible.length
+    ? visible.map((r) => `
         <article class="recipe-grid-card" data-recipe-id="${r.id}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)} details">
           <img class="recipe-grid-card-thumb" src="${r.photo}" alt="${escapeHtml(r.name)}" loading="lazy" />
           <span class="recipe-grid-card-name">${escapeHtml(r.name)}</span>
-          <span class="recipe-grid-card-meta">${r.calories} cal · ${r.prep_time} min</span>
+          <div class="recipe-card-footer-row">
+            <span class="recipe-grid-card-meta">${r.calories} Cal</span>
+            ${bookmarkButtonHtml(r.id)}
+          </div>
         </article>
       `).join('')
-    : '<p class="empty-state">No recipes match your search.</p>';
+    : `<p class="empty-state">${recipeBookmarkFilterActive ? 'No bookmarked recipes yet.' : 'No recipes match your search.'}</p>`;
 }
 
 function openRecipeGridView(category) {
@@ -7518,6 +7580,8 @@ recipeGridChipsRowEl.addEventListener('click', (e) => {
   renderRecipeGrid();
 });
 recipeGridListEl.addEventListener('click', (e) => {
+  const bookmarkBtn = e.target.closest('.recipe-card-bookmark-btn');
+  if (bookmarkBtn) { handleBookmarkBtnClick(bookmarkBtn, renderRecipeGrid); return; }
   const card = e.target.closest('.recipe-grid-card');
   if (!card) return;
   const recipe = findRecipeById(card.dataset.recipeId);

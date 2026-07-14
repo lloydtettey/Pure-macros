@@ -4881,20 +4881,6 @@ html.has-session .auth-overlay {
 }
 .profile-scorecard-value { font-size: 14px; font-weight: 800; color: var(--text-1); }
 
-.profile-premium-banner-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--neon-cyan);
-  color: #04212b;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-.profile-premium-banner-btn:active { transform: scale(0.97); }
-
 .profile-edit-row-btn {
   width: 100%;
   display: flex;
@@ -5124,6 +5110,34 @@ html.has-session .auth-overlay {
 /* Recipe Discovery: category carousels + View More grid (reuses .wr-carousel/.wr-card) */
 .recipe-category-row-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
 .recipe-category-row-header .wr-category-title { margin: 0; }
+
+.bookmark-ribbon-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.recipe-bookmark-filter-btn { color: var(--text-1); }
+.recipe-bookmark-filter-btn.active { background: var(--neon-cyan); border-color: var(--neon-cyan); color: #04212b; }
+.recipe-bookmark-filter-btn.active .bookmark-ribbon-icon { fill: currentColor; }
+
+.recipe-card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.recipe-card-bookmark-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recipe-card-bookmark-btn .bookmark-ribbon-icon { width: 16px; height: 16px; }
+.recipe-card-bookmark-btn.saved { color: var(--neon-cyan); }
+.recipe-card-bookmark-btn.saved .bookmark-ribbon-icon { fill: currentColor; }
 .recipe-view-more-btn {
   flex-shrink: 0;
   border: none;
