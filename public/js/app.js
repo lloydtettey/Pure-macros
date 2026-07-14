@@ -801,10 +801,17 @@ const themeColorMetaEl = document.getElementById('themeColorMeta');
 const THEME_COLOR_DARK = '#0a0a0c';
 const THEME_COLOR_LIGHT = '#ffffff';
 
-// Preference is what the user picked: 'light', 'dark', or 'system'.
+// Preference is what the user picked: 'light', 'dark', or 'system'. Reading
+// localStorage can throw in iOS Safari private-browsing/low-storage states,
+// so any failure or corrupt value falls straight back to 'dark' rather than
+// taking down the boot sequence.
 function getStoredThemePreference() {
-  const stored = localStorage.getItem(THEME_KEY);
-  return stored === 'light' || stored === 'system' ? stored : 'dark';
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    return stored === 'light' || stored === 'system' ? stored : 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 // Resolved is the actual surface to render: 'light' or 'dark'. For 'system'
@@ -828,12 +835,25 @@ function setTheme(preference) {
   // swaps color instantly instead of animating in parallel — that parallel
   // recalculation is what was causing visible lag on phone GPUs.
   document.body.classList.add('no-transitions');
-  localStorage.setItem(THEME_KEY, preference);
+  try {
+    localStorage.setItem(THEME_KEY, preference);
+  } catch {
+    // Storage may be unavailable (private browsing, full quota); the theme
+    // still applies for this session, it just won't persist across reloads.
+  }
   applyTheme(preference);
   setTimeout(() => document.body.classList.remove('no-transitions'), 50);
 }
 
-applyTheme(getStoredThemePreference());
+// Boot-time theme scan: never let a corrupt localStorage value or a thrown
+// storage-access error abort app initialization — always resolves to at
+// least the safe 'dark' default so the pipeline below keeps running.
+try {
+  applyTheme(getStoredThemePreference());
+} catch {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  document.body.classList.add('dark-theme');
+}
 
 appearanceCardGridEl.addEventListener('click', (e) => {
   const card = e.target.closest('.appearance-card');
