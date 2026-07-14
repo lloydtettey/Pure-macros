@@ -6287,10 +6287,11 @@ function currentBase() {
   return subViewStack[subViewStack.length - 1] || document.querySelector('.tab-view:not(.hidden)');
 }
 function openSubView(view) {
+  view.classList.remove('subview-closed');
   const base = currentBase();
   if (base) base.classList.add('subview-covered');
   subViewStack.push(view);
-  view.classList.add('open');
+  requestAnimationFrame(() => view.classList.add('open'));
 }
 function closeSubView(view) {
   view.classList.remove('open');
@@ -6298,6 +6299,17 @@ function closeSubView(view) {
   if (idx !== -1) subViewStack.splice(idx, 1);
   const base = currentBase();
   if (base) base.classList.remove('subview-covered');
+
+  // Marks the view fully closed once its slide-out transition ends, so a
+  // rapid re-open can't race the tail of the previous close. Guards against
+  // bubbled transitionend from children (e.g. an inner card) and against a
+  // stale listener firing after the view was reopened mid-transition.
+  function finishClose(e) {
+    if (e.target !== view || view.classList.contains('open')) return;
+    view.classList.add('subview-closed');
+    view.removeEventListener('transitionend', finishClose);
+  }
+  view.addEventListener('transitionend', finishClose);
 }
 
 // Native iOS-style "swipe from the left edge to pop the screen" gesture for
