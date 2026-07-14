@@ -2108,11 +2108,11 @@ function renderGoalsView() {
 
 function openGoalsView() {
   renderGoalsView();
-  goalsView.classList.add('open');
+  openSubView(goalsView);
 }
 
 function closeGoalsView() {
-  goalsView.classList.remove('open');
+  closeSubView(goalsView);
 }
 
 goalsBackBtn.addEventListener('click', closeGoalsView);
@@ -2999,6 +2999,8 @@ async function loadDay() {
   }
   await loadWater();
   await loadExercise();
+  await loadSteps();
+  renderCalorieBar();
 }
 
 async function loadProfile() {
@@ -3810,6 +3812,105 @@ function renderExercise() {
     exerciseEntryListEl.appendChild(li);
   }
 }
+
+// ---------- Exercise Hub (MFP-style Exercise view opened from the home Exercise card) ----------
+const exerciseHubView = document.getElementById('exerciseHubView');
+const exerciseHubBackBtn = document.getElementById('exerciseHubBackBtn');
+const exerciseHubDropdownBtn = document.getElementById('exerciseHubDropdownBtn');
+const exerciseHubDropdownMenu = document.getElementById('exerciseHubDropdownMenu');
+const exerciseAdjustmentCardEl = document.getElementById('exerciseAdjustmentCard');
+const exerciseAdjustmentTitleEl = document.getElementById('exerciseAdjustmentTitle');
+const exerciseHubEntryListEl = document.getElementById('exerciseHubEntryList');
+const exerciseHubLogMoreBtn = document.getElementById('exerciseHubLogMoreBtn');
+const mfpAdjustmentSheet = document.getElementById('mfpAdjustmentSheet');
+const mfpAdjustmentEarnedEl = document.getElementById('mfpAdjustmentEarned');
+const mfpAdjustmentLearnMoreBtn = document.getElementById('mfpAdjustmentLearnMoreBtn');
+
+// MyFitnessPal's iOS app nudges the calorie goal up on high-step days; this
+// mirrors that "calorie adjustment" using today's synced/logged step count.
+function getStepAdjustmentCalories() {
+  const today = (state.steps || []).find((s) => s.date === todayStr());
+  const steps = today ? today.steps : 0;
+  return Math.floor(steps * 0.04);
+}
+
+function renderExerciseAdjustmentCard() {
+  const extra = getStepAdjustmentCalories();
+  exerciseAdjustmentTitleEl.textContent = `${extra.toLocaleString()} cal, 1 minutes`;
+  mfpAdjustmentEarnedEl.textContent = extra.toLocaleString();
+}
+
+function renderExerciseHubEntryList() {
+  exerciseHubEntryListEl.innerHTML = '';
+  if (!state.exercise || state.exercise.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty-state';
+    li.textContent = 'No exercise logged yet today.';
+    exerciseHubEntryListEl.appendChild(li);
+    return;
+  }
+  for (const entry of state.exercise) {
+    const li = document.createElement('li');
+    li.className = 'exercise-entry';
+    li.innerHTML = `
+      <span>
+        <span class="exercise-entry-name">${escapeHtml(entry.name)}</span><br>
+        <span class="exercise-entry-meta">${entry.minutes} min</span>
+      </span>
+      <span class="exercise-entry-cals">-${entry.caloriesBurned} kcal</span>
+    `;
+    exerciseHubEntryListEl.appendChild(li);
+  }
+}
+
+async function openExerciseHubView() {
+  await loadSteps();
+  renderExerciseAdjustmentCard();
+  renderExerciseHubEntryList();
+  renderCalorieBar();
+  openSubView(exerciseHubView);
+}
+exerciseHubBackBtn.addEventListener('click', () => closeSubView(exerciseHubView));
+document.querySelector('.exercise-card').addEventListener('click', () => openExerciseHubView());
+
+exerciseHubDropdownBtn.addEventListener('click', () => {
+  const expanded = exerciseHubDropdownBtn.getAttribute('aria-expanded') === 'true';
+  exerciseHubDropdownBtn.setAttribute('aria-expanded', String(!expanded));
+  exerciseHubDropdownMenu.classList.toggle('hidden', expanded);
+});
+
+exerciseHubDropdownMenu.addEventListener('click', (e) => {
+  const item = e.target.closest('[data-jump]');
+  if (!item) return;
+  exerciseHubDropdownMenu.classList.add('hidden');
+  exerciseHubDropdownBtn.setAttribute('aria-expanded', 'false');
+  const jump = item.dataset.jump;
+  if (jump === 'exercise') return;
+  closeSubView(exerciseHubView);
+  requestAnimationFrame(() => {
+    let target;
+    if (jump === 'water') target = document.querySelector('.water-card');
+    else if (jump === 'all') target = document.getElementById('meals');
+    else target = document.querySelector(`.meal-card[data-meal="${jump}"]`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+exerciseAdjustmentCardEl.addEventListener('click', () => {
+  renderExerciseAdjustmentCard();
+  mfpAdjustmentSheet.classList.add('open');
+});
+mfpAdjustmentSheet.addEventListener('click', (e) => {
+  if (e.target === mfpAdjustmentSheet) mfpAdjustmentSheet.classList.remove('open');
+});
+mfpAdjustmentLearnMoreBtn.addEventListener('click', () => {
+  showToast("Steps convert into extra calories you can eat, just like MyFitnessPal's iOS calorie adjustment.");
+});
+
+exerciseHubLogMoreBtn.addEventListener('click', () => {
+  closeSubView(exerciseHubView);
+  openAddExerciseSheet();
+});
 
 function populateExerciseNameSelect(type) {
   exerciseNameSelect.innerHTML = '';
@@ -4666,7 +4767,7 @@ function renderCalorieBar() {
   const dayTarget = getActiveDayTypeTarget();
   const goal = dayTarget ? dayTarget.calories : state.settings.calorieGoal;
   const consumed = Math.round(totals.calories);
-  const burned = (state.exercise || []).reduce((sum, e) => sum + e.caloriesBurned, 0);
+  const burned = (state.exercise || []).reduce((sum, e) => sum + e.caloriesBurned, 0) + getStepAdjustmentCalories();
   const remaining = goal - consumed + burned;
 
   document.getElementById('caloriesConsumed').textContent = consumed.toLocaleString();
@@ -7175,9 +7276,96 @@ async function openSleepTrackingView() {
     sleepDeepValueEl.textContent = `${Math.round(avgDeep * 10) / 10}h`;
     sleepConsistencyValueEl.textContent = `${consistency}%`;
   }
+  renderSleepReminders();
   openSubView(sleepTrackingView);
 }
 sleepTrackingBackBtn.addEventListener('click', () => closeSubView(sleepTrackingView));
+
+// ---------- Sleep Reminders (Sleep Tracking -> Sleep Reminders card) ----------
+const SLEEP_NOTIF_ENABLED_KEY = 'sleep_notifications_enabled';
+const SLEEP_NOTIF_BEDTIME_KEY = 'sleep_notification_bedtime';
+const SLEEP_NOTIF_LAST_FIRED_KEY = 'sleep_notification_last_fired';
+const sleepNotifToggle = document.getElementById('sleepNotifToggle');
+const sleepNotifBedtimeInput = document.getElementById('sleepNotifBedtimeInput');
+const sleepReminderBanner = document.getElementById('sleepReminderBanner');
+
+function isSleepNotificationsEnabled() {
+  return localStorage.getItem(SLEEP_NOTIF_ENABLED_KEY) === 'true';
+}
+
+function renderSleepReminders() {
+  sleepNotifToggle.setAttribute('aria-checked', String(isSleepNotificationsEnabled()));
+  sleepNotifBedtimeInput.value = localStorage.getItem(SLEEP_NOTIF_BEDTIME_KEY) || '22:00';
+}
+
+sleepNotifToggle.addEventListener('click', async () => {
+  const next = sleepNotifToggle.getAttribute('aria-checked') !== 'true';
+  if (next && 'Notification' in window && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch {}
+  }
+  localStorage.setItem(SLEEP_NOTIF_ENABLED_KEY, String(next));
+  sleepNotifToggle.setAttribute('aria-checked', String(next));
+  showToast(next ? 'Sleep notifications enabled' : 'Sleep notifications disabled');
+});
+
+sleepNotifBedtimeInput.addEventListener('change', () => {
+  localStorage.setItem(SLEEP_NOTIF_BEDTIME_KEY, sleepNotifBedtimeInput.value);
+});
+
+// Short synthesized chime (no external audio asset) for the in-app fallback
+// banner when the real Notification permission is blocked.
+function playSleepReminderChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.2);
+  } catch {}
+}
+
+let sleepReminderBannerTimer = null;
+function showSleepReminderBanner() {
+  sleepReminderBanner.classList.add('show');
+  playSleepReminderChime();
+  clearTimeout(sleepReminderBannerTimer);
+  sleepReminderBannerTimer = setTimeout(() => sleepReminderBanner.classList.remove('show'), 6000);
+}
+sleepReminderBanner.addEventListener('click', () => sleepReminderBanner.classList.remove('show'));
+
+function fireSleepReminder() {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Pure Macros', { body: '🌙 Time to wind down! Your scheduled bedtime is in 30 minutes...' });
+  } else {
+    showSleepReminderBanner();
+  }
+}
+
+// Background check loop: every 30s, compares now to (bedtime - 30 minutes).
+// A localStorage date stamp caps it to firing once per calendar day so it
+// doesn't repeat on every tick while inside the reminder window.
+setInterval(() => {
+  if (!isSleepNotificationsEnabled()) return;
+  const bedtime = localStorage.getItem(SLEEP_NOTIF_BEDTIME_KEY);
+  if (!bedtime) return;
+  const [bh, bm] = bedtime.split(':').map(Number);
+  if (Number.isNaN(bh) || Number.isNaN(bm)) return;
+  const today = todayStr();
+  if (localStorage.getItem(SLEEP_NOTIF_LAST_FIRED_KEY) === today) return;
+  const now = new Date();
+  const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), bh, bm - 30);
+  const msSinceReminder = now - reminderTime;
+  if (msSinceReminder >= 0 && msSinceReminder < 5 * 60 * 1000) {
+    fireSleepReminder();
+    localStorage.setItem(SLEEP_NOTIF_LAST_FIRED_KEY, today);
+  }
+}, 30000);
 
 // ---------- Reminders ----------
 const remindersView = document.getElementById('remindersView');
@@ -7871,19 +8059,66 @@ recipeGridListEl.addEventListener('click', (e) => {
 const appsDevicesView = document.getElementById('appsDevicesView');
 const appsDevicesBackBtn = document.getElementById('appsDevicesBackBtn');
 const appsDevicesGridEl = document.getElementById('appsDevicesGrid');
+const deviceConnectOverlay = document.getElementById('deviceConnectOverlay');
+const deviceConnectTitleEl = document.getElementById('deviceConnectTitle');
+const deviceConnectLogoEl = document.getElementById('deviceConnectLogo');
+const deviceConnectDescEl = document.getElementById('deviceConnectDesc');
+const deviceConnectActionBtn = document.getElementById('deviceConnectActionBtn');
+const closeDeviceConnectModal = document.getElementById('closeDeviceConnectModal');
 
 function renderAppsDevicesGrid() {
   appsDevicesGridEl.querySelectorAll('.apps-device-card').forEach((card) => {
     const connected = Boolean(state.devices?.[card.dataset.device]);
     card.classList.toggle('connected', connected);
-    card.querySelector('.apps-device-badge').textContent = connected ? 'Synced' : 'Connect';
+    card.querySelector('.apps-device-badge').textContent = connected ? '✓ Connected' : 'Connect';
   });
 }
 
-appsDevicesGridEl.addEventListener('click', async (e) => {
+async function openAppsDevicesView() {
+  await loadDevices();
+  renderAppsDevicesGrid();
+  openSubView(appsDevicesView);
+}
+appsDevicesBackBtn.addEventListener('click', () => closeSubView(appsDevicesView));
+
+// ---------- Device Connect Modal ----------
+const DEVICE_INFO = {
+  garmin: { name: 'Garmin', icon: '⌚', desc: 'Sync your steps, heart rate, and workouts from Garmin Connect.' },
+  fitbit: { name: 'Fitbit', icon: '⌚', desc: 'Sync your steps, heart rate, and workouts from Fitbit.' },
+  strava: { name: 'Strava', icon: '🏃', desc: 'Sync your runs and rides straight into your Cardio diary.' },
+  myFitnessPal: { name: 'MyFitnessPal', icon: '🍽️', desc: 'Import your food diary history from MyFitnessPal.' }
+};
+let activeDeviceKey = null;
+
+function renderDeviceConnectModal() {
+  const info = DEVICE_INFO[activeDeviceKey];
+  const connected = Boolean(state.devices?.[activeDeviceKey]);
+  deviceConnectTitleEl.textContent = info.name;
+  deviceConnectLogoEl.textContent = info.icon;
+  deviceConnectDescEl.textContent = info.desc;
+  deviceConnectActionBtn.textContent = connected ? 'Disconnect Device' : 'Connect Device';
+  deviceConnectActionBtn.classList.toggle('btn-danger', connected);
+  deviceConnectActionBtn.classList.toggle('btn-primary', !connected);
+}
+
+appsDevicesGridEl.addEventListener('click', (e) => {
   const card = e.target.closest('.apps-device-card');
   if (!card) return;
-  const key = card.dataset.device;
+  activeDeviceKey = card.dataset.device;
+  renderDeviceConnectModal();
+  deviceConnectOverlay.classList.add('open');
+});
+
+function closeDeviceConnectModalFn() {
+  deviceConnectOverlay.classList.remove('open');
+  activeDeviceKey = null;
+}
+closeDeviceConnectModal.addEventListener('click', closeDeviceConnectModalFn);
+deviceConnectOverlay.addEventListener('click', (e) => { if (e.target === deviceConnectOverlay) closeDeviceConnectModalFn(); });
+
+deviceConnectActionBtn.addEventListener('click', async () => {
+  if (!activeDeviceKey) return;
+  const key = activeDeviceKey;
   const next = !state.devices?.[key];
   try {
     const res = await authFetch(`${API}/devices`, {
@@ -7894,19 +8129,46 @@ appsDevicesGridEl.addEventListener('click', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to update device');
     state.devices = data;
+    localStorage.setItem(`${key}_connected`, String(next));
     renderAppsDevicesGrid();
+    renderDeviceConnectModal();
+
+    if (next && (key === 'garmin' || key === 'fitbit')) {
+      const stepsRes = await authFetch(`${API}/steps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayStr(), steps: 8420 })
+      });
+      if (stepsRes.ok) {
+        await loadSteps(true);
+        renderCalorieBar();
+        if (exerciseHubView.classList.contains('open')) {
+          renderExerciseAdjustmentCard();
+        }
+      }
+    } else if (next && key === 'strava') {
+      const exerciseRes = await authFetch(`${API}/exercise`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayStr(), type: 'cardio', name: 'Morning Run', minutes: 30, caloriesBurned: 350 })
+      });
+      if (exerciseRes.ok) {
+        const entry = await exerciseRes.json();
+        state.exercise.unshift(entry);
+        renderExercise();
+        renderCalorieBar();
+        if (exerciseHubView.classList.contains('open')) {
+          renderExerciseHubEntryList();
+        }
+      }
+    }
+
     showToast(next ? 'Connected' : 'Disconnected');
+    closeDeviceConnectModalFn();
   } catch (err) {
     showToast(err.message, true);
   }
 });
-
-async function openAppsDevicesView() {
-  await loadDevices();
-  renderAppsDevicesGrid();
-  openSubView(appsDevicesView);
-}
-appsDevicesBackBtn.addEventListener('click', () => closeSubView(appsDevicesView));
 
 // ---------- Weekly Report ----------
 const weeklyReportView = document.getElementById('weeklyReportView');

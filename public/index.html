@@ -2426,6 +2426,21 @@
     </div>
   </div>
 
+  <!-- Device Connect Modal (Apps & Devices -> tapping Garmin/Fitbit/Strava/MyFitnessPal) -->
+  <div class="modal-overlay" id="deviceConnectOverlay">
+    <div class="modal device-connect-modal">
+      <div class="modal-header">
+        <h3 id="deviceConnectTitle">Garmin</h3>
+        <button class="icon-btn" id="closeDeviceConnectModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body device-connect-body">
+        <span class="device-connect-logo" id="deviceConnectLogo" aria-hidden="true">⌚</span>
+        <p class="device-connect-desc" id="deviceConnectDesc"></p>
+        <button type="button" class="btn-primary device-connect-action" id="deviceConnectActionBtn">Connect Device</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Push Notifications Sub-View (full-screen, nested under Settings) -->
   <div class="settings-view" id="pushNotificationsView">
     <header class="settings-view-header">
@@ -3024,6 +3039,65 @@
     </div>
   </div>
 
+  <!-- Exercise Sub-View (full-screen, opened by tapping the home Exercise tracker card) -->
+  <div class="settings-view" id="exerciseHubView">
+    <header class="settings-view-header">
+      <button type="button" class="icon-btn settings-back-btn" id="exerciseHubBackBtn" aria-label="Back">←</button>
+      <div class="exercise-hub-dropdown" id="exerciseHubDropdown">
+        <button type="button" class="exercise-hub-dropdown-btn" id="exerciseHubDropdownBtn" aria-haspopup="true" aria-expanded="false">
+          Exercise <span class="exercise-hub-dropdown-caret" aria-hidden="true">▾</span>
+        </button>
+        <ul class="exercise-hub-dropdown-menu hidden" id="exerciseHubDropdownMenu">
+          <li data-jump="breakfast">Breakfast</li>
+          <li data-jump="lunch">Lunch</li>
+          <li data-jump="dinner">Dinner</li>
+          <li data-jump="snack">Snacks</li>
+          <li data-jump="water">Water</li>
+          <li data-jump="exercise">Exercise</li>
+          <li data-jump="all">All Food</li>
+        </ul>
+      </div>
+      <span class="settings-view-header-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="settings-view-body">
+      <section class="card exercise-adjustment-card" id="exerciseAdjustmentCard">
+        <div class="exercise-adjustment-row">
+          <span class="exercise-adjustment-icon" aria-hidden="true">👟</span>
+          <div class="exercise-adjustment-text">
+            <span class="exercise-adjustment-title" id="exerciseAdjustmentTitle">0 cal, 1 minutes</span>
+            <span class="exercise-adjustment-sub">MFP iOS calorie adjustment</span>
+            <span class="exercise-adjustment-note">Your calorie goal for today has increased! 🎉</span>
+          </div>
+          <span class="exercise-adjustment-chevron" aria-hidden="true">›</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Today's Exercise</h2>
+        <ul class="exercise-entry-list" id="exerciseHubEntryList"></ul>
+      </section>
+    </div>
+    <button type="button" class="btn-primary exercise-hub-log-more-btn" id="exerciseHubLogMoreBtn">Log more</button>
+  </div>
+
+  <!-- MFP calorie adjustment detail sheet ("iPhone" slide-open panel, opened from the Exercise view's adjustment card) -->
+  <div class="exercise-sheet" id="mfpAdjustmentSheet">
+    <div class="exercise-sheet-panel" id="mfpAdjustmentSheetPanel">
+      <div class="exercise-sheet-grabber" id="mfpAdjustmentGrabber" aria-hidden="true"></div>
+      <h2 class="exercise-sheet-header">iPhone</h2>
+      <div class="exercise-sheet-body mfp-adjustment-detail">
+        <div class="mfp-adjustment-trophy">
+          <span class="mfp-adjustment-trophy-icon" aria-hidden="true">🏆</span>
+          <span class="mfp-adjustment-trophy-label">Extra Calories Earned: <span id="mfpAdjustmentEarned">0</span></span>
+        </div>
+        <button type="button" class="mfp-adjustment-learn-more" id="mfpAdjustmentLearnMoreBtn">
+          <span class="mfp-adjustment-phone-icon" aria-hidden="true">📱</span>
+          <span>Learn more</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Sleep Tracking Sub-View (full-screen, nested under the More tab) -->
   <div class="settings-view" id="sleepTrackingView">
     <header class="settings-view-header">
@@ -3051,7 +3125,31 @@
           <span class="stat-mini-label">Consistency</span>
         </div>
       </section>
+
+      <section class="card sleep-reminders-card">
+        <h2 class="card-title">Sleep Reminders</h2>
+        <ul class="more-menu-list">
+          <li class="more-menu-item">
+            <span class="more-menu-title">Enable Sleep Notifications</span>
+            <button type="button" class="toggle-switch toggle-switch--green" id="sleepNotifToggle" role="switch" aria-checked="false" aria-label="Enable Sleep Notifications">
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </li>
+          <li class="more-menu-item">
+            <span class="more-menu-title">Bedtime</span>
+            <input type="time" id="sleepNotifBedtimeInput" class="sleep-notif-bedtime-input" value="22:00" />
+          </li>
+        </ul>
+      </section>
     </div>
+  </div>
+
+  <!-- Sleep Reminder fallback banner: slides down from the top when a scheduled
+       bedtime notification fires but the browser Notification permission is
+       blocked (see fireSleepReminder in app.js) -->
+  <div class="sleep-reminder-banner" id="sleepReminderBanner">
+    <span class="sleep-reminder-banner-icon" aria-hidden="true">🌙</span>
+    <span class="sleep-reminder-banner-text">Time to wind down! Your scheduled bedtime is in 30 minutes...</span>
   </div>
 
   <!-- Reminders Sub-View (full-screen, nested under the More tab) -->

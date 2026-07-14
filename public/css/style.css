@@ -1895,6 +1895,13 @@ body {
   z-index: 130;
 }
 
+/* Opened from inside the Apps & Devices sub-view (.settings-view, z-index:
+   120) via tapping a device card — same stacking need as #macroGoalsOverlay
+   above. */
+#deviceConnectOverlay {
+  z-index: 130;
+}
+
 /* Opened from inside the log overlay's feature grid (.log-overlay, z-index:
    210) and stays stacked on top of it while open, mirroring the Voice Log
    sheet (.exercise-sheet, z-index: 220) so closing it reveals the still-open
@@ -5394,6 +5401,130 @@ html.has-session .auth-overlay {
   color: var(--text-3);
 }
 .apps-device-card.connected .apps-device-badge { background: var(--neon-green); color: #04240a; }
+
+/* Device Connect Modal (Apps & Devices) */
+.device-connect-body { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding-top: 4px; }
+.device-connect-logo { font-size: 48px; }
+.device-connect-desc { font-size: 13px; color: var(--text-2); margin: 0 0 6px; }
+.device-connect-action { width: 100%; }
+
+/* Exercise Hub (home Exercise card -> full-screen MFP-style Exercise view) */
+.exercise-card { cursor: pointer; }
+.exercise-hub-dropdown { position: relative; }
+.exercise-hub-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--neon-cyan);
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+.exercise-hub-dropdown-caret { font-size: 12px; }
+.exercise-hub-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--sheet-opaque-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card-hover);
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-width: 160px;
+  z-index: 10;
+}
+.exercise-hub-dropdown-menu.hidden { display: none; }
+.exercise-hub-dropdown-menu li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.exercise-hub-dropdown-menu li:hover { background: var(--card-bg-raised); }
+.exercise-adjustment-card { cursor: pointer; padding: 14px; }
+.exercise-adjustment-row { display: flex; align-items: center; gap: 12px; }
+.exercise-adjustment-icon { font-size: 26px; flex-shrink: 0; }
+.exercise-adjustment-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.exercise-adjustment-title { font-size: 14px; font-weight: 800; color: var(--text-1); }
+.exercise-adjustment-sub { font-size: 12px; color: var(--text-2); }
+.exercise-adjustment-note { font-size: 12px; color: var(--neon-green); }
+.exercise-adjustment-chevron { font-size: 18px; color: var(--text-3); }
+.exercise-hub-log-more-btn {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  padding: 14px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 44px;
+  align-self: center;
+  width: calc(100% - 28px);
+}
+.exercise-hub-log-more-btn:active { transform: scale(0.97); }
+.mfp-adjustment-detail { align-items: center; text-align: center; }
+.mfp-adjustment-trophy { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0 4px; }
+.mfp-adjustment-trophy-icon { font-size: 40px; }
+.mfp-adjustment-trophy-label { font-size: 15px; font-weight: 800; color: var(--text-1); }
+.mfp-adjustment-learn-more {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg-raised);
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mfp-adjustment-phone-icon { font-size: 18px; color: var(--warning, #ffa500); }
+
+/* Sleep Reminders card (Sleep Tracking sub-view) */
+.sleep-notif-bedtime-input {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  color: var(--text-1);
+}
+.sleep-reminder-banner {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-140%);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--sheet-opaque-bg);
+  border: 1px solid var(--panel-glass-border);
+  box-shadow: var(--shadow-card-hover);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.35s ease;
+}
+.sleep-reminder-banner.show { transform: translateX(-50%) translateY(0); }
+.sleep-reminder-banner-icon { font-size: 18px; flex-shrink: 0; }
 
 /* Weekly Report */
 .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
