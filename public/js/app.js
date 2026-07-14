@@ -369,8 +369,25 @@ const sleepAwakeInput = document.getElementById('sleepAwakeInput');
 const sleepRemInput = document.getElementById('sleepRemInput');
 const sleepCoreInput = document.getElementById('sleepCoreInput');
 const sleepDeepInput = document.getElementById('sleepDeepInput');
+const sleepBedTimeInput = document.getElementById('sleepBedTimeInput');
+const sleepWakeTimeInput = document.getElementById('sleepWakeTimeInput');
+const sleepQualityStarsEl = document.getElementById('sleepQualityStars');
 const sleepError = document.getElementById('sleepError');
 const sleepTimelineEl = document.getElementById('sleepTimeline');
+let selectedSleepQuality = 0;
+
+function renderSleepQualityStars() {
+  sleepQualityStarsEl.querySelectorAll('.sleep-star-btn').forEach((btn) => {
+    btn.classList.toggle('filled', Number(btn.dataset.star) <= selectedSleepQuality);
+  });
+}
+sleepQualityStarsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.sleep-star-btn');
+  if (!btn) return;
+  const star = Number(btn.dataset.star);
+  selectedSleepQuality = selectedSleepQuality === star ? 0 : star;
+  renderSleepQualityStars();
+});
 
 const fabLogBtn = document.getElementById('fabLogBtn');
 const logOverlay = document.getElementById('logOverlay');
@@ -443,8 +460,17 @@ const addWaterAmountInput = document.getElementById('addWaterAmountInput');
 const addWaterUnitLabel = document.getElementById('addWaterUnitLabel');
 const addWaterChangeUnitBtn = document.getElementById('addWaterChangeUnitBtn');
 const addWaterUnitValue = document.getElementById('addWaterUnitValue');
+const addWaterQuickAddRowEl = document.getElementById('addWaterQuickAddRow');
+const waterCardUnitSwitcher = document.getElementById('waterCardUnitSwitcher');
+const waterCardQuickAdd = document.getElementById('waterCardQuickAdd');
 const WATER_DISPLAY_UNIT_KEY = 'pure_macros_water_unit';
 const OZ_TO_ML = 29.5735;
+// Quick-add amounts are defined per-unit (not just relabeled conversions) so
+// the numbers stay the "nice" values a person expects in that unit — 8/16/24
+// oz cups, or 250/500/750 ml bottles. Whichever button is tapped, the amount
+// is converted to ounces before it ever touches state/localStorage, since oz
+// is the uniform base unit water totals are always stored in.
+const WATER_QUICKADD_BY_UNIT = { oz: [8, 16, 24], ml: [250, 500, 750] };
 let addWaterPendingOz = 0;
 
 const addWeightScreen = document.getElementById('addWeightScreen');
@@ -2528,7 +2554,7 @@ function startVoiceLogListening() {
   voiceLogRecognition.onend = () => {
     voiceLogListening = false;
     voiceLogMicBtn.classList.remove('listening');
-    const transcript = voiceLogFinalTranscript.trim();
+    const transcript = sanitizeToEnglishAscii(voiceLogFinalTranscript);
     if (transcript) {
       logSearchInput.value = transcript;
       switchLogSubtab('foods');
@@ -2884,6 +2910,23 @@ function autoEstimateMacros(name, kcal, grams) {
   };
 }
 
+// English-only parser enforcement (frontend half — see toEnglishAsciiLabel
+// in server.js for the server-side mirror). Food descriptions must always
+// resolve to English/ASCII before they reach the nutrition estimate or a
+// diary entry: this strips accents off Latin script ("café" -> "cafe") via
+// Unicode decomposition, then drops any character still outside ASCII
+// (non-Latin scripts) since there's no real translation service here.
+const COMBINING_DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+
+function sanitizeToEnglishAscii(str) {
+  return (str || '')
+    .normalize('NFKD')
+    .replace(COMBINING_DIACRITICS_RE, '')
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Automated Smart Nutrition Lookup Engine — asks the server's
 // POST /api/estimate-nutrition for a per-100g { kcal, protein, carbs, fat }
 // estimate for a typed food name (staple dictionary match, or a generic
@@ -2895,7 +2938,7 @@ async function fetchNutritionEstimate(foodName) {
     const res = await fetch(`${API}/estimate-nutrition`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ foodName })
+      body: JSON.stringify({ foodName: sanitizeToEnglishAscii(foodName) })
     });
     if (!res.ok) return null;
     return await res.json();
@@ -2906,7 +2949,7 @@ async function fetchNutritionEstimate(foodName) {
 
 function readCustomFood(card) {
   return {
-    name: card.querySelector('.f-custom-name').value.trim(),
+    name: sanitizeToEnglishAscii(card.querySelector('.f-custom-name').value),
     kcal: Number(card.querySelector('.f-custom-kcal').value || 0),
     protein: Number(card.querySelector('.f-custom-protein').value || 0),
     carbs: Number(card.querySelector('.f-custom-carbs').value || 0),
@@ -3472,9 +3515,68 @@ function renderAddWaterAmount() {
   updateWaterFillBar();
 }
 
+// Builds a unit-aware row of quick-add buttons into `container` (used by both
+// the Add Water screen and the Hydration card). `onAdd` receives the tapped
+// amount already converted to ounces — the base unit everything is stored in
+// — so callers never have to think about which display unit was active.
+function renderWaterQuickAddButtons(container, onAdd) {
+  if (!container) return;
+  const unit = getWaterDisplayUnit();
+  container.innerHTML = WATER_QUICKADD_BY_UNIT[unit]
+    .map((amount) => `<button type="button" class="water-quickadd-btn" data-amount="${amount}">+${amount} ${unit}</button>`)
+    .join('');
+  container.querySelectorAll('.water-quickadd-btn').forEach((btn) => {
+    btn.addEventListener('click', () => onAdd(displayUnitToOz(Number(btn.dataset.amount), unit)));
+  });
+}
+
+function renderWaterCardUnitSwitcher() {
+  const unit = getWaterDisplayUnit();
+  waterCardUnitSwitcher.querySelectorAll('.water-unit-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.unit === unit);
+  });
+  renderWaterQuickAddButtons(waterCardQuickAdd, (oz) => addWaterOunces(oz));
+}
+
+// Persists water totals in ounces regardless of the display unit, so
+// switching oz<->ml never re-scales or corrupts the already-logged total.
+async function addWaterOunces(oz) {
+  if (oz <= 0) return;
+  try {
+    const res = await authFetch(`${API}/water`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: state.date, ounces: Math.round((state.waterOz + oz) * 10) / 10 })
+    });
+    if (!res.ok) throw new Error('Failed to save water log');
+    const data = await res.json();
+    state.water = data.filled;
+    state.waterOz = data.ounces;
+    renderWater();
+    const unit = getWaterDisplayUnit();
+    showToast(`Added ${Math.round(ozToDisplayUnit(oz, unit) * 10) / 10} ${unit} water`);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function setWaterDisplayUnit(unit) {
+  localStorage.setItem(WATER_DISPLAY_UNIT_KEY, unit === 'ml' ? 'ml' : 'oz');
+  renderAddWaterAmount();
+  renderWaterQuickAddButtons(addWaterQuickAddRowEl, (oz) => {
+    addWaterPendingOz += oz;
+    renderAddWaterAmount();
+  });
+  renderWaterCardUnitSwitcher();
+}
+
 function openAddWaterScreen() {
   addWaterPendingOz = 0;
   renderAddWaterAmount();
+  renderWaterQuickAddButtons(addWaterQuickAddRowEl, (oz) => {
+    addWaterPendingOz += oz;
+    renderAddWaterAmount();
+  });
   addWaterScreen.classList.add('open');
 }
 function closeAddWaterScreen() {
@@ -3482,13 +3584,6 @@ function closeAddWaterScreen() {
 }
 
 addWaterBackBtn.addEventListener('click', closeAddWaterScreen);
-
-document.querySelectorAll('.water-quickadd-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    addWaterPendingOz += Number(btn.dataset.oz);
-    renderAddWaterAmount();
-  });
-});
 
 addWaterAmountInput.addEventListener('input', () => {
   const unit = getWaterDisplayUnit();
@@ -3498,31 +3593,21 @@ addWaterAmountInput.addEventListener('input', () => {
 });
 
 addWaterChangeUnitBtn.addEventListener('click', () => {
-  localStorage.setItem(WATER_DISPLAY_UNIT_KEY, getWaterDisplayUnit() === 'oz' ? 'ml' : 'oz');
-  renderAddWaterAmount();
+  setWaterDisplayUnit(getWaterDisplayUnit() === 'oz' ? 'ml' : 'oz');
 });
 
+waterCardUnitSwitcher.addEventListener('click', (e) => {
+  const btn = e.target.closest('.water-unit-btn');
+  if (!btn) return;
+  setWaterDisplayUnit(btn.dataset.unit);
+});
+
+renderWaterCardUnitSwitcher();
+
 addWaterSaveBtn.addEventListener('click', async () => {
-  if (addWaterPendingOz <= 0) {
-    closeAddWaterScreen();
-    return;
-  }
-  try {
-    const res = await authFetch(`${API}/water`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: state.date, ounces: Math.round((state.waterOz + addWaterPendingOz) * 10) / 10 })
-    });
-    if (!res.ok) throw new Error('Failed to save water log');
-    const data = await res.json();
-    state.water = data.filled;
-    state.waterOz = data.ounces;
-    renderWater();
-    closeAddWaterScreen();
-    showToast(`Added ${Math.round(addWaterPendingOz)} oz water`);
-  } catch (err) {
-    showToast(err.message, true);
-  }
+  const oz = addWaterPendingOz;
+  closeAddWaterScreen();
+  await addWaterOunces(oz);
 });
 
 // ---------- Add Weight screen + Bottom Wheel Picker Sheet ----------
@@ -4466,9 +4551,11 @@ function renderSleepTimeline() {
 function buildSleepEntry(entry) {
   const li = document.createElement('li');
   li.className = 'weight-entry';
+  const timesLabel = entry.bedTime && entry.wakeTime ? ` · ${entry.bedTime}→${entry.wakeTime}` : '';
+  const qualityLabel = entry.quality ? ` · ${'★'.repeat(entry.quality)}${'☆'.repeat(5 - entry.quality)}` : '';
   li.innerHTML = `
     <span class="weight-date">${formatDateLabel(entry.date)}</span>
-    <span class="weight-value">${entry.totalHours}h asleep</span>
+    <span class="weight-value">${entry.totalHours}h asleep${timesLabel}${qualityLabel}</span>
   `;
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -4486,6 +4573,8 @@ async function handleSleepSubmit(e) {
   const remHours = Number(sleepRemInput.value || 0);
   const coreHours = Number(sleepCoreInput.value || 0);
   const deepHours = Number(sleepDeepInput.value || 0);
+  const bedTime = sleepBedTimeInput.value || '';
+  const wakeTime = sleepWakeTimeInput.value || '';
   if ([awakeHours, remHours, coreHours, deepHours].some((v) => Number.isNaN(v) || v < 0)) {
     sleepError.textContent = 'Enter valid, non-negative hours for each phase';
     return;
@@ -4494,11 +4583,24 @@ async function handleSleepSubmit(e) {
     sleepError.textContent = 'Sleep phase hours cannot exceed 24 total';
     return;
   }
+  if (!bedTime && !wakeTime && awakeHours + remHours + coreHours + deepHours === 0) {
+    sleepError.textContent = 'Enter bed/wake times or a phase breakdown';
+    return;
+  }
   try {
     const res = await authFetch(`${API}/sleep`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: state.date, awakeHours, remHours, coreHours, deepHours })
+      body: JSON.stringify({
+        date: state.date,
+        awakeHours,
+        remHours,
+        coreHours,
+        deepHours,
+        bedTime: bedTime || undefined,
+        wakeTime: wakeTime || undefined,
+        quality: selectedSleepQuality || undefined
+      })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to log sleep');
@@ -4506,6 +4608,10 @@ async function handleSleepSubmit(e) {
     sleepRemInput.value = '';
     sleepCoreInput.value = '';
     sleepDeepInput.value = '';
+    sleepBedTimeInput.value = '';
+    sleepWakeTimeInput.value = '';
+    selectedSleepQuality = 0;
+    renderSleepQualityStars();
     await loadSleep(true);
     showToast('Sleep logged');
   } catch (err) {
@@ -4615,7 +4721,56 @@ function renderMacroPercentageCard(totals) {
     document.getElementById(`${key}ValueDisplay`).textContent = macroCardMode === 'grams' ? `${grams}g` : `${pct}%`;
     document.getElementById(`${key}Bar`).style.width = `${pct}%`;
   }
+  renderTodayMacroPie(columns);
 }
+
+// Today tab: interactive SVG donut/pie mapping Carbs/Protein/Fat % of
+// today's logged foods — three stacked circles sharing one circumference,
+// each offset to start where the previous slice ended (12 o'clock, via the
+// -90deg rotate on .macro-pie-svg). Tapping a slice dims the others and
+// shows that macro's grams+percent in the center instead of "Today".
+const MACRO_PIE_CIRCUMFERENCE = 2 * Math.PI * 40;
+const MACRO_PIE_ORDER = ['carbs', 'fat', 'protein'];
+let todayMacroPieColumns = null;
+let activeMacroPieSlice = null;
+
+function renderTodayMacroPie(columns) {
+  todayMacroPieColumns = columns;
+  let cumulative = 0;
+  for (const key of MACRO_PIE_ORDER) {
+    const pct = columns[key].pct;
+    const segLen = (pct / 100) * MACRO_PIE_CIRCUMFERENCE;
+    const el = document.getElementById(`todayPie${key.charAt(0).toUpperCase()}${key.slice(1)}`);
+    el.style.strokeDasharray = `${segLen} ${MACRO_PIE_CIRCUMFERENCE - segLen}`;
+    el.style.strokeDashoffset = String(-cumulative);
+    cumulative += segLen;
+  }
+  if (activeMacroPieSlice) showMacroPieSlice(activeMacroPieSlice);
+}
+
+function showMacroPieSlice(key) {
+  if (!todayMacroPieColumns) return;
+  activeMacroPieSlice = key;
+  const wrap = document.getElementById('todayMacroPieWrap');
+  wrap.classList.add('dimmed');
+  wrap.querySelectorAll('.macro-pie-arc').forEach((arc) => arc.classList.toggle('active', arc.dataset.macro === key));
+  const { pct, grams } = todayMacroPieColumns[key];
+  document.getElementById('todayMacroPieCenterValue').textContent = `${key.charAt(0).toUpperCase()}${key.slice(1)} ${pct}% ${grams}g`;
+}
+
+function resetMacroPieSlice() {
+  activeMacroPieSlice = null;
+  const wrap = document.getElementById('todayMacroPieWrap');
+  wrap.classList.remove('dimmed');
+  document.getElementById('todayMacroPieCenterValue').textContent = 'Today';
+}
+
+document.getElementById('todayMacroPieWrap').addEventListener('click', (e) => {
+  const arc = e.target.closest('.macro-pie-arc');
+  const key = arc ? arc.dataset.macro : null;
+  if (!key || key === activeMacroPieSlice) resetMacroPieSlice();
+  else showMacroPieSlice(key);
+});
 
 // Progress > Macros panel keeps its original grams-vs-goal framing, separate
 // from the homepage card's calorie-share percentages.
@@ -6647,6 +6802,7 @@ let fastingTickTimer = null;
 function fastingGoalHoursFor(protocol) {
   if (protocol === '16:8') return 16;
   if (protocol === '18:6') return 18;
+  if (protocol === '20:4') return 20;
   return Number(fastingCustomHoursInput.value) || 20;
 }
 
@@ -6741,7 +6897,7 @@ fastingEndBtn.addEventListener('click', async () => {
     showToast(err.message, true);
   }
 });
-const FASTING_PROTOCOLS_CLIENT = ['16:8', '18:6'];
+const FASTING_PROTOCOLS_CLIENT = ['16:8', '18:6', '20:4'];
 
 // ---------- Nutrition Analytics ----------
 const nutritionAnalyticsView = document.getElementById('nutritionAnalyticsView');
@@ -6899,6 +7055,10 @@ const stepsHubRingProgressEl = document.getElementById('stepsHubRingProgress');
 const stepsHubValueEl = document.getElementById('stepsHubValue');
 const stepsHubGoalLabelEl = document.getElementById('stepsHubGoalLabel');
 const stepsHubSyncListEl = document.getElementById('stepsHubSyncList');
+const stepsHubLogInput = document.getElementById('stepsHubLogInput');
+const stepsHubLogBtn = document.getElementById('stepsHubLogBtn');
+const stepsHubLogError = document.getElementById('stepsHubLogError');
+const stepsHubWeeklyChartEl = document.getElementById('stepsHubWeeklyChart');
 const STEPS_HUB_DAILY_GOAL = 10000;
 
 async function loadDevices() {
@@ -6940,16 +7100,52 @@ stepsHubSyncListEl.addEventListener('click', async (e) => {
 });
 
 async function openStepsHubView() {
-  await Promise.all([loadSteps(), loadDevices()]);
+  stepsHubLogError.textContent = '';
+  await Promise.all([loadSteps(true), loadDevices()]);
   const today = state.steps.find((s) => s.date === todayStr());
   const steps = today ? today.steps : 0;
   stepsHubValueEl.textContent = steps.toLocaleString();
   stepsHubGoalLabelEl.textContent = `of ${STEPS_HUB_DAILY_GOAL.toLocaleString()} steps`;
   setRingProgress(stepsHubRingProgressEl, steps / STEPS_HUB_DAILY_GOAL);
   renderStepsHubSync();
+  const last7 = state.steps.slice(0, 7).slice().sort((a, b) => a.date.localeCompare(b.date));
+  renderMetricBarChart(stepsHubWeeklyChartEl, last7, 'steps', STEPS_HUB_DAILY_GOAL);
   openSubView(stepsHubView);
 }
 stepsHubBackBtn.addEventListener('click', () => closeSubView(stepsHubView));
+
+async function handleStepsHubLogSubmit() {
+  stepsHubLogError.textContent = '';
+  const entered = Number(stepsHubLogInput.value);
+  if (!Number.isInteger(entered) || entered < 0) {
+    stepsHubLogError.textContent = 'Enter a valid step count';
+    return;
+  }
+  try {
+    const res = await authFetch(`${API}/steps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: state.date, steps: entered })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to log steps');
+    stepsHubLogInput.value = '';
+    await loadSteps(true);
+    const today = state.steps.find((s) => s.date === todayStr());
+    const steps = today ? today.steps : 0;
+    stepsHubValueEl.textContent = steps.toLocaleString();
+    setRingProgress(stepsHubRingProgressEl, steps / STEPS_HUB_DAILY_GOAL);
+    const last7 = state.steps.slice(0, 7).slice().sort((a, b) => a.date.localeCompare(b.date));
+    renderMetricBarChart(stepsHubWeeklyChartEl, last7, 'steps', STEPS_HUB_DAILY_GOAL);
+    showToast('Steps logged');
+  } catch (err) {
+    stepsHubLogError.textContent = err.message;
+  }
+}
+stepsHubLogBtn.addEventListener('click', handleStepsHubLogSubmit);
+stepsHubLogInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleStepsHubLogSubmit();
+});
 
 // ---------- Sleep Tracking ----------
 const sleepTrackingView = document.getElementById('sleepTrackingView');
@@ -8783,10 +8979,48 @@ function formatDobDisplay(iso) {
   return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
 }
 
+// The uploaded avatar lives in its own localStorage key (a data URL, so it
+// can be large) rather than inside the PROFILE_DETAILS_KEY blob, keeping the
+// text-field profile object small and fast to JSON.parse on every render.
+const USER_PROFILE_AVATAR_KEY = 'user_profile_avatar';
+const profilePhotoFileInput = document.getElementById('profilePhotoFileInput');
+
+// Every avatar placeholder across the app (profile header, hero card,
+// community composer, ...) is tagged with [data-avatar-slot] so one upload
+// updates all of them immediately instead of only the screen it was set from.
+function refreshAllAvatars() {
+  const dataUrl = localStorage.getItem(USER_PROFILE_AVATAR_KEY);
+  document.querySelectorAll('[data-avatar-slot]').forEach((el) => {
+    if (dataUrl) {
+      el.style.backgroundImage = `url("${dataUrl}")`;
+      el.classList.add('has-photo');
+    } else {
+      el.style.backgroundImage = '';
+      el.classList.remove('has-photo');
+    }
+  });
+}
+
+profilePhotoFileInput.addEventListener('change', () => {
+  const file = profilePhotoFileInput.files && profilePhotoFileInput.files[0];
+  profilePhotoFileInput.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    localStorage.setItem(USER_PROFILE_AVATAR_KEY, reader.result);
+    refreshAllAvatars();
+    renderProfileDetailsList();
+    showToast('Profile photo updated');
+  };
+  reader.onerror = () => showToast('Failed to read image', true);
+  reader.readAsDataURL(file);
+});
+refreshAllAvatars();
+
 function renderProfileDetailsList() {
   const details = getProfileDetails();
   document.getElementById('profileDetailsUsername').textContent = details.username || state.user?.username || PROFILE_DETAILS_FIELDS.username.default;
-  document.getElementById('profileDetailsProfilePhoto').textContent = details.profilePhoto ? '📷 Photo Set' : '👤 Add Photo';
+  document.getElementById('profileDetailsProfilePhoto').textContent = localStorage.getItem(USER_PROFILE_AVATAR_KEY) ? '📷 Photo Set' : '👤 Add Photo';
   document.getElementById('profileDetailsHeight').textContent = details.height || PROFILE_DETAILS_FIELDS.height.default;
   document.getElementById('profileDetailsSex').textContent = details.sex || PROFILE_DETAILS_FIELDS.sex.default;
   document.getElementById('profileDetailsDob').textContent = formatDobDisplay(details.dob || PROFILE_DETAILS_FIELDS.dob.default);
@@ -8873,6 +9107,10 @@ profileDetailsListEl.addEventListener('click', (e) => {
   }
   const row = e.target.closest('[data-profile-field]');
   if (!row) return;
+  if (row.dataset.profileField === 'profilePhoto') {
+    profilePhotoFileInput.click();
+    return;
+  }
   openProfileFieldSheet(row.dataset.profileField);
 });
 

@@ -56,7 +56,7 @@ const CUSTOM_FOOD_ID = '__custom__';
 const SCRYPT_KEYLEN = 64;
 const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'very', 'extreme'];
 const FITNESS_GOALS = ['lose', 'maintain', 'gain'];
-const FASTING_PROTOCOLS = ['16:8', '18:6', 'custom'];
+const FASTING_PROTOCOLS = ['16:8', '18:6', '20:4', 'custom'];
 const DEVICE_KEYS = ['appleHealth', 'googleFit', 'manualEntry', 'garmin', 'fitbit', 'strava', 'myFitnessPal'];
 const WEEK_START_OPTIONS = ['monday', 'sunday'];
 const DIARY_SHARING_OPTIONS = ['private', 'friends', 'public', 'locked'];
@@ -833,13 +833,28 @@ function estimateGenericNutrition(foodName, lowerName) {
   const profile = NUTRITION_GENERIC_PROFILES.find((p) => p.keywords.some((kw) => lowerName.includes(kw))) || NUTRITION_GENERIC_DEFAULT;
   const kcal = profile.kcal;
   return {
-    name: foodName,
+    name: toEnglishAsciiLabel(foodName),
     kcal,
     protein: Math.round(((kcal * profile.protein) / 4) * 10) / 10,
     carbs: Math.round(((kcal * profile.carbs) / 4) * 10) / 10,
     fat: Math.round(((kcal * profile.fat) / 9) * 10) / 10,
     source: 'generic'
   };
+}
+
+// English/ASCII enforcement for the estimate-nutrition response: descriptions
+// and JSON nodes must always come back in English regardless of the typed
+// language, so every name that echoes user input funnels through here first.
+// Strips accents off Latin script (café -> cafe) via Unicode decomposition,
+// then drops anything still non-ASCII (non-Latin scripts) since there's no
+// translation service wired in — falling back to a generic English label
+// rather than ever emitting foreign characters.
+const COMBINING_DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+
+function toEnglishAsciiLabel(rawName) {
+  const deAccented = rawName.normalize('NFKD').replace(COMBINING_DIACRITICS_RE, '');
+  const asciiOnly = deAccented.replace(/[^\x00-\x7F]/g, '').replace(/\s+/g, ' ').trim();
+  return asciiOnly || 'Unrecognized Food';
 }
 
 // POST /api/estimate-nutrition — body: { foodName }. Returns
@@ -1401,11 +1416,20 @@ app.get('/api/sleep', requireAuth, async (req, res) => {
   res.json(sleep);
 });
 
-// POST /api/sleep — body: { date, awakeHours, remHours, coreHours, deepHours }.
-// totalHours ("time asleep") is server-computed from rem+core+deep and
-// deliberately excludes awakeHours. One entry per date, upsert-by-date.
+// POST /api/sleep — body: { date, awakeHours, remHours, coreHours, deepHours,
+// bedTime?, wakeTime?, quality? }. totalHours ("time asleep") is normally
+// server-computed from rem+core+deep, but when bedTime/wakeTime ('HH:MM')
+// are both given, totalHours is instead derived directly from that time
+// span (wrapping past midnight), and — if no phase breakdown was entered —
+// the whole span is attributed to coreHours so the existing phase ring still
+// renders something meaningful. quality is an optional 1-5 star rating.
+// One entry per date, upsert-by-date.
 app.post('/api/sleep', requireAuth, async (req, res) => {
-  const { date, awakeHours, remHours, coreHours, deepHours } = req.body || {};
+  const { date, bedTime, wakeTime, quality } = req.body || {};
+  const awakeHours = req.body?.awakeHours ?? 0;
+  const remHours = req.body?.remHours ?? 0;
+  const coreHours = req.body?.coreHours ?? 0;
+  const deepHours = req.body?.deepHours ?? 0;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
     return res.status(400).json({ error: 'date must be in YYYY-MM-DD format' });
   }
@@ -1419,16 +1443,48 @@ app.post('/api/sleep', requireAuth, async (req, res) => {
   if (sum > 24) {
     return res.status(400).json({ error: 'Sleep phase hours cannot exceed 24 total' });
   }
-  const totalHours = Math.round((remHours + coreHours + deepHours) * 10) / 10;
+
+  const hasTimes = /^\d{2}:\d{2}$/.test(bedTime || '') && /^\d{2}:\d{2}$/.test(wakeTime || '');
+  let totalHours;
+  let resolvedCoreHours = coreHours;
+  if (hasTimes) {
+    const [bh, bm] = bedTime.split(':').map(Number);
+    const [wh, wm] = wakeTime.split(':').map(Number);
+    let minutes = (wh * 60 + wm) - (bh * 60 + bm);
+    if (minutes <= 0) minutes += 24 * 60;
+    totalHours = Math.round((minutes / 60) * 10) / 10;
+    if (sum === 0) resolvedCoreHours = totalHours;
+  } else {
+    totalHours = Math.round((remHours + coreHours + deepHours) * 10) / 10;
+  }
+
+  let resolvedQuality;
+  if (quality !== undefined && quality !== null) {
+    if (!Number.isInteger(quality) || quality < 1 || quality > 5) {
+      return res.status(400).json({ error: 'quality must be an integer between 1 and 5' });
+    }
+    resolvedQuality = quality;
+  }
 
   const sleepLogs = req.db.userdata[req.userId].sleepLogs;
   const existing = sleepLogs.find((s) => s.date === date);
+  const fields = {
+    awakeHours,
+    remHours,
+    coreHours: resolvedCoreHours,
+    deepHours,
+    totalHours,
+    bedTime: hasTimes ? bedTime : (existing?.bedTime ?? null),
+    wakeTime: hasTimes ? wakeTime : (existing?.wakeTime ?? null),
+    quality: resolvedQuality !== undefined ? resolvedQuality : (existing?.quality ?? null),
+    createdAt: new Date().toISOString()
+  };
   let entry;
   if (existing) {
-    Object.assign(existing, { awakeHours, remHours, coreHours, deepHours, totalHours, createdAt: new Date().toISOString() });
+    Object.assign(existing, fields);
     entry = existing;
   } else {
-    entry = { id: crypto.randomUUID(), date, awakeHours, remHours, coreHours, deepHours, totalHours, createdAt: new Date().toISOString() };
+    entry = { id: crypto.randomUUID(), date, ...fields };
     sleepLogs.push(entry);
   }
   await writeDb(req.db);

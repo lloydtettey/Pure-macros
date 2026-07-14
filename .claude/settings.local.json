@@ -106,7 +106,9 @@
       "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"ProcessId=7004\\\\\" | Select-Object ProcessId,CommandLine,ParentProcessId | Format-List\" 2>&1)",
       "Bash(powershell -NoProfile -Command \"Stop-Process -Id 7004 -Force\")",
       "Bash(mkdir -p 'C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\05352e00-0b71-4af2-bbba-9cc8271955c1\\\\scratchpad')",
-      "Bash(tail -5 /tmp_install.log)"
+      "Bash(tail -5 /tmp_install.log)",
+      "Bash(./node_modules/.bin/playwright --version)",
+      "Bash(pkill -f \"find /\")"
     ]
   }
 }

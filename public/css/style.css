@@ -1391,6 +1391,68 @@ body {
   gap: 6px;
 }
 
+.macros-pct-body { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.macro-pie-svg-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.macro-pie-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.macro-pie-arc {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease, opacity 0.2s ease;
+}
+.macro-pie-svg-wrap.dimmed .macro-pie-arc { opacity: 0.35; }
+.macro-pie-svg-wrap.dimmed .macro-pie-arc.active { opacity: 1; }
+.macro-pie-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* The donut hole is much smaller than this full-box label layer — without
+     this, the label sits on top of the ring and swallows every click before
+     it reaches the arc circles underneath, breaking the tap-a-slice
+     interaction. */
+  pointer-events: none;
+}
+.macro-pie-center-value { font-size: 10px; font-weight: 800; color: var(--text-2); line-height: 1.2; }
+.macros-pct-body .macros-pct-cols { flex: 1; }
+
+.sleep-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.sleep-time-grid input[type="time"] {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--text-1);
+  font-size: 14px;
+}
+
+.sleep-quality-picker { margin-bottom: 12px; }
+.sleep-quality-stars { display: flex; gap: 6px; margin-top: 6px; }
+.sleep-star-btn {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--card-border);
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+.sleep-star-btn:active { transform: scale(0.9); }
+.sleep-star-btn.filled { color: var(--neon-yellow, #ffcf3f); }
+
 .inline-add-form input,
 .inline-add-form select {
   background: var(--input-bg);
@@ -1662,6 +1724,15 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+/* Uploaded avatar image: applied to any [data-avatar-slot] element (profile
+   header, hero card, community composer, ...) once a photo is set, covering
+   the placeholder emoji with a cropped, centered background image. */
+[data-avatar-slot].has-photo {
+  color: transparent;
+  background-size: cover;
+  background-position: center;
 }
 
 .profile-avatar {
@@ -4506,6 +4577,35 @@ html.has-session .auth-overlay {
 }
 .water-quickadd-btn:hover { box-shadow: 0 0 12px rgba(46, 159, 255, 0.35); transform: translateY(-1px); }
 .water-quickadd-btn:active { transform: scale(0.95); }
+
+.water-unit-switcher {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 3px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg-raised);
+}
+.water-unit-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 0;
+  border-radius: calc(var(--radius) - 3px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.water-unit-btn.active {
+  background: var(--neon-blue);
+  color: #04121f;
+  box-shadow: 0 0 10px rgba(46, 159, 255, 0.45);
+}
+.water-quickadd-row--compact { margin-top: 10px; gap: 6px; }
+.water-quickadd-row--compact .water-quickadd-btn { padding: 8px 4px; font-size: 12px; }
 
 .utility-settings-row {
   display: flex;
