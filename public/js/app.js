@@ -2761,21 +2761,27 @@ function initApp() {
   // any real data loads or the app is revealed.
   const cachedUser = getCachedCurrentUser();
   if (cachedUser) state.user = cachedUser;
+  let data;
   try {
     const res = await authFetch(`${API}/auth/me`);
     if (!res.ok) throw new Error('invalid session');
-    const data = await res.json();
-    state.user = data;
-    revealApp();
-    initApp();
-    if (!data.onboarded) openCoachWizard({ mode: 'onboarding' });
+    data = await res.json();
   } catch {
     state.user = null;
     clearToken();
     // The head script pre-hid the auth overlay on the assumption this token
     // was valid — since it wasn't, undo that so the login form shows.
     document.documentElement.classList.remove('has-session');
+    return;
   }
+  // Outside the try/catch above on purpose — the session is already confirmed
+  // valid at this point, so an unrelated error in rendering the app shouldn't
+  // be swallowed and misread as an invalid session (which would wrongly clear
+  // a good token and bounce a signed-in user back to the login screen).
+  state.user = data;
+  revealApp();
+  initApp();
+  if (!data.onboarded) openCoachWizard({ mode: 'onboarding' });
 })();
 
 // ---------- Data loading ----------

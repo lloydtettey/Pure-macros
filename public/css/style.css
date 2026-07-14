@@ -25,6 +25,9 @@ html, body { background: #0f0f12; color: #fff; }
   --danger: #ff4d4d;
   --success: var(--neon-green);
 
+  --alert-bg: #2c1a04;
+  --alert-text: #ffcc00;
+
   --radius: 8px;
   --pad-sm: 16px;
   --pad-lg: 24px;
@@ -63,6 +66,8 @@ html, body { background: #0f0f12; color: #fff; }
   --input-bg: #f1f2f4;
   /* Deep charcoal/slate track — sharp and clearly visible under neon fills. */
   --track-bg: #334155;
+  --alert-bg: #ffeeba;
+  --alert-text: #856404;
   --chrome-bg: #ffffff;
   --overlay-tint: #f8f9fa;
   --panel-glass-bg: #ffffff;
@@ -6141,9 +6146,9 @@ html.has-session .auth-overlay {
   margin: 0;
   padding: 12px 14px;
   border-radius: var(--radius);
-  background: #2a210f;
+  background: var(--alert-bg);
   border: 1px solid rgba(255, 176, 32, 0.4);
-  color: var(--text-1);
+  color: var(--alert-text);
   font-size: 13px;
   line-height: 1.5;
   transition: opacity 0.35s ease;
@@ -6155,7 +6160,7 @@ html.has-session .auth-overlay {
   padding: 0;
   border: none;
   background: none;
-  color: var(--neon-cyan);
+  color: var(--alert-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
