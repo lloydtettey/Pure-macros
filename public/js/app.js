@@ -864,10 +864,13 @@ function setTheme(preference) {
   }
   applyTheme(preference);
   // 250ms gives iOS Safari's WebKit engine time to fully finish its layout
-  // and paint cycles for the swap before transitions are re-enabled.
+  // and paint cycles for the swap before transitions are re-enabled. The
+  // toggle lock releases here too, so taps stay blocked for exactly as long
+  // as the paint cycle they're waiting on, instead of a second guessed timer.
   themeTimeout = setTimeout(() => {
     document.body.classList.remove('no-transitions');
     themeTimeout = null;
+    themeToggleLocked = false;
   }, 250);
 }
 
@@ -891,7 +894,6 @@ appearanceCardGridEl.addEventListener('click', (e) => {
   if (!card) return;
   themeToggleLocked = true;
   setTheme(card.dataset.themeChoice);
-  setTimeout(() => { themeToggleLocked = false; }, 350);
 });
 appAppearanceBackBtn.addEventListener('click', () => closeSubView(appAppearanceView));
 
