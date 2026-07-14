@@ -193,6 +193,13 @@ const profileFieldSaveBtn = document.getElementById('profileFieldSaveBtn');
 const profileFieldTitleEl = document.getElementById('profileFieldTitle');
 const profileFieldTextInput = document.getElementById('profileFieldTextInput');
 const profileFieldSelectInput = document.getElementById('profileFieldSelectInput');
+const profileFieldHeightUnitField = document.getElementById('profileFieldHeightUnitField');
+const profileFieldHeightUnitToggle = document.getElementById('profileFieldHeightUnitToggle');
+const profileFieldHeightCmRow = document.getElementById('profileFieldHeightCmRow');
+const profileFieldHeightCmInput = document.getElementById('profileFieldHeightCmInput');
+const profileFieldHeightFtInRow = document.getElementById('profileFieldHeightFtInRow');
+const profileFieldHeightFtInput = document.getElementById('profileFieldHeightFtInput');
+const profileFieldHeightInInput = document.getElementById('profileFieldHeightInInput');
 const settingsView = document.getElementById('settingsView');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const settingsMenuListEl = document.getElementById('settingsMenuList');
@@ -4065,7 +4072,7 @@ function formatChartLabel(dateStr, totalDays) {
 // Shared by every hand-rolled history chart (Calories, Overview, and the
 // per-macro Protein/Carbs/Fat charts) — same column structure, different
 // metric key and day counts.
-function renderMetricBarChart(container, days, metricKey, goal) {
+function renderMetricBarChart(container, days, metricKey, goal, fillVariant) {
   container.innerHTML = '';
   const maxScale = Math.max(goal || 0, ...days.map((d) => d[metricKey]), 1);
   for (const day of days) {
@@ -4074,9 +4081,10 @@ function renderMetricBarChart(container, days, metricKey, goal) {
     const over = goal > 0 && value > goal;
     const col = document.createElement('div');
     col.className = 'bar-chart-col';
+    const fillClass = ['bar-chart-fill', over ? 'over-goal' : '', !over && fillVariant ? fillVariant : ''].filter(Boolean).join(' ');
     col.innerHTML = `
       <span class="bar-chart-value">${Math.round(value)}</span>
-      <div class="bar-chart-track"><div class="bar-chart-fill${over ? ' over-goal' : ''}" style="height:${pct}%"></div></div>
+      <div class="bar-chart-track"><div class="${fillClass}" style="height:${pct}%"></div></div>
       <span class="bar-chart-label">${formatChartLabel(day.date, days.length)}</span>
     `;
     container.appendChild(col);
@@ -8176,14 +8184,88 @@ deviceConnectActionBtn.addEventListener('click', async () => {
   }
 });
 
-// ---------- Weekly Report ----------
+// ---------- Weekly Digest ----------
 const weeklyReportView = document.getElementById('weeklyReportView');
 const weeklyReportBackBtn = document.getElementById('weeklyReportBackBtn');
+const weeklyReportDateRangeEl = document.getElementById('weeklyReportDateRange');
 const weeklyReportRingProgressEl = document.getElementById('weeklyReportRingProgress');
 const weeklyReportRingValueEl = document.getElementById('weeklyReportRingValue');
 const weeklyReportChartAxisEl = document.getElementById('weeklyReportChartAxis');
 const weeklyReportChartSvgEl = document.getElementById('weeklyReportChartSvg');
 const weeklyReportAveragesListEl = document.getElementById('weeklyReportAveragesList');
+const weeklyDigestCalorieGoalEl = document.getElementById('weeklyDigestCalorieGoal');
+const weeklyDigestCaloriesLoggedEl = document.getElementById('weeklyDigestCaloriesLogged');
+const weeklyDigestCaloriesBurnedEl = document.getElementById('weeklyDigestCaloriesBurned');
+const weeklyDigestFoodListEl = document.getElementById('weeklyDigestFoodList');
+const weeklyDigestStepsChartEl = document.getElementById('weeklyDigestStepsChart');
+const weeklyDigestStepsTotalEl = document.getElementById('weeklyDigestStepsTotal');
+const weeklyDigestStreakValueEl = document.getElementById('weeklyDigestStreakValue');
+const WEEKLY_STEP_GOAL = 70000;
+
+// Same 0.04 kcal/step approximation the MyFitnessPal-style step calorie
+// adjustment (getStepAdjustmentCalories) already uses, generalized to any
+// day's step count instead of just today's.
+function caloriesBurnedFromSteps(steps) {
+  return Math.floor((steps || 0) * 0.04);
+}
+
+function formatWeeklyDigestRange(startStr, endStr) {
+  const start = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startLabel = start.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' });
+  const endLabel = end.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${startLabel} – ${endLabel}`;
+}
+
+// Fans out one /api/entries?date= request per day in the digest window (the
+// API only exposes single-day lookups) and aggregates by food name so the
+// card can surface the 3 most-eaten foods with their weekly tally.
+async function renderWeeklyDigestFoods(days) {
+  weeklyDigestFoodListEl.innerHTML = '<li class="weekly-digest-food-empty">Loading…</li>';
+  try {
+    const perDay = await Promise.all(
+      days.map((d) => authFetch(`${API}/entries?date=${d.date}`).then((r) => (r.ok ? r.json() : [])))
+    );
+    const byName = new Map();
+    perDay.flat().forEach((entry) => {
+      const agg = byName.get(entry.name) || { name: entry.name, count: 0, calories: 0 };
+      agg.count += 1;
+      agg.calories += entry.calories || 0;
+      byName.set(entry.name, agg);
+    });
+    const top3 = [...byName.values()].sort((a, b) => b.count - a.count || b.calories - a.calories).slice(0, 3);
+    weeklyDigestFoodListEl.innerHTML = top3.length
+      ? top3
+          .map(
+            (f) => `
+        <li class="weekly-digest-food-row">
+          <div>
+            <div class="weekly-digest-food-name">${escapeHtml(f.name)}</div>
+            <div class="weekly-digest-food-meta">Eaten ${f.count}× this week</div>
+          </div>
+          <span class="weekly-digest-food-cal">${Math.round(f.calories).toLocaleString()} kcal</span>
+        </li>`
+          )
+          .join('')
+      : '<li class="weekly-digest-food-empty">No foods logged this week yet</li>';
+  } catch {
+    weeklyDigestFoodListEl.innerHTML = '<li class="weekly-digest-food-empty">Couldn\'t load food history</li>';
+  }
+}
+
+// Reads state.steps (loaded fresh by openWeeklyReportView) for the same 7
+// calendar dates already zero-filled by the calorie history window, so a
+// day with no synced/logged steps renders as a 0 bar rather than being
+// skipped.
+function renderWeeklyDigestSteps(days) {
+  const stepsByDate = new Map((state.steps || []).map((s) => [s.date, s.steps]));
+  const stepsDays = days.map((d) => ({ date: d.date, steps: stepsByDate.get(d.date) || 0 }));
+  renderMetricBarChart(weeklyDigestStepsChartEl, stepsDays, 'steps', STEPS_HUB_DAILY_GOAL, 'bar-chart-fill--green');
+  const totalSteps = stepsDays.reduce((sum, d) => sum + d.steps, 0);
+  weeklyDigestStepsTotalEl.innerHTML = `<strong>${totalSteps.toLocaleString()}</strong> / ${WEEKLY_STEP_GOAL.toLocaleString()} steps this week`;
+  return stepsDays;
+}
 
 function renderWeeklyReportChart(days, goal) {
   weeklyReportChartAxisEl.innerHTML = '';
@@ -8248,6 +8330,7 @@ async function openWeeklyReportView() {
   openSubView(weeklyReportView);
   const history = await loadHistory({ days: 7 });
   if (!history) return;
+  weeklyReportDateRangeEl.textContent = formatWeeklyDigestRange(history.start, history.end);
   const goal = state.settings?.calorieGoal || 0;
   const compliantDays = history.days.filter((d) => d.calories > 0 && d.calories >= goal * 0.8 && d.calories <= goal * 1.1).length;
   const compliancePct = history.days.length ? compliantDays / history.days.length : 0;
@@ -8255,6 +8338,18 @@ async function openWeeklyReportView() {
   weeklyReportRingValueEl.textContent = `${Math.round(compliancePct * 100)}%`;
   renderWeeklyReportChart(history.days, goal);
   renderWeeklyAverages(history.averages);
+
+  weeklyDigestCalorieGoalEl.textContent = `${Math.round(goal * history.days.length).toLocaleString()} kcal`;
+  weeklyDigestCaloriesLoggedEl.textContent = `${Math.round(history.totals.calories).toLocaleString()} kcal`;
+  renderWeeklyDigestFoods(history.days);
+
+  await loadSteps(true);
+  const stepsDays = renderWeeklyDigestSteps(history.days);
+  const burnedTotal = stepsDays.reduce((sum, d) => sum + caloriesBurnedFromSteps(d.steps), 0);
+  weeklyDigestCaloriesBurnedEl.textContent = `${burnedTotal.toLocaleString()} kcal`;
+
+  await refreshStreak();
+  weeklyDigestStreakValueEl.textContent = String(state.streak || 0);
 }
 weeklyReportBackBtn.addEventListener('click', () => closeSubView(weeklyReportView));
 
@@ -9375,6 +9470,64 @@ profileDetailsBackBtn.addEventListener('click', () => {
 
 let activeProfileField = null;
 
+// Reverses formatHeightForUnits() ("5 ft, 10 in" / "178 cm") back to a raw cm
+// number so the height row's metric/imperial modal can prefill from whatever
+// display string is already saved, regardless of which unit it was saved in.
+function parseHeightStringToCm(str) {
+  if (!str) return null;
+  const ftInMatch = str.match(/(\d+(?:\.\d+)?)\s*ft.*?(\d+(?:\.\d+)?)\s*in/i);
+  if (ftInMatch) return ftInToCm(Number(ftInMatch[1]), Number(ftInMatch[2]));
+  const cmMatch = str.match(/(\d+(?:\.\d+)?)\s*cm/i);
+  if (cmMatch) return Number(cmMatch[1]);
+  return null;
+}
+
+function applyProfileFieldHeightUnitUI(unit) {
+  profileFieldHeightUnitToggle.querySelectorAll('.unit-toggle-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.unit === unit);
+  });
+  profileFieldHeightCmRow.classList.toggle('hidden', unit !== 'cm');
+  profileFieldHeightFtInRow.classList.toggle('hidden', unit !== 'ftin');
+}
+
+function writeProfileFieldHeightFromCm(cm, unit) {
+  if (cm === null || cm === undefined || Number.isNaN(cm)) {
+    profileFieldHeightCmInput.value = '';
+    profileFieldHeightFtInput.value = '';
+    profileFieldHeightInInput.value = '';
+    return;
+  }
+  if (unit === 'cm') {
+    profileFieldHeightCmInput.value = Math.round(cm * 10) / 10;
+  } else {
+    const { ft, inch } = cmToFtIn(cm);
+    profileFieldHeightFtInput.value = ft;
+    profileFieldHeightInInput.value = inch;
+  }
+}
+
+function readProfileFieldHeightCm(unit) {
+  if (unit === 'cm') {
+    const v = Number(profileFieldHeightCmInput.value);
+    return v > 0 ? v : null;
+  }
+  const ft = Number(profileFieldHeightFtInput.value) || 0;
+  const inch = Number(profileFieldHeightInInput.value) || 0;
+  if (!ft && !inch) return null;
+  return ftInToCm(ft, inch);
+}
+
+profileFieldHeightUnitToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('.unit-toggle-btn');
+  if (!btn) return;
+  const nextUnit = btn.dataset.unit;
+  const currentUnit = profileFieldHeightUnitToggle.querySelector('.unit-toggle-btn.active').dataset.unit;
+  if (nextUnit === currentUnit) return;
+  const currentCm = readProfileFieldHeightCm(currentUnit);
+  applyProfileFieldHeightUnitUI(nextUnit);
+  writeProfileFieldHeightFromCm(currentCm, nextUnit);
+});
+
 function openProfileFieldSheet(field) {
   const config = PROFILE_DETAILS_FIELDS[field];
   if (!config) return;
@@ -9382,7 +9535,19 @@ function openProfileFieldSheet(field) {
   const details = getProfileDetails();
   profileFieldTitleEl.textContent = config.label;
 
-  if (config.type === 'select') {
+  profileFieldHeightUnitField.classList.add('hidden');
+  profileFieldHeightCmRow.classList.add('hidden');
+  profileFieldHeightFtInRow.classList.add('hidden');
+
+  if (field === 'height') {
+    profileFieldTextInput.classList.add('hidden');
+    profileFieldSelectInput.classList.add('hidden');
+    profileFieldHeightUnitField.classList.remove('hidden');
+    const unit = getHeightUnit();
+    applyProfileFieldHeightUnitUI(unit);
+    const cm = parseHeightStringToCm(details.height) ?? state.settings?.heightCm ?? null;
+    writeProfileFieldHeightFromCm(cm, unit);
+  } else if (config.type === 'select') {
     profileFieldSelectInput.innerHTML = config.options
       .map((opt) => `<option value="${opt}">${opt}</option>`)
       .join('');
@@ -9398,7 +9563,7 @@ function openProfileFieldSheet(field) {
   }
 
   profileFieldSheet.classList.add('open');
-  if (config.type !== 'select') profileFieldTextInput.focus();
+  if (field !== 'height' && config.type !== 'select') profileFieldTextInput.focus();
 }
 
 function closeProfileFieldSheet() {
@@ -9435,11 +9600,39 @@ function applyProfileUnitsPreference(unitsValue) {
   if (userUnitPreference !== systemPref) setUnitSystemPreference(systemPref);
 }
 
-profileFieldSaveBtn.addEventListener('click', () => {
+profileFieldSaveBtn.addEventListener('click', async () => {
   if (!activeProfileField) return;
+  const details = getProfileDetails();
+
+  if (activeProfileField === 'height') {
+    const unit = profileFieldHeightUnitToggle.querySelector('.unit-toggle-btn.active').dataset.unit;
+    const cm = readProfileFieldHeightCm(unit);
+    if (!cm) { closeProfileFieldSheet(); return; }
+    localStorage.setItem(HEIGHT_UNIT_KEY, unit);
+    applyHeightUnitUI();
+    details.height = formatHeightForUnits(cm, details.units || PROFILE_DETAILS_FIELDS.units.default);
+    localStorage.setItem(PROFILE_DETAILS_KEY, JSON.stringify(details));
+    renderProfileDetailsList();
+    closeProfileFieldSheet();
+    // Height feeds the BMR-driven calorie/macro goals computed server-side,
+    // so persist it immediately rather than waiting for the next full
+    // profile-form submit — otherwise Goals silently keeps using the old cm.
+    try {
+      const res = await authFetch(`${API}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calorieGoal: state.settings.calorieGoal, macroGoals: state.settings.macroGoals, heightCm: cm, targetWeightKg: state.settings.targetWeightKg })
+      });
+      const data = await res.json();
+      if (res.ok) state.settings = data;
+    } catch {
+      // Non-fatal — the local profile row already reflects the new height.
+    }
+    return;
+  }
+
   const config = PROFILE_DETAILS_FIELDS[activeProfileField];
   const value = config.type === 'select' ? profileFieldSelectInput.value : profileFieldTextInput.value.trim();
-  const details = getProfileDetails();
   if (value) details[activeProfileField] = value;
   else delete details[activeProfileField];
   localStorage.setItem(PROFILE_DETAILS_KEY, JSON.stringify(details));

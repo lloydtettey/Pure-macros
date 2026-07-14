@@ -112,7 +112,9 @@
       "Bash(ls \"$\\(node -e \"console.log\\(require\\('os'\\).homedir\\(\\)\\)\"\\)/AppData/Local/ms-playwright\")",
       "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify.js\")",
       "Bash(cat)",
-      "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify2.js\")"
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify2.js\")",
+      "Bash(xargs wc -l)",
+      "Bash(sort -u -t: -k2)"
     ]
   }
 }

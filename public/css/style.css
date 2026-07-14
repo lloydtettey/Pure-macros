@@ -1798,6 +1798,9 @@ body {
   box-sizing: border-box;
 }
 .profile-field-input:focus { outline: none; border-color: var(--neon-cyan); }
+.profile-field-height-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+#profileFieldHeightCmRow { grid-template-columns: 1fr; }
+#profileFieldHeightUnitField { margin-top: 4px; }
 
 /* ---------- More tab: high-density premium menu list ---------- */
 .more-menu-card { padding: 0; overflow: hidden; }
@@ -5544,6 +5547,42 @@ html.has-session .auth-overlay {
 .wra-row-value { color: var(--text-1); font-weight: 700; }
 .wra-track { height: 8px; border-radius: 999px; background: var(--track-bg); overflow: hidden; }
 .wra-fill { height: 100%; background: var(--neon-cyan); border-radius: 999px; transition: width 0.4s ease; }
+
+/* ---------- Weekly Digest (More > Weekly Digest) ---------- */
+.weekly-digest-range { text-align: center; color: var(--text-3); font-size: 13px; font-weight: 600; margin: -4px 0 4px; }
+
+.card-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 18px; }
+.card-title-row .card-title { margin: 0; }
+.weekly-digest-steps-goal { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+
+.bar-chart-fill--green { background: var(--neon-green); box-shadow: 0 0 10px rgba(57, 255, 20, 0.6); }
+.weekly-digest-steps-total { text-align: center; margin: 14px 0 0; font-size: 13px; color: var(--text-2); font-weight: 700; }
+.weekly-digest-steps-total strong { color: var(--neon-green); }
+
+.weekly-digest-food-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.weekly-digest-food-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.weekly-digest-food-name { color: var(--text-1); font-weight: 700; font-size: 13px; }
+.weekly-digest-food-meta { color: var(--text-3); font-size: 11px; }
+.weekly-digest-food-cal { color: var(--neon-cyan); font-weight: 800; font-size: 13px; white-space: nowrap; }
+.weekly-digest-food-empty { color: var(--text-3); font-size: 13px; text-align: center; padding: 8px 0; }
+
+.weekly-digest-streak-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px var(--pad-lg);
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 229, 255, 0.16), var(--card-bg) 72%);
+  border-color: rgba(0, 229, 255, 0.4);
+}
+.weekly-digest-streak-value {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 18px rgba(0, 229, 255, 0.75);
+  line-height: 1;
+}
+.weekly-digest-streak-label { font-size: 14px; font-weight: 700; color: var(--text-1); letter-spacing: 0.3px; }
 
 /* Reminders — vertical alarm rows, reusing .weight-entry shell */
 .reminders-list .weight-entry { align-items: center; }

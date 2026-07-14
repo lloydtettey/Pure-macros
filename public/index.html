@@ -835,7 +835,7 @@
             </li>
             <li class="more-menu-item" data-menu-key="weekly-report">
               <span class="more-menu-icon" aria-hidden="true">📊</span>
-              <span class="more-menu-title">My Weekly Report</span>
+              <span class="more-menu-title">Weekly Digest</span>
               <span class="more-menu-chevron" aria-hidden="true">›</span>
             </li>
             <li class="more-menu-item" data-menu-key="community">
@@ -2733,6 +2733,20 @@
       <div class="profile-field-sheet-body">
         <input type="text" class="profile-field-input" id="profileFieldTextInput" />
         <select class="profile-field-input privacy-select hidden" id="profileFieldSelectInput"></select>
+        <div class="unit-toggle-field hidden" id="profileFieldHeightUnitField">
+          <span class="profile-label">Height unit</span>
+          <div class="unit-toggle" id="profileFieldHeightUnitToggle">
+            <button type="button" class="unit-toggle-btn active" data-unit="cm">cm</button>
+            <button type="button" class="unit-toggle-btn" data-unit="ftin">ft / in</button>
+          </div>
+        </div>
+        <div class="profile-field-height-row hidden" id="profileFieldHeightCmRow">
+          <input type="number" class="profile-field-input" id="profileFieldHeightCmInput" placeholder="Height (cm)" min="0" step="0.1" />
+        </div>
+        <div class="profile-field-height-row hidden" id="profileFieldHeightFtInRow">
+          <input type="number" class="profile-field-input" id="profileFieldHeightFtInput" placeholder="ft" min="0" step="1" />
+          <input type="number" class="profile-field-input" id="profileFieldHeightInInput" placeholder="in" min="0" step="0.1" />
+        </div>
       </div>
     </div>
   </div>
@@ -3225,19 +3239,23 @@
     </div>
   </div>
 
-  <!-- Weekly Report Sub-View (full-screen, nested under the More tab) -->
-  <div class="settings-view" id="weeklyReportView">
+  <!-- Weekly Digest Sub-View (full-screen, nested under the More tab). Every
+       card below reads its numbers live from the same diary/steps/streak
+       state the rest of the app already tracks — nothing here is canned. -->
+  <div class="settings-view weekly-digest-view" id="weeklyReportView">
     <header class="settings-view-header">
       <button type="button" class="icon-btn settings-back-btn" id="weeklyReportBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">Weekly Report</h1>
+      <h1 class="settings-view-title">Weekly Digest</h1>
       <span class="settings-view-header-spacer" aria-hidden="true"></span>
     </header>
     <div class="settings-view-body">
+      <p class="weekly-digest-range" id="weeklyReportDateRange">—</p>
+
       <section class="card sleep-ring-card" style="align-items: center; display: flex; flex-direction: column;">
         <div class="ring-wrap">
           <svg viewBox="0 0 160 160" class="ring">
             <circle cx="80" cy="80" r="70" class="ring-track" />
-            <circle cx="80" cy="80" r="70" class="ring-progress" id="weeklyReportRingProgress" style="stroke: var(--neon-cyan); filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.85));" />
+            <circle cx="80" cy="80" r="70" class="ring-progress" id="weeklyReportRingProgress" style="stroke: var(--neon-blue); filter: drop-shadow(0 0 8px rgba(46, 159, 255, 0.85));" />
           </svg>
           <div class="ring-center">
             <span class="ring-value" id="weeklyReportRingValue">0%</span>
@@ -3256,6 +3274,41 @@
           <span class="macro-history-legend-item"><span class="legend-dot legend-dot--goal"></span> Goal</span>
           <span class="macro-history-legend-item"><span class="legend-dot legend-dot--actual"></span> Actual</span>
         </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Week At A Glance</h2>
+        <div class="profile-row">
+          <span class="profile-label">Weekly Calorie Goal</span>
+          <span class="profile-value profile-value--cyan" id="weeklyDigestCalorieGoal">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Total Calories Logged</span>
+          <span class="profile-value profile-value--cyan" id="weeklyDigestCaloriesLogged">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Calories Burned (Steps)</span>
+          <span class="profile-value profile-value--cyan" id="weeklyDigestCaloriesBurned">—</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Frequently Logged Foods</h2>
+        <ul class="weekly-digest-food-list" id="weeklyDigestFoodList"></ul>
+      </section>
+
+      <section class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Steps — Monday to Sunday</h2>
+          <span class="weekly-digest-steps-goal">Weekly Step Goal (70,000)</span>
+        </div>
+        <div class="bar-chart" id="weeklyDigestStepsChart"></div>
+        <p class="weekly-digest-steps-total" id="weeklyDigestStepsTotal">—</p>
+      </section>
+
+      <section class="card weekly-digest-streak-card" id="weeklyDigestStreakCard">
+        <span class="weekly-digest-streak-value" id="weeklyDigestStreakValue">0</span>
+        <span class="weekly-digest-streak-label">Day Streak!</span>
       </section>
 
       <section class="card">
