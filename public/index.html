@@ -705,7 +705,6 @@
             <div class="mfp-profile-info">
               <div class="mfp-profile-name-row">
                 <span class="profile-header-username" id="profileUsername">—</span>
-                <span class="mfp-premium-badge" id="mfpPremiumBadge">★ PREMIUM</span>
               </div>
               <span class="mfp-last-sync" id="mfpLastSync">Last Sync: Just now</span>
             </div>
@@ -2625,85 +2624,92 @@
   <div class="settings-view" id="profileView">
     <header class="settings-view-header">
       <button type="button" class="icon-btn settings-back-btn" id="profileBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">My Profile</h1>
+      <h1 class="settings-view-title" id="profileViewTitle">—</h1>
       <span class="settings-view-header-spacer" aria-hidden="true"></span>
     </header>
     <div class="settings-view-body">
-      <section class="card profile-hero-card">
-        <span class="profile-avatar profile-avatar--hero" aria-hidden="true">👤</span>
-        <h2 class="profile-hero-name" id="profileHeroName">—</h2>
-        <p class="profile-hero-email" id="profileHeroEmail">—</p>
-      </section>
-
-      <section class="stat-mini-grid">
-        <div class="stat-mini-card">
-          <span class="stat-mini-value" id="profileDaysActive">0</span>
-          <span class="stat-mini-label">Days Active</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-value" id="profileTotalWeight">—</span>
-          <span class="stat-mini-label">Total Weight</span>
-        </div>
-        <div class="stat-mini-card">
-          <span class="stat-mini-value" id="profileLocationValue">—</span>
-          <span class="stat-mini-label">Location Base</span>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="card-title">Bio</h2>
-        <form id="profileBioForm">
-          <textarea id="profileBioInput" class="bio-textarea" rows="4" maxlength="500" placeholder="Tell us a bit about yourself…"></textarea>
-          <label class="field" style="margin-top: 10px;">
-            <span>Location Base</span>
-            <input type="text" id="profileLocationInput" maxlength="120" placeholder="City, Country" />
-          </label>
-          <p class="form-error" id="profileBioError"></p>
-          <div class="modal-actions">
-            <button type="submit" class="btn-primary">Save Profile</button>
+      <section class="card profile-hero-header-card">
+        <div class="profile-hero-header">
+          <span class="profile-avatar profile-hero-avatar-lg" aria-hidden="true">👤</span>
+          <div class="profile-hero-header-info">
+            <span class="profile-hero-username" id="profileHeroName">—</span>
+            <span class="profile-hero-syncline">Last Sync: Just now</span>
           </div>
-        </form>
+        </div>
+
+        <div class="profile-scorecard">
+          <div class="profile-scorecard-cell">
+            <span class="profile-scorecard-value" id="profileScoreWeightLost">[ 0 st Lost ]</span>
+          </div>
+          <div class="profile-scorecard-cell">
+            <span class="profile-scorecard-value" id="profileScoreFriends">[ 0 Friends ]</span>
+          </div>
+        </div>
+
+        <button type="button" class="profile-premium-banner-btn" id="profileGoPremiumBtn">Go Premium</button>
+
+        <button type="button" class="profile-edit-row-btn" id="profileEditRowBtn">
+          <span>Edit Profile</span>
+          <span aria-hidden="true">›</span>
+        </button>
       </section>
     </div>
   </div>
 
-  <!-- Profile Details Sub-View (full-screen, opened by tapping the MFP-style profile card) -->
+  <!-- Personal Details Sub-View (full-screen, opened by tapping the MFP-style profile card / Edit Profile) -->
   <div class="settings-view" id="profileDetailsView">
     <header class="settings-view-header">
       <button type="button" class="icon-btn settings-back-btn" id="profileDetailsBackBtn" aria-label="Back">←</button>
-      <h1 class="settings-view-title">Profile Details</h1>
+      <h1 class="settings-view-title">Personal Details</h1>
       <span class="settings-view-header-spacer" aria-hidden="true"></span>
     </header>
     <div class="settings-view-body">
       <section class="card">
+        <h2 class="card-title">Personal Details</h2>
         <div class="profile-details" id="profileDetailsList">
           <div class="profile-row profile-row--clickable" data-profile-field="username">
-            <span class="profile-label">Username</span>
-            <span class="profile-value" id="profileDetailsUsername">—</span>
+            <span class="profile-label">User Name</span>
+            <span class="profile-value" id="profileDetailsUsername">username123</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="profilePhoto">
+            <span class="profile-label">Profile Photo</span>
+            <span class="profile-value" id="profileDetailsProfilePhoto">👤 Add Photo</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="height">
             <span class="profile-label">Height</span>
-            <span class="profile-value" id="profileDetailsHeight">—</span>
+            <span class="profile-value" id="profileDetailsHeight">5 ft, 10 in</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="sex">
             <span class="profile-label">Sex</span>
-            <span class="profile-value" id="profileDetailsSex">—</span>
+            <span class="profile-value" id="profileDetailsSex">Male</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="dob">
             <span class="profile-label">Date of Birth</span>
-            <span class="profile-value" id="profileDetailsDob">—</span>
+            <span class="profile-value" id="profileDetailsDob">01 Jan 2000</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="location">
             <span class="profile-label">Location</span>
-            <span class="profile-value" id="profileDetailsLocation">—</span>
+            <span class="profile-value" id="profileDetailsLocation">United Kingdom</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="zipCode">
-            <span class="profile-label">Zip Code</span>
-            <span class="profile-value" id="profileDetailsZipCode">—</span>
+            <span class="profile-label">Zip/Postal Code</span>
+            <span class="profile-value" id="profileDetailsZipCode">90210</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="timeZone">
+            <span class="profile-label">Time Zone</span>
+            <span class="profile-value" id="profileDetailsTimeZone">GMT</span>
           </div>
           <div class="profile-row profile-row--clickable" data-profile-field="email">
-            <span class="profile-label">Email</span>
-            <span class="profile-value" id="profileDetailsEmail">—</span>
+            <span class="profile-label">Email Address</span>
+            <span class="profile-value" id="profileDetailsEmail">user@example.com</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-field="units">
+            <span class="profile-label">Units</span>
+            <span class="profile-value" id="profileDetailsUnits">st, ft/in, cal, mi, oz</span>
+          </div>
+          <div class="profile-row profile-row--clickable" data-profile-nav="goals">
+            <span class="profile-label">Goals</span>
+            <span class="profile-value">›</span>
           </div>
         </div>
       </section>
@@ -3077,11 +3083,6 @@
       <input type="search" class="recipe-grid-search" id="recipeGridSearchInput" placeholder="Search recipes…" />
       <div class="progress-subnav" id="recipeGridChipsRow">
         <button type="button" class="progress-subnav-btn active" data-category="all">All</button>
-        <button type="button" class="progress-subnav-btn" data-category="High Protein">High Protein</button>
-        <button type="button" class="progress-subnav-btn" data-category="Gut Health">Gut Health</button>
-        <button type="button" class="progress-subnav-btn" data-category="Mediterranean">Mediterranean</button>
-        <button type="button" class="progress-subnav-btn" data-category="GLP-1 Lunches">GLP-1 Lunches</button>
-        <button type="button" class="progress-subnav-btn" data-category="Low Carb">Low Carb</button>
       </div>
       <div class="recipe-grid" id="recipeGridList"></div>
     </div>

@@ -5972,63 +5972,31 @@ function renderNutrientsListInto(container, averages) {
 // ---------- My Profile ----------
 const profileView = document.getElementById('profileView');
 const profileBackBtn = document.getElementById('profileBackBtn');
+const profileViewTitleEl = document.getElementById('profileViewTitle');
 const profileHeroNameEl = document.getElementById('profileHeroName');
-const profileHeroEmailEl = document.getElementById('profileHeroEmail');
-const profileDaysActiveEl = document.getElementById('profileDaysActive');
-const profileTotalWeightEl = document.getElementById('profileTotalWeight');
-const profileLocationValueEl = document.getElementById('profileLocationValue');
-const profileBioForm = document.getElementById('profileBioForm');
-const profileBioInput = document.getElementById('profileBioInput');
-const profileLocationInput = document.getElementById('profileLocationInput');
-const profileBioError = document.getElementById('profileBioError');
+const profileHeroSynclineEl = profileView.querySelector('.profile-hero-syncline');
+const profileScoreWeightLostEl = document.getElementById('profileScoreWeightLost');
+const profileScoreFriendsEl = document.getElementById('profileScoreFriends');
+const profileGoPremiumBtn = document.getElementById('profileGoPremiumBtn');
+const profileEditRowBtn = document.getElementById('profileEditRowBtn');
 
-async function openProfileView() {
+function openProfileView() {
   const username = state.user?.username || '—';
+  profileViewTitleEl.textContent = username;
   profileHeroNameEl.textContent = username;
-  profileHeroEmailEl.textContent = username;
-  profileBioInput.value = state.settings?.bio || '';
-  profileLocationInput.value = state.settings?.location || '';
-  profileLocationValueEl.textContent = state.settings?.location || 'Add location';
+  profileHeroSynclineEl.textContent = formatMfpLastSync(state.lastSyncAt);
 
-  if (state.weights.length > 0) {
-    const unit = getWeightUnit();
-    const latest = state.weights[0].weight;
-    const displayWeight = unit === 'lbs' ? Math.round(kgToLbs(latest) * 10) / 10 : Math.round(latest * 10) / 10;
-    profileTotalWeightEl.textContent = `${displayWeight} ${unit}`;
-  } else {
-    profileTotalWeightEl.textContent = '—';
-  }
+  const summary = computeWeightSummary();
+  const stoneLost = summary ? Math.max(0, Math.round((kgToLbs(summary.lost) / 14) * 10) / 10) : 0;
+  profileScoreWeightLostEl.textContent = `[ ${stoneLost} st Lost ]`;
+  profileScoreFriendsEl.textContent = `[ ${FRIENDS.length} Friends ]`;
 
   openSubView(profileView);
-
-  const history = await loadHistory({ days: 365 });
-  profileDaysActiveEl.textContent = String(history ? history.days.filter((d) => d.calories > 0).length : 0);
 }
 profileBackBtn.addEventListener('click', () => closeSubView(profileView));
 
-profileBioForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  profileBioError.textContent = '';
-  try {
-    const res = await authFetch(`${API}/settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        calorieGoal: state.settings.calorieGoal,
-        macroGoals: state.settings.macroGoals,
-        bio: profileBioInput.value,
-        location: profileLocationInput.value
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to save profile');
-    state.settings = data;
-    profileLocationValueEl.textContent = data.location || 'Add location';
-    showToast('Profile saved');
-  } catch (err) {
-    profileBioError.textContent = err.message;
-  }
-});
+profileGoPremiumBtn.addEventListener('click', () => showToast('Coming soon'));
+profileEditRowBtn.addEventListener('click', () => openProfileDetailsView());
 
 // ---------- Workout Routines ----------
 const workoutsView = document.getElementById('workoutsView');
@@ -7122,41 +7090,193 @@ const RECIPE_DB = [
     directions: ['Cook bulgur according to package directions and cool.', 'Toss with chopped parsley, tomatoes, lemon juice, and olive oil.', 'Slice grilled chicken and serve over the tabbouleh.'],
     photo: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=500&q=80'
   },
-  // ---- GLP-1 Lunches (light, high-protein/fiber, satiating) ----
+  // ---- GLP-1 Lunch's and Dinner (light, high-protein/fiber, satiating) ----
   {
-    id: 'glp1-1', category: 'GLP-1 Lunches', name: 'Lentil & Spinach Soup',
+    id: 'glp1-1', category: "GLP-1 Lunch's and Dinner", name: 'Lentil & Spinach Soup',
     calories: 280, protein: 18, carbs: 40, fat: 5, fiber: 12, prep_time: 30,
     ingredients: ['1 cup red lentils', 'Vegetable broth', 'Spinach', 'Carrot', 'Onion', 'Cumin'],
     directions: ['Sauté onion and carrot until softened.', 'Add lentils, broth, and cumin; simmer 20 minutes until lentils are tender.', 'Stir in spinach until wilted.', 'Blend partially for a creamier texture, if desired.'],
     photo: 'https://images.unsplash.com/photo-1493770348161-369560ae357d?auto=format&fit=crop&w=500&q=80'
   },
   {
-    id: 'glp1-2', category: 'GLP-1 Lunches', name: 'Grilled Chicken Lettuce Wraps',
+    id: 'glp1-2', category: "GLP-1 Lunch's and Dinner", name: 'Grilled Chicken Lettuce Wraps',
     calories: 300, protein: 34, carbs: 12, fat: 12, fiber: 4, prep_time: 20,
     ingredients: ['Butter lettuce leaves', '6oz grilled chicken, diced', 'Shredded carrot', 'Cucumber', 'Peanut-lime sauce'],
     directions: ['Dice grilled chicken into small pieces.', 'Fill lettuce leaves with chicken, carrot, and cucumber.', 'Drizzle with peanut-lime sauce and wrap to eat.'],
     photo: 'https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?auto=format&fit=crop&w=500&q=80'
   },
   {
-    id: 'glp1-3', category: 'GLP-1 Lunches', name: 'Cottage Cheese & Berry Bowl',
+    id: 'glp1-3', category: "GLP-1 Lunch's and Dinner", name: 'Cottage Cheese & Berry Bowl',
     calories: 260, protein: 26, carbs: 24, fat: 6, fiber: 5, prep_time: 5,
     ingredients: ['1.5 cups cottage cheese', 'Mixed berries', 'Sliced almonds', 'Cinnamon'],
     directions: ['Spoon cottage cheese into a bowl.', 'Top with mixed berries and sliced almonds.', 'Finish with a dusting of cinnamon.'],
     photo: 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=500&q=80'
   },
   {
-    id: 'glp1-4', category: 'GLP-1 Lunches', name: 'Turkey & Veggie Lettuce Cups',
+    id: 'glp1-4', category: "GLP-1 Lunch's and Dinner", name: 'Turkey & Veggie Lettuce Cups',
     calories: 290, protein: 30, carbs: 14, fat: 12, fiber: 5, prep_time: 20,
     ingredients: ['Ground turkey', 'Water chestnuts', 'Bell pepper', 'Garlic-ginger sauce', 'Butter lettuce leaves'],
     directions: ['Brown ground turkey in a skillet with garlic-ginger sauce.', 'Stir in diced water chestnuts and bell pepper; cook until tender.', 'Spoon the mixture into lettuce cups to serve.'],
     photo: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?auto=format&fit=crop&w=500&q=80'
   },
   {
-    id: 'glp1-5', category: 'GLP-1 Lunches', name: 'High-Protein Broccoli Cheddar Soup',
+    id: 'glp1-5', category: "GLP-1 Lunch's and Dinner", name: 'High-Protein Broccoli Cheddar Soup',
     calories: 310, protein: 24, carbs: 18, fat: 15, fiber: 6, prep_time: 25,
     ingredients: ['Broccoli florets', 'Chicken broth', 'Reduced-fat cheddar', 'Greek yogurt', 'Onion', 'Garlic'],
     directions: ['Simmer broccoli, onion, and garlic in chicken broth until tender.', 'Blend until mostly smooth, leaving some texture.', 'Stir in cheddar and Greek yogurt until melted and creamy.'],
     photo: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- High Fiber ----
+  {
+    id: 'hf1', category: 'High Fiber', name: 'Black Bean & Sweet Potato Chili',
+    calories: 380, protein: 18, carbs: 58, fat: 8, fiber: 16, prep_time: 35,
+    ingredients: ['2 cups black beans', '1 cup diced sweet potato', '1 can diced tomatoes', '1/2 cup corn', 'Chili powder & cumin', 'Onion & garlic'],
+    directions: ['Sauté onion and garlic until fragrant.', 'Add sweet potato, tomatoes, and spices; simmer 15 minutes.', 'Stir in black beans and corn; simmer 10 more minutes until sweet potato is tender.', 'Ladle into bowls and serve warm.'],
+    photo: 'https://images.unsplash.com/photo-1600335895229-6e75511892c8?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Air Fryer ----
+  {
+    id: 'af1', category: 'Air Fryer', name: 'Air Fryer Lemon Herb Chicken Thighs',
+    calories: 410, protein: 36, carbs: 4, fat: 27, fiber: 1, prep_time: 25,
+    ingredients: ['4 boneless chicken thighs', '1 lemon, zested & juiced', '2 tbsp olive oil', 'Garlic powder', 'Dried oregano', 'Salt & pepper'],
+    directions: ['Toss chicken thighs with olive oil, lemon zest/juice, and seasonings.', 'Preheat air fryer to 380°F (193°C).', 'Air fry for 16-18 minutes, flipping halfway, until crispy and cooked through.', 'Rest 5 minutes before serving.'],
+    photo: 'https://images.unsplash.com/photo-1600628421066-f6bda6a7b976?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Summer Salad ----
+  {
+    id: 'ss1', category: 'Summer Salad', name: 'Watermelon Feta Salad',
+    calories: 260, protein: 7, carbs: 28, fat: 14, fiber: 2, prep_time: 10,
+    ingredients: ['3 cups cubed watermelon', '1/2 cup crumbled feta', 'Fresh mint leaves', 'Baby arugula', 'Balsamic glaze', 'Olive oil'],
+    directions: ['Combine watermelon cubes and arugula in a large bowl.', 'Scatter crumbled feta and torn mint leaves over the top.', 'Drizzle with olive oil and balsamic glaze.', 'Chill 10 minutes before serving.'],
+    photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Men's Health ----
+  {
+    id: 'mh1', category: "Men's Health", name: 'Zinc-Rich Steak & Spinach Bowl',
+    calories: 520, protein: 44, carbs: 32, fat: 22, fiber: 7, prep_time: 25,
+    ingredients: ['6oz lean sirloin steak', '2 cups baby spinach', '1/2 cup cooked farro', 'Pumpkin seeds', 'Cherry tomatoes', 'Olive oil & balsamic'],
+    directions: ['Season steak and sear 3-4 minutes per side; rest and slice.', 'Toss spinach and farro in a bowl with olive oil and balsamic.', 'Top with sliced steak, tomatoes, and pumpkin seeds.', 'Serve immediately.'],
+    photo: 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Grilling ----
+  {
+    id: 'gr1', category: 'Grilling', name: 'Grilled BBQ Chicken Skewers',
+    calories: 390, protein: 38, carbs: 20, fat: 14, fiber: 3, prep_time: 30,
+    ingredients: ['1.5 lb chicken breast, cubed', 'Bell peppers & red onion', '1/2 cup BBQ sauce', 'Olive oil', 'Garlic powder', 'Skewers'],
+    directions: ['Thread chicken, peppers, and onion onto skewers.', 'Brush with olive oil and season with garlic powder.', 'Grill over medium-high heat 10-12 minutes, turning and basting with BBQ sauce.', 'Rest 3 minutes before serving.'],
+    photo: 'https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Women's Health ----
+  {
+    id: 'wh1', category: "Women's Health", name: 'Iron-Boost Lentil & Beet Salad',
+    calories: 340, protein: 16, carbs: 46, fat: 11, fiber: 13, prep_time: 25,
+    ingredients: ['1 cup cooked lentils', '1 cup roasted beets, diced', 'Baby spinach', 'Goat cheese', 'Walnuts', 'Lemon vinaigrette'],
+    directions: ['Toss lentils and spinach in a bowl.', 'Add roasted beets, crumbled goat cheese, and walnuts.', 'Drizzle with lemon vinaigrette and toss gently.', 'Serve chilled or at room temperature.'],
+    photo: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Plant Based Protein ----
+  {
+    id: 'pbp1', category: 'Plant Based Protein', name: 'Crispy Tofu & Edamame Buddha Bowl',
+    calories: 430, protein: 28, carbs: 44, fat: 16, fiber: 10, prep_time: 25,
+    ingredients: ['14oz firm tofu, cubed', '1 cup shelled edamame', '1 cup cooked brown rice', 'Shredded carrot', 'Sesame seeds', 'Soy-ginger dressing'],
+    directions: ['Press and cube tofu, then pan-fry until crispy on all sides.', 'Arrange brown rice, edamame, and shredded carrot in a bowl.', 'Top with crispy tofu and sesame seeds.', 'Drizzle with soy-ginger dressing before serving.'],
+    photo: 'https://images.unsplash.com/photo-1580013759032-c96505e24c1f?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Grab & Go ----
+  {
+    id: 'gg1', category: 'Grab & Go', name: 'Peanut Butter Protein Energy Bites',
+    calories: 220, protein: 12, carbs: 22, fat: 10, fiber: 4, prep_time: 15,
+    ingredients: ['1 cup rolled oats', '1/2 cup peanut butter', '1/3 cup protein powder', '2 tbsp honey', 'Mini chocolate chips', '1 tbsp chia seeds'],
+    directions: ['Mix oats, peanut butter, protein powder, and honey in a bowl.', 'Fold in chocolate chips and chia seeds.', 'Roll into bite-sized balls.', 'Refrigerate at least 30 minutes before packing to go.'],
+    photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- GLP-1 Friendly Breakfast ----
+  {
+    id: 'glpb1', category: 'GLP-1 Friendly Breakfast', name: 'High-Protein Veggie Egg Muffins',
+    calories: 240, protein: 22, carbs: 8, fat: 12, fiber: 2, prep_time: 25,
+    ingredients: ['8 eggs', '1/2 cup egg whites', 'Spinach & bell pepper, diced', 'Reduced-fat cheese', 'Salt & pepper', 'Cooking spray'],
+    directions: ['Preheat oven to 350°F (175°C) and grease a muffin tin.', 'Whisk eggs and egg whites together with salt and pepper.', 'Divide spinach, bell pepper, and cheese among muffin cups; pour egg mixture over top.', 'Bake 18-20 minutes until set.'],
+    photo: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- High Protein Breakfast ----
+  {
+    id: 'hpb1', category: 'High Protein Breakfast', name: 'Protein Pancakes with Berries',
+    calories: 360, protein: 30, carbs: 38, fat: 8, fiber: 5, prep_time: 15,
+    ingredients: ['1 cup oat flour', '1 scoop vanilla protein powder', '2 eggs', '3/4 cup cottage cheese', 'Baking powder', 'Mixed berries'],
+    directions: ['Blend oat flour, protein powder, eggs, cottage cheese, and baking powder until smooth.', 'Cook 1/4-cup portions on a greased griddle until bubbles form, then flip.', 'Cook 1-2 minutes more until golden.', 'Top with mixed berries and serve.'],
+    photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- High Protein Lunch and Dinner ----
+  {
+    id: 'hpld1', category: 'High Protein Lunch and Dinner', name: 'Steak & Sweet Potato Power Plate',
+    calories: 540, protein: 45, carbs: 42, fat: 20, fiber: 6, prep_time: 30,
+    ingredients: ['6oz sirloin steak', '1 large sweet potato, roasted', 'Steamed broccoli', 'Olive oil', 'Garlic & rosemary', 'Salt & pepper'],
+    directions: ['Season steak with garlic, rosemary, salt, and pepper.', 'Sear steak 3-4 minutes per side, then rest and slice.', 'Roast sweet potato wedges at 425°F (220°C) for 25 minutes.', 'Plate steak with sweet potato and steamed broccoli.'],
+    photo: 'https://images.unsplash.com/photo-1600628421066-f6bda6a7b976?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Pre Workout ----
+  {
+    id: 'pw1', category: 'Pre Workout', name: 'Banana Oat Energy Toast',
+    calories: 300, protein: 12, carbs: 48, fat: 9, fiber: 6, prep_time: 8,
+    ingredients: ['2 slices whole grain toast', '1 banana, sliced', '2 tbsp almond butter', '1 tsp honey', 'Cinnamon', 'Chia seeds'],
+    directions: ['Toast the bread until golden.', 'Spread almond butter evenly over each slice.', 'Top with banana slices, a drizzle of honey, and a dusting of cinnamon.', 'Sprinkle with chia seeds and serve 30-45 minutes before training.'],
+    photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Post Workout ----
+  {
+    id: 'pow1', category: 'Post Workout', name: 'Chocolate Protein Recovery Smoothie Bowl',
+    calories: 340, protein: 30, carbs: 38, fat: 8, fiber: 6, prep_time: 8,
+    ingredients: ['1 scoop chocolate protein powder', '1 frozen banana', '3/4 cup milk of choice', '1 tbsp peanut butter', 'Granola', 'Sliced strawberries'],
+    directions: ['Blend protein powder, frozen banana, milk, and peanut butter until thick and smooth.', 'Pour into a bowl.', 'Top with granola and sliced strawberries.', 'Enjoy within 30-60 minutes post-workout.'],
+    photo: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Under 500 Calories ----
+  {
+    id: 'u500-1', category: 'Under 500 Calories', name: 'Shrimp & Vegetable Stir-Fry',
+    calories: 340, protein: 32, carbs: 24, fat: 12, fiber: 5, prep_time: 20,
+    ingredients: ['1 lb shrimp, peeled', 'Broccoli, snap peas & carrots', 'Garlic & ginger', 'Low-sodium soy sauce', '1 tsp sesame oil', 'Green onion'],
+    directions: ['Sauté garlic and ginger in sesame oil until fragrant.', 'Add shrimp and cook 2-3 minutes per side until pink.', 'Add vegetables and stir-fry 4-5 minutes until crisp-tender.', 'Toss with soy sauce and garnish with green onion.'],
+    photo: 'https://images.unsplash.com/photo-1580013759032-c96505e24c1f?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Breakfast ----
+  {
+    id: 'bf1', category: 'Breakfast', name: 'Veggie & Cheese Omelette',
+    calories: 310, protein: 22, carbs: 8, fat: 20, fiber: 2, prep_time: 12,
+    ingredients: ['3 eggs', 'Bell pepper & onion, diced', 'Shredded cheddar', 'Spinach', 'Salt & pepper', '1 tsp butter'],
+    directions: ['Whisk eggs with salt and pepper.', 'Melt butter in a nonstick pan and sauté pepper, onion, and spinach.', 'Pour in eggs and cook until mostly set.', 'Sprinkle cheese over half, fold, and serve.'],
+    photo: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Lunch ----
+  {
+    id: 'ln1', category: 'Lunch', name: 'Chicken Caesar Wrap',
+    calories: 420, protein: 32, carbs: 34, fat: 18, fiber: 4, prep_time: 15,
+    ingredients: ['Whole wheat wrap', 'Grilled chicken, sliced', 'Romaine lettuce, chopped', 'Parmesan shavings', 'Caesar dressing', 'Cherry tomatoes'],
+    directions: ['Lay the wrap flat and layer romaine lettuce down the center.', 'Add sliced chicken, cherry tomatoes, and Parmesan.', 'Drizzle with Caesar dressing.', 'Roll tightly and slice in half to serve.'],
+    photo: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Dinner ----
+  {
+    id: 'dn1', category: 'Dinner', name: 'One-Pan Garlic Butter Salmon & Veggies',
+    calories: 460, protein: 38, carbs: 18, fat: 26, fiber: 5, prep_time: 25,
+    ingredients: ['6oz salmon fillet', 'Broccoli & baby potatoes', '3 tbsp garlic butter', 'Lemon', 'Fresh parsley', 'Salt & pepper'],
+    directions: ['Preheat oven to 400°F (200°C).', 'Arrange salmon, broccoli, and baby potatoes on a sheet pan.', 'Dot with garlic butter and season with salt and pepper.', 'Roast 18-20 minutes; finish with lemon and parsley.'],
+    photo: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Immune Support ----
+  {
+    id: 'imm1', category: 'Immune Support', name: 'Ginger Turmeric Chicken Soup',
+    calories: 280, protein: 26, carbs: 20, fat: 10, fiber: 4, prep_time: 35,
+    ingredients: ['Shredded chicken breast', 'Carrots & celery, diced', 'Fresh ginger & turmeric', 'Garlic', 'Chicken broth', 'Fresh lemon juice'],
+    directions: ['Sauté garlic, ginger, carrots, and celery until fragrant.', 'Add chicken broth and turmeric; bring to a simmer.', 'Stir in shredded chicken and simmer 15 minutes.', 'Finish with fresh lemon juice before serving.'],
+    photo: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Vegetarian ----
+  {
+    id: 'veg1', category: 'Vegetarian', name: 'Chickpea & Spinach Curry',
+    calories: 380, protein: 16, carbs: 46, fat: 14, fiber: 11, prep_time: 30,
+    ingredients: ['2 cans chickpeas', '4 cups baby spinach', 'Coconut milk', 'Curry powder', 'Diced tomatoes', 'Onion & garlic'],
+    directions: ['Sauté onion and garlic until soft.', 'Stir in curry powder, tomatoes, and coconut milk; simmer 10 minutes.', 'Add chickpeas and simmer 10 more minutes.', 'Fold in spinach until wilted and serve over rice.'],
+    photo: 'https://images.unsplash.com/photo-1600335895229-6e75511892c8?auto=format&fit=crop&w=500&q=80'
   },
   // ---- Low Carb ----
   {
@@ -7193,8 +7313,93 @@ const RECIPE_DB = [
     ingredients: ['1 lb sliced beef sirloin', 'Bell peppers', 'Onion', 'Soy sauce', 'Ginger', 'Sesame oil'],
     directions: ['Sear sliced beef in a hot wok until browned; set aside.', 'Stir-fry bell peppers and onion until crisp-tender.', 'Return beef to the wok with soy sauce, ginger, and sesame oil; toss to combine.'],
     photo: 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Pantry Staples ----
+  {
+    id: 'ps1', category: 'Pantry Staples', name: 'Garlic Butter Pasta with Canned Tuna',
+    calories: 430, protein: 28, carbs: 52, fat: 12, fiber: 3, prep_time: 20,
+    ingredients: ['8oz pasta', '2 cans tuna, drained', '3 cloves garlic, minced', '2 tbsp butter', 'Red pepper flakes', 'Parmesan cheese'],
+    directions: ['Cook pasta according to package directions; reserve 1/2 cup pasta water.', 'Melt butter in a skillet and sauté garlic until fragrant.', 'Add tuna and red pepper flakes, breaking the tuna apart gently.', 'Toss with pasta, a splash of pasta water, and Parmesan.'],
+    photo: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=500&q=80'
+  },
+  // ---- Holiday Recipes ----
+  {
+    id: 'hol1', category: 'Holiday Recipes', name: 'Herb-Roasted Turkey Breast with Cranberry Glaze',
+    calories: 380, protein: 42, carbs: 22, fat: 9, fiber: 2, prep_time: 55,
+    ingredients: ['2 lb turkey breast', 'Fresh rosemary & thyme', '2 tbsp olive oil', '1/2 cup cranberry sauce', 'Garlic', 'Salt & pepper'],
+    directions: ['Preheat oven to 375°F (190°C).', 'Rub turkey breast with olive oil, garlic, herbs, salt, and pepper.', 'Roast 45-50 minutes until internal temperature reaches 165°F (74°C).', 'Rest 10 minutes, then brush with warmed cranberry glaze before slicing.'],
+    photo: 'https://images.unsplash.com/photo-1600628421066-f6bda6a7b976?auto=format&fit=crop&w=500&q=80'
   }
 ];
+
+// The 26 category rows required for Recipe Discovery, in the exact order
+// they should render. Every category has at least one authored RECIPE_DB
+// entry above; generateCategoryRecipes() pads each row to 10-20 cards.
+const RECIPE_CATEGORY_ORDER = [
+  'High Fiber', 'Air Fryer', 'Summer Salad', "Men's Health", 'Grilling', "Women's Health",
+  'Mediterranean', 'Plant Based Protein', 'Grab & Go', "GLP-1 Lunch's and Dinner", 'GLP-1 Friendly Breakfast',
+  'High Protein', 'High Protein Breakfast', 'High Protein Lunch and Dinner', 'Pre Workout', 'Post Workout',
+  'Under 500 Calories', 'Breakfast', 'Lunch', 'Dinner', 'Immune Support', 'Vegetarian', 'Low Carb',
+  'Gut Health', 'Pantry Staples', 'Holiday Recipes'
+];
+
+// Real, already-verified Unsplash photo URLs pulled from RECIPE_DB itself,
+// reused (rotated per category) as placeholders for generated card variants
+// so every mutated card still points at a working image.
+const RECIPE_PHOTO_POOL = [...new Set(RECIPE_DB.map((r) => r.photo))];
+
+const RECIPE_NAME_MODIFIERS = [
+  'Quick', 'Zesty', 'Weeknight', 'Family-Style', 'Light', 'Hearty', 'Fresh',
+  'Simple', 'Speedy', 'Rustic', 'Classic', 'Bright', 'Cozy', 'Garden', 'Skillet', 'Easy'
+];
+
+const RECIPE_INGREDIENT_SWAPS = [
+  'baby spinach', 'arugula', 'kale', 'shredded carrots', 'snap peas', 'bell pepper strips',
+  'cherry tomatoes', 'sliced cucumber', 'roasted broccoli', 'sautéed mushrooms', 'diced zucchini',
+  'shredded red cabbage', 'baby kale', 'watercress', 'microgreens'
+];
+
+// Mutates a base recipe into a distinct variant for the given category:
+// shifts calories/prep time slightly, swaps a secondary ingredient, and
+// rotates in a different (still-real) Unsplash placeholder.
+function mutateRecipeForCategory(base, category, seedIndex) {
+  const modifier = RECIPE_NAME_MODIFIERS[seedIndex % RECIPE_NAME_MODIFIERS.length];
+  const calorieShift = ((seedIndex % 5) - 2) * 15;
+  const prepShift = ((seedIndex % 3) - 1) * 4;
+  const ingredients = base.ingredients.slice();
+  if (ingredients.length > 1) {
+    const swapIdx = 1 + (seedIndex % (ingredients.length - 1));
+    ingredients[swapIdx] = RECIPE_INGREDIENT_SWAPS[(seedIndex + swapIdx) % RECIPE_INGREDIENT_SWAPS.length];
+  }
+  return {
+    ...base,
+    id: `${base.id}-v${seedIndex}`,
+    category,
+    name: `${modifier} ${base.name}`,
+    calories: Math.max(120, base.calories + calorieShift),
+    prep_time: Math.max(5, base.prep_time + prepShift),
+    ingredients,
+    photo: RECIPE_PHOTO_POOL[(seedIndex * 3 + base.id.length) % RECIPE_PHOTO_POOL.length]
+  };
+}
+
+// Returns 10-20 recipe cards for a category: its authored entries plus, if
+// fewer than 10 exist, generated mutations cycled from those same entries.
+function generateCategoryRecipes(category) {
+  const authored = RECIPE_DB.filter((r) => r.category === category);
+  const seeds = authored.length ? authored : RECIPE_DB;
+  const result = authored.slice();
+  let seedIndex = 0;
+  while (result.length < 10 && seedIndex < 40) {
+    result.push(mutateRecipeForCategory(seeds[seedIndex % seeds.length], category, seedIndex));
+    seedIndex++;
+  }
+  return result.slice(0, 20);
+}
+
+// The full, category-padded recipe list used for rendering (Discovery rows,
+// the grid view, and lookups) — built once so repeated renders stay stable.
+const FULL_RECIPE_DB = RECIPE_CATEGORY_ORDER.flatMap(generateCategoryRecipes);
 
 // ---------- Recipe Discovery / Learn Feed ----------
 const discoveryView = document.getElementById('discoveryView');
@@ -7207,7 +7412,7 @@ const recipeGridSearchInput = document.getElementById('recipeGridSearchInput');
 const recipeGridChipsRowEl = document.getElementById('recipeGridChipsRow');
 const recipeGridListEl = document.getElementById('recipeGridList');
 
-const RECIPE_CATEGORIES = [...new Set(RECIPE_DB.map((r) => r.category))];
+const RECIPE_CATEGORIES = RECIPE_CATEGORY_ORDER;
 let recipeGridCategory = 'all';
 
 function renderRecipeDiscovery() {
@@ -7219,7 +7424,7 @@ function renderRecipeDiscovery() {
         <button type="button" class="recipe-view-more-btn" data-category="${escapeHtml(cat)}">View More ›</button>
       </div>
       <div class="wr-carousel">
-        ${RECIPE_DB.filter((r) => r.category === cat).map((r) => `
+        ${FULL_RECIPE_DB.filter((r) => r.category === cat).map((r) => `
           <article class="wr-card recipe-carousel-card" data-recipe-id="${r.id}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)} details">
             <img class="wr-card-thumb" src="${r.photo}" alt="${escapeHtml(r.name)}" loading="lazy" />
             <span class="wr-card-meta">⏱ ${r.prep_time} min · ${r.calories} cal</span>
@@ -7232,7 +7437,7 @@ function renderRecipeDiscovery() {
 }
 
 function findRecipeById(id) {
-  return RECIPE_DB.find((r) => r.id === id);
+  return FULL_RECIPE_DB.find((r) => r.id === id);
 }
 
 // Adapts a RECIPE_DB entry onto the field names the shared #recipe-modal
@@ -7265,9 +7470,18 @@ async function openDiscoveryView() {
 }
 discoveryBackBtn.addEventListener('click', () => closeSubView(discoveryView));
 
+// Populates the category filter chips row once, from RECIPE_CATEGORY_ORDER,
+// keeping the "All" chip that's already hardcoded in index.html.
+function renderRecipeGridChips() {
+  if (recipeGridChipsRowEl.childElementCount > 1) return;
+  recipeGridChipsRowEl.insertAdjacentHTML('beforeend', RECIPE_CATEGORY_ORDER.map((cat) => `
+    <button type="button" class="progress-subnav-btn" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>
+  `).join(''));
+}
+
 function renderRecipeGrid() {
   const q = recipeGridSearchInput.value.trim().toLowerCase();
-  const filtered = RECIPE_DB.filter((r) => {
+  const filtered = FULL_RECIPE_DB.filter((r) => {
     const matchesCategory = recipeGridCategory === 'all' || r.category === recipeGridCategory;
     const matchesQuery = !q || r.name.toLowerCase().includes(q);
     return matchesCategory && matchesQuery;
@@ -7284,6 +7498,7 @@ function renderRecipeGrid() {
 }
 
 function openRecipeGridView(category) {
+  renderRecipeGridChips();
   recipeGridCategory = category || 'all';
   recipeGridTitleEl.textContent = recipeGridCategory === 'all' ? 'All Recipes' : recipeGridCategory;
   recipeGridSearchInput.value = '';
@@ -8390,14 +8605,19 @@ moreProfileHeaderCard.addEventListener('keydown', (e) => {
 // username/email used for auth (see Email Settings, which already treats
 // that as read-only) — so every row here reads/writes one localStorage blob.
 const PROFILE_DETAILS_KEY = 'pure_macros_profile_details';
+const TIME_ZONE_OPTIONS = ['GMT', 'CET', 'EST', 'CST', 'MST', 'PST', 'IST', 'AEST'];
+const UNITS_OPTIONS = ['st, ft/in, cal, mi, oz', 'kg, cm, kJ, km, g'];
 const PROFILE_DETAILS_FIELDS = {
-  username: { label: 'Username', type: 'text', placeholder: 'Enter a username' },
-  height: { label: 'Height', type: 'text', placeholder: 'e.g. 175 cm' },
-  sex: { label: 'Sex', type: 'select', options: ['Male', 'Female', 'Other'] },
-  dob: { label: 'Date of Birth', type: 'date' },
-  location: { label: 'Location', type: 'text', placeholder: 'City, Country' },
-  zipCode: { label: 'Zip Code', type: 'text', placeholder: 'e.g. 10001' },
-  email: { label: 'Email', type: 'text', placeholder: 'you@example.com' }
+  username: { label: 'User Name', type: 'text', placeholder: 'username123', default: 'username123' },
+  profilePhoto: { label: 'Profile Photo', type: 'text', placeholder: 'Paste an image URL', default: '' },
+  height: { label: 'Height', type: 'text', placeholder: '5 ft, 10 in', default: '5 ft, 10 in' },
+  sex: { label: 'Sex', type: 'select', options: ['Male', 'Female', 'Other'], default: 'Male' },
+  dob: { label: 'Date of Birth', type: 'date', default: '2000-01-01' },
+  location: { label: 'Location', type: 'text', placeholder: 'United Kingdom', default: 'United Kingdom' },
+  zipCode: { label: 'Zip/Postal Code', type: 'text', placeholder: '90210', default: '90210' },
+  timeZone: { label: 'Time Zone', type: 'select', options: TIME_ZONE_OPTIONS, default: 'GMT' },
+  email: { label: 'Email Address', type: 'text', placeholder: 'user@example.com', default: 'user@example.com' },
+  units: { label: 'Units', type: 'select', options: UNITS_OPTIONS, default: 'st, ft/in, cal, mi, oz' }
 };
 
 function getProfileDetails() {
@@ -8408,15 +8628,26 @@ function getProfileDetails() {
   }
 }
 
+// 'YYYY-MM-DD' (the <input type="date"> storage format) -> 'DD Mon YYYY'
+// display text. Parsed manually so the day never shifts across timezones.
+function formatDobDisplay(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
+}
+
 function renderProfileDetailsList() {
   const details = getProfileDetails();
-  document.getElementById('profileDetailsUsername').textContent = details.username || state.user?.username || '—';
-  document.getElementById('profileDetailsHeight').textContent = details.height || '—';
-  document.getElementById('profileDetailsSex').textContent = details.sex || '—';
-  document.getElementById('profileDetailsDob').textContent = details.dob || '—';
-  document.getElementById('profileDetailsLocation').textContent = details.location || '—';
-  document.getElementById('profileDetailsZipCode').textContent = details.zipCode || '—';
-  document.getElementById('profileDetailsEmail').textContent = details.email || '—';
+  document.getElementById('profileDetailsUsername').textContent = details.username || state.user?.username || PROFILE_DETAILS_FIELDS.username.default;
+  document.getElementById('profileDetailsProfilePhoto').textContent = details.profilePhoto ? '📷 Photo Set' : '👤 Add Photo';
+  document.getElementById('profileDetailsHeight').textContent = details.height || PROFILE_DETAILS_FIELDS.height.default;
+  document.getElementById('profileDetailsSex').textContent = details.sex || PROFILE_DETAILS_FIELDS.sex.default;
+  document.getElementById('profileDetailsDob').textContent = formatDobDisplay(details.dob || PROFILE_DETAILS_FIELDS.dob.default);
+  document.getElementById('profileDetailsLocation').textContent = details.location || PROFILE_DETAILS_FIELDS.location.default;
+  document.getElementById('profileDetailsZipCode').textContent = details.zipCode || PROFILE_DETAILS_FIELDS.zipCode.default;
+  document.getElementById('profileDetailsTimeZone').textContent = details.timeZone || PROFILE_DETAILS_FIELDS.timeZone.default;
+  document.getElementById('profileDetailsEmail').textContent = details.email || PROFILE_DETAILS_FIELDS.email.default;
+  document.getElementById('profileDetailsUnits').textContent = details.units || PROFILE_DETAILS_FIELDS.units.default;
 }
 
 function openProfileDetailsView() {
@@ -8438,13 +8669,13 @@ function openProfileFieldSheet(field) {
     profileFieldSelectInput.innerHTML = config.options
       .map((opt) => `<option value="${opt}">${opt}</option>`)
       .join('');
-    profileFieldSelectInput.value = details[field] || config.options[0];
+    profileFieldSelectInput.value = details[field] || config.default || config.options[0];
     profileFieldSelectInput.classList.remove('hidden');
     profileFieldTextInput.classList.add('hidden');
   } else {
     profileFieldTextInput.type = config.type === 'date' ? 'date' : 'text';
     profileFieldTextInput.placeholder = config.placeholder || '';
-    profileFieldTextInput.value = details[field] || '';
+    profileFieldTextInput.value = details[field] || (config.type === 'date' ? config.default : '');
     profileFieldTextInput.classList.remove('hidden');
     profileFieldSelectInput.classList.add('hidden');
   }
@@ -8473,6 +8704,12 @@ profileFieldSaveBtn.addEventListener('click', () => {
 });
 
 profileDetailsListEl.addEventListener('click', (e) => {
+  const navRow = e.target.closest('[data-profile-nav]');
+  if (navRow) {
+    const action = MORE_MENU_ACTIONS[navRow.dataset.profileNav];
+    if (action) action();
+    return;
+  }
   const row = e.target.closest('[data-profile-field]');
   if (!row) return;
   openProfileFieldSheet(row.dataset.profileField);
