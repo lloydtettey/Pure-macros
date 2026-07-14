@@ -854,7 +854,9 @@ function setTheme(preference) {
     // still applies for this session, it just won't persist across reloads.
   }
   applyTheme(preference);
-  setTimeout(() => document.body.classList.remove('no-transitions'), 50);
+  // 250ms gives iOS Safari's WebKit engine time to fully finish its layout
+  // and paint cycles for the swap before transitions are re-enabled.
+  setTimeout(() => document.body.classList.remove('no-transitions'), 250);
 }
 
 // Boot-time theme scan: never let a corrupt localStorage value or a thrown

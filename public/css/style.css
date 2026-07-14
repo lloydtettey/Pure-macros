@@ -46,7 +46,7 @@ html, body { background: #0f0f12; color: #fff; }
      overlap once two sheets stacked. */
   --sheet-opaque-bg: #101014;
 
-  --theme-transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  --theme-transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
   color-scheme: dark;
 }
 
@@ -77,12 +77,6 @@ html, body { background: #0f0f12; color: #fff; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
-/* Applied to <body> for one frame around a theme swap so every element's
-   transition/animation is skipped instead of recalculated — without this,
-   toggling data-theme lets every color/background transition fire at once
-   and the recalculation lags visibly on phone GPUs. */
-.no-transitions, .no-transitions * { transition: none !important; animation: none !important; }
 
 /* Kills the browser-native gray tap-flash box and iOS's press-and-hold
    callout menu on every element, for a native-app feel on touch. */
@@ -176,7 +170,7 @@ body {
 .pill-btn,
 .auth-form .field input,
 .theme-switch {
-  transition: var(--theme-transition), transform 0.3s ease, width 0.5s ease;
+  transition: var(--theme-transition), width 0.5s ease;
 }
 
 /* Strict mobile layout: the whole app is locked to a single iPhone-width
@@ -197,7 +191,7 @@ body {
   background: var(--bg) !important;
   opacity: 0;
   transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s ease;
 }
 .app.app-visible {
   opacity: 1;
@@ -324,7 +318,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 .icon-btn:hover {
   background: #3a3a3d;
@@ -343,7 +337,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 .pill-btn:hover {
   background: #3a3a3d;
@@ -365,7 +359,7 @@ body {
      every property (including layout-adjacent ones like padding/radius) on
      every class toggle, which is what was overloading iOS Safari's GPU
      memory allocation pools during view swaps. */
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .card-title {
@@ -447,7 +441,7 @@ body {
   font-size: 13px;
   color: var(--text-2);
   transform: translateY(2px);
-  transition: transform 0.2s ease;
+  transition: none;
 }
 .today-header-title[aria-expanded="true"] .today-header-chevron {
   transform: translateY(2px) rotate(180deg);
@@ -477,7 +471,7 @@ body {
   transform: translateX(-50%) translateY(-6px) scale(0.98);
   pointer-events: none;
   transform-origin: top center;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s ease;
 }
 .calendar-dropdown.open {
   opacity: 1;
@@ -540,7 +534,7 @@ body {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
   transform: translateY(1px);
-  transition: transform 0.2s ease;
+  transition: none;
 }
 .calendar-month-year-btn[aria-expanded="true"] .calendar-month-year-chevron {
   transform: translateY(1px) rotate(180deg);
@@ -689,7 +683,7 @@ body {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 .day-type-btn.active {
   color: #fff;
@@ -739,7 +733,7 @@ body {
   transform: translateX(-50%) translateY(-6px) scale(0.98);
   pointer-events: none;
   transform-origin: top center;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s ease;
 }
 .streak-popover.open {
   opacity: 1;
@@ -880,7 +874,7 @@ body {
   padding: 4px;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .macros-swap-btn:hover { color: var(--neon-cyan); background: var(--card-bg-raised); }
 .macros-swap-btn.active { color: var(--neon-cyan); transform: rotate(180deg); }
@@ -952,7 +946,7 @@ body {
   align-items: center;
   justify-content: center;
   filter: grayscale(1) opacity(0.45);
-  transition: background-color 0.3s ease, border-color 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .cup-btn:hover {
   transform: translateY(-2px);
@@ -1004,7 +998,7 @@ body {
   color: var(--text-1);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .weight-form input:focus {
   border-color: var(--neon-cyan);
@@ -1226,7 +1220,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 .scan-plate-btn:hover {
   background: #0b3034;
@@ -1331,7 +1325,7 @@ body {
   border-bottom: none;
   touch-action: pan-y;
   will-change: transform;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: none;
 }
 .food-item-swipe.food-item-swipe--dragging .food-item { transition: none; }
 .food-item-delete-bg {
@@ -1465,7 +1459,7 @@ body {
   color: var(--card-border);
   cursor: pointer;
   padding: 2px;
-  transition: color 0.2s ease, transform 0.15s ease;
+  transition: color 0.2s ease;
 }
 .sleep-star-btn:active { transform: scale(0.9); }
 .sleep-star-btn.filled { color: var(--neon-yellow, #ffcf3f); }
@@ -1480,7 +1474,7 @@ body {
   font-size: 13px;
   outline: none;
   min-width: 0;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .inline-add-form input::placeholder { color: var(--text-3); }
 .inline-add-form input:focus,
@@ -1498,7 +1492,7 @@ body {
   font-weight: 800;
   cursor: pointer;
   padding: 10px 14px;
-  transition: filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: none;
 }
 .btn-add-inline:hover {
   filter: brightness(1.1);
@@ -1535,7 +1529,7 @@ body {
   box-shadow: var(--shadow-card-hover);
   overflow: hidden;
   transform: scale(0.95) translateY(8px);
-  transition: transform 0.3s ease;
+  transition: none;
 }
 .modal-overlay.open .modal {
   transform: scale(1) translateY(0);
@@ -1598,7 +1592,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .target-profile-section .field input:focus {
   border-color: var(--neon-cyan);
@@ -1640,7 +1634,7 @@ body {
   background: var(--neon-cyan);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: none;
   border: 2px solid #001318;
 }
 .field input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
@@ -1652,7 +1646,7 @@ body {
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
   cursor: pointer;
   border: 2px solid #001318;
-  transition: transform 0.3s ease;
+  transition: none;
 }
 
 .field select {
@@ -1664,7 +1658,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .field select:focus {
   border-color: var(--neon-cyan);
@@ -1702,7 +1696,7 @@ body {
   padding: 7px 14px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
   min-height: 32px;
 }
 .unit-toggle-btn.active {
@@ -1941,7 +1935,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transform: translateX(24px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
   overflow-y: auto;
 }
 .settings-view.open {
@@ -2045,7 +2039,7 @@ body {
   border-radius: 50%;
   background: var(--neon-cyan);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
-  transition: transform 0.3s ease, background 0.3s ease;
+  transition: background 0.3s ease;
 }
 .theme-switch[aria-checked="true"] .theme-switch-thumb {
   transform: translateX(20px);
@@ -2082,7 +2076,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .btn-primary {
@@ -2147,7 +2141,7 @@ body {
   color: var(--text-1);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .scan-modal .field input[type="number"]:focus {
   border-color: var(--neon-cyan);
@@ -2285,7 +2279,7 @@ html.has-session .auth-overlay {
   padding: 32px 26px 26px;
   text-align: center;
   transform: scale(1) translateY(0);
-  transition: transform 0.45s ease;
+  transition: none;
 }
 .auth-overlay.closing .auth-panel {
   transform: scale(0.92) translateY(-24px);
@@ -2351,7 +2345,7 @@ html.has-session .auth-overlay {
   border-radius: 6px;
   cursor: pointer;
   text-align: center;
-  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 .auth-tab.active {
   background: var(--neon-cyan);
@@ -2370,7 +2364,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .auth-form .field input:focus {
   border-color: var(--neon-cyan);
@@ -2423,7 +2417,7 @@ html.has-session .auth-overlay {
   font-weight: 600;
   cursor: pointer;
   box-sizing: border-box;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 .btn-oauth:active { transform: scale(0.97); }
 .btn-oauth svg { width: 18px; height: 18px; flex-shrink: 0; }
@@ -2474,7 +2468,7 @@ html.has-session .auth-overlay {
   padding: 32px 26px 26px;
   text-align: center;
   transform: scale(1) translateY(0);
-  transition: transform 0.45s ease;
+  transition: none;
 }
 .onboarding-overlay:not(.open) .onboarding-panel {
   transform: scale(0.92) translateY(-24px);
@@ -2500,7 +2494,7 @@ html.has-session .auth-overlay {
   height: 7px;
   border-radius: 50%;
   background: var(--card-border);
-  transition: width 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+  transition: width 0.3s ease, border-radius 0.3s ease, background-color 0.3s ease;
 }
 .onboarding-dot.active {
   width: 18px;
@@ -2520,7 +2514,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .onboarding-step .field input:focus {
   border-color: var(--neon-cyan);
@@ -2542,7 +2536,7 @@ html.has-session .auth-overlay {
   box-shadow: var(--shadow-card-hover);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
   z-index: 100;
 }
 .toast.show {
@@ -2577,7 +2571,7 @@ html.has-session .auth-overlay {
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 .progress-subnav-btn:hover { border-color: rgba(0, 229, 255, 0.4); color: var(--text-1); }
 .progress-subnav-btn.active {
@@ -2929,7 +2923,7 @@ html.has-session .auth-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
 }
 .sleep-step-btn:hover { color: var(--neon-violet); border-color: rgba(157, 59, 255, 0.4); }
 .sleep-step-btn:active { transform: scale(0.92); }
@@ -2988,7 +2982,7 @@ html.has-session .auth-overlay {
   border-radius: 6px;
   cursor: pointer;
   min-height: 36px;
-  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 .state-toggle-btn.active {
   background: var(--neon-violet);
@@ -3028,7 +3022,7 @@ html.has-session .auth-overlay {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 6px 22px rgba(0, 229, 255, 0.45);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: none;
 }
 .fab-log-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 229, 255, 0.55); }
 .fab-log-btn:active { transform: scale(0.94); }
@@ -3065,7 +3059,7 @@ html.has-session .auth-overlay {
   display: flex;
   flex-direction: column;
   transform: translate3d(0, 24px, 0);
-  transition: transform 0.35s ease;
+  transition: none;
   will-change: transform, opacity;
   box-sizing: border-box;
   overflow: hidden;
@@ -3274,7 +3268,7 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .log-food-add-btn:hover {
   background: var(--neon-cyan);
@@ -3301,7 +3295,7 @@ html.has-session .auth-overlay {
   border-radius: 12px;
   background: var(--card-bg-raised);
   cursor: pointer;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.25s ease;
   min-width: 0;
 }
 .log-feature-card:hover {
@@ -3391,7 +3385,7 @@ html.has-session .auth-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .log-filter-btn:hover { border-color: rgba(0, 229, 255, 0.4); box-shadow: 0 0 8px rgba(0, 229, 255, 0.2); }
 .log-filter-icon {
@@ -3434,7 +3428,7 @@ html.has-session .auth-overlay {
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease;
 }
 .log-utility-btn:hover { color: var(--text-1); transform: translateY(-1px); }
 .log-utility-btn:active { transform: scale(0.95); }
@@ -3495,7 +3489,7 @@ html.has-session .auth-overlay {
   box-shadow: var(--shadow-card);
   padding: 12px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: none;
 }
 .plan-recipe-card:active { transform: scale(0.98); }
 .plan-recipe-card-media { flex-shrink: 0; }
@@ -3584,7 +3578,7 @@ html.has-session .auth-overlay {
   will-change: transform, opacity;
   transform: translate3d(0, 100%, 0);
   opacity: 0;
-  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 .recipe-modal.open .recipe-modal-sheet {
   transform: translate3d(0, 0, 0);
@@ -3772,7 +3766,7 @@ html.has-session .auth-overlay {
   will-change: transform, opacity;
   transform: translate3d(0, 100%, 0);
   opacity: 0;
-  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 .workout-modal.open .workout-modal-sheet {
   transform: translate3d(0, 0, 0);
@@ -3901,7 +3895,7 @@ html.has-session .auth-overlay {
   will-change: transform, opacity;
   transform: translate3d(0, 24px, 0);
   opacity: 0;
-  transition: transform 0.35s ease, opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 .article-reader-modal.open .article-reader-sheet {
   transform: translate3d(0, 0, 0);
@@ -4080,7 +4074,7 @@ html.has-session .auth-overlay {
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .pw-option-list--compact .pw-option { flex: 1 1 auto; text-align: center; }
 .pw-option:hover { border-color: var(--neon-cyan); }
@@ -4159,7 +4153,7 @@ html.has-session .auth-overlay {
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .pw-diet-card:hover { border-color: var(--neon-cyan); }
 .pw-diet-card.selected {
@@ -4351,7 +4345,7 @@ html.has-session .auth-overlay {
   cursor: grab;
   user-select: none;
   transform-origin: center bottom;
-  transition: transform 0.32s ease, opacity 0.32s ease;
+  transition: opacity 0.32s ease;
   z-index: 1;
   opacity: 0;
   pointer-events: none;
@@ -4406,7 +4400,7 @@ html.has-session .auth-overlay {
   background: var(--card-bg-raised);
   font-size: 22px;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 .pw-swipe-action-btn:active { transform: scale(0.9); }
 .pw-swipe-action-btn:disabled { opacity: 0.4; cursor: default; }
@@ -4508,7 +4502,7 @@ html.has-session .auth-overlay {
   opacity: 0;
   pointer-events: none;
   transform: translate3d(0, 24px, 0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
   will-change: transform, opacity;
   overflow-y: auto;
 }
@@ -4600,7 +4594,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  transition: none;
 }
 .water-quickadd-btn:hover { box-shadow: 0 0 12px rgba(46, 159, 255, 0.35); transform: translateY(-1px); }
 .water-quickadd-btn:active { transform: scale(0.95); }
@@ -4624,7 +4618,7 @@ html.has-session .auth-overlay {
   padding: 6px 0;
   border-radius: calc(var(--radius) - 3px);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .water-unit-btn.active {
   background: var(--neon-blue);
@@ -4648,7 +4642,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: box-shadow 0.25s ease;
+  transition: none;
   margin-top: auto;
 }
 .utility-settings-row:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.2); }
@@ -4668,7 +4662,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  transition: none;
   position: relative;
 }
 .utility-config-row:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.2); }
@@ -4725,7 +4719,7 @@ html.has-session .auth-overlay {
   border-radius: 24px 24px 0 0;
   box-shadow: var(--shadow-card-hover);
   transform: translateY(24px);
-  transition: transform 0.35s ease;
+  transition: none;
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
 }
@@ -4838,7 +4832,7 @@ html.has-session .auth-overlay {
   border-radius: 24px 24px 0 0;
   box-shadow: var(--shadow-card-hover);
   transform: translateY(24px);
-  transition: transform 0.35s ease;
+  transition: none;
   box-sizing: border-box;
   max-height: 85vh;
   overflow-y: auto;
@@ -4886,7 +4880,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.25s ease;
 }
 .exercise-block:hover { box-shadow: 0 0 14px rgba(0, 229, 255, 0.2); transform: translateY(-1px); }
 .exercise-block:active { transform: scale(0.97); }
@@ -4895,7 +4889,7 @@ html.has-session .auth-overlay {
 .exercise-block-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .exercise-block-title { font-size: 15px; font-weight: 800; }
 .exercise-block-sub { font-size: 12px; color: var(--text-2); }
-.exercise-block-chevron { font-size: 16px; color: var(--text-3); transition: transform 0.25s ease; }
+.exercise-block-chevron { font-size: 16px; color: var(--text-3); transition: none; }
 .exercise-block.active .exercise-block-chevron { transform: rotate(90deg); }
 
 /* ---------- Quick Add full screen ---------- */
@@ -4910,7 +4904,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   outline: none;
   min-height: 44px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .utility-screen-body .field select:focus,
 .utility-screen-body .field input:focus {
@@ -4975,7 +4969,7 @@ html.has-session .auth-overlay {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
-  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 .voice-log-mic-btn:active { transform: scale(0.95); }
 .voice-log-mic-btn.listening {
@@ -5007,7 +5001,7 @@ html.has-session .auth-overlay {
   color: var(--text-1);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .exercise-quick-form select:focus,
 .exercise-quick-form input:focus {
@@ -5154,7 +5148,7 @@ html.has-session .auth-overlay {
   font-size: 16px;
   outline: none;
   min-height: 44px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 .community-connect-form .field input:focus,
 .community-connect-form .field select:focus {
@@ -5174,7 +5168,7 @@ html.has-session .auth-overlay {
   font-weight: 800;
   cursor: pointer;
   margin-top: 4px;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 .btn-solid-blue:hover { background: #1c86e8; box-shadow: 0 0 14px rgba(46, 159, 255, 0.4); }
 .btn-solid-blue:active { transform: scale(0.97); }
@@ -5251,7 +5245,7 @@ html.has-session .auth-overlay {
   cursor: pointer;
   min-height: 44px;
   box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
-  transition: filter 0.2s ease, transform 0.2s ease;
+  transition: none;
 }
 .routine-start-btn:hover { filter: brightness(1.05); }
 .routine-start-btn:active { transform: scale(0.97); }
@@ -5541,7 +5535,7 @@ html.has-session .auth-overlay {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.35s ease;
+  transition: none;
 }
 .sleep-reminder-banner.show { transform: translateX(-50%) translateY(0); }
 .sleep-reminder-banner-icon { font-size: 18px; flex-shrink: 0; }
@@ -5746,7 +5740,7 @@ html.has-session .auth-overlay {
   padding: 9px 22px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 .btn-outline-blue:hover { background: rgba(46, 159, 255, 0.12); }
 .btn-outline-blue:active { transform: scale(0.96); }
@@ -5767,7 +5761,7 @@ html.has-session .auth-overlay {
   padding: 7px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: filter 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 .friend-request-accept-btn { border: none; background: var(--neon-cyan); color: #001318; }
 .friend-request-accept-btn:hover { filter: brightness(1.1); }
@@ -5913,7 +5907,7 @@ html.has-session .auth-overlay {
   height: 20px;
   border-radius: 50%;
   background: var(--text-3);
-  transition: transform 0.3s ease, background 0.3s ease;
+  transition: background 0.3s ease;
 }
 .toggle-switch[aria-checked="true"] .toggle-switch-thumb {
   transform: translateX(18px);
@@ -5944,7 +5938,7 @@ html.has-session .auth-overlay {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 .privacy-danger-row:hover { background: #391919; }
 :root[data-theme="light"] .privacy-danger-row { background: #ffeaea; }
@@ -5965,7 +5959,7 @@ html.has-session .auth-overlay {
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .help-card:hover { border-color: rgba(0, 229, 255, 0.4); }
 .help-card.active { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12); }
@@ -5975,7 +5969,7 @@ html.has-session .auth-overlay {
 .help-faq-item { padding: 10px 12px; background: var(--card-bg-raised); border: 1px solid var(--card-border); border-radius: var(--radius); }
 .help-faq-q-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; background: none; border: none; padding: 0; margin: 0; cursor: pointer; text-align: left; font: inherit; }
 .help-faq-q { font-size: 13px; font-weight: 700; color: var(--text-1); margin: 0; }
-.help-faq-caret { flex-shrink: 0; color: var(--text-2); font-size: 16px; transition: transform 0.2s ease; }
+.help-faq-caret { flex-shrink: 0; color: var(--text-2); font-size: 16px; transition: none; }
 .help-faq-item.open .help-faq-caret { transform: rotate(90deg); color: var(--neon-cyan); }
 .help-faq-a { font-size: 12.5px; color: var(--text-2); margin: 0; line-height: 1.5; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease; }
 .help-faq-item.open .help-faq-a { max-height: 240px; opacity: 1; margin-top: 6px; }
@@ -6034,7 +6028,7 @@ html.has-session .auth-overlay {
   border: 2px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .appearance-card:hover { border-color: var(--text-2); }
 .appearance-card--active { border-color: var(--neon-cyan); box-shadow: 0 0 14px rgba(0, 229, 255, 0.35); }
@@ -6079,7 +6073,7 @@ html.has-session .auth-overlay {
   border-radius: 999px;
   background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.3s ease;
 }
 .unit-segmented[data-active="imperial"] .unit-segmented-thumb {
   transform: translateX(100%);
@@ -6272,7 +6266,7 @@ select {
 .settings-view.settings-view--nested-privacy {
   z-index: 125;
   transform: translate3d(100%, 0, 0);
-  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
 }
 .settings-view.settings-view--nested-privacy.open {
   transform: translate3d(0, 0, 0);
@@ -6314,7 +6308,7 @@ select {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
+  transition: none;
 }
 .btn-email-resend:hover { filter: brightness(1.08); }
 .btn-email-resend:active { transform: scale(0.97); }
@@ -6378,7 +6372,7 @@ select {
   z-index: 400;
   opacity: 0;
   pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.25, 1.4, 0.5, 1), opacity 0.3s ease;
+  transition: opacity 0.3s ease;
   max-width: calc(100% - 32px);
 }
 .ios-top-toast.show { transform: translate(-50%, 0); opacity: 1; }
@@ -6413,3 +6407,11 @@ select {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* Applied to <body> for one frame around a theme swap so every element's
+   transition/animation is skipped instead of recalculated — without this,
+   toggling data-theme lets every color/background transition fire at once
+   and the recalculation lags visibly on phone GPUs. Sets transition-duration
+   directly too, since some WebKit builds honor duration overrides that
+   arrive milliseconds before the shorthand's own cascade resolves. */
+.no-transitions, .no-transitions * { transition: none !important; transition-duration: 0s !important; animation: none !important; }
