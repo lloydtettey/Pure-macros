@@ -262,6 +262,23 @@ const customExerciseError = document.getElementById('customExerciseError');
 const pushNotificationsView = document.getElementById('pushNotificationsView');
 const pushNotificationsBackBtn = document.getElementById('pushNotificationsBackBtn');
 const notifDisabledBanner = document.getElementById('notifDisabledBanner');
+const notifBannerSettingsLink = document.getElementById('notifBannerSettingsLink');
+const quietHoursTimeRow = document.getElementById('quietHoursTimeRow');
+const quietHoursStartInput = document.getElementById('quietHoursStartInput');
+const quietHoursEndInput = document.getElementById('quietHoursEndInput');
+
+const mockDeviceSettingsOverlay = document.getElementById('mockDeviceSettingsOverlay');
+const closeMockDeviceSettings = document.getElementById('closeMockDeviceSettings');
+const mockAllowNotificationsSwitch = document.getElementById('mockAllowNotificationsSwitch');
+
+const iosWheelPickerSheet = document.getElementById('iosWheelPickerSheet');
+const iosWheelPickerBackdrop = document.getElementById('iosWheelPickerBackdrop');
+const iosWheelPickerCloseBtn = document.getElementById('iosWheelPickerCloseBtn');
+const iosWheelPickerSaveBtn = document.getElementById('iosWheelPickerSaveBtn');
+const iosWheelPickerTitle = document.getElementById('iosWheelPickerTitle');
+const iosWheelPickerTrack = document.getElementById('iosWheelPickerTrack');
+const goalsWorkoutsPerWeekRow = document.getElementById('goalsWorkoutsPerWeekRow');
+const goalsMinutesPerWorkoutRow = document.getElementById('goalsMinutesPerWorkoutRow');
 
 const logoutConfirmOverlay = document.getElementById('logoutConfirmOverlay');
 const closeLogoutConfirmModal = document.getElementById('closeLogoutConfirmModal');
@@ -1775,15 +1792,22 @@ addCustomExerciseForm.addEventListener('submit', async (e) => {
 });
 
 // ---------- Push Notifications sub-view (Settings > Push Notifications) ----------
+// The system permission itself is simulated (see #mockDeviceSettingsOverlay
+// below) rather than requested through the real Notification API, so the
+// banner's on/off state lives in localStorage instead of Notification.permission.
+function isPushNotificationsAllowed() {
+  return localStorage.getItem('push_notifications_enabled') === 'true';
+}
+
 function renderPushNotifications() {
   const notifications = state.settings?.notifications || {};
   pushNotificationsView.querySelectorAll('[data-notif-key]').forEach((box) => {
     box.checked = Boolean(notifications[box.dataset.notifKey]);
   });
-  // Mirrors MyFitnessPal: surface the OS/browser notification permission state
-  // so the user knows toggles below won't fire until it's granted.
-  const permission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
-  notifDisabledBanner.hidden = permission === 'granted';
+  quietHoursTimeRow.hidden = !notifications.quietHours;
+  quietHoursStartInput.value = localStorage.getItem('quiet_hours_start') || '22:00';
+  quietHoursEndInput.value = localStorage.getItem('quiet_hours_end') || '07:00';
+  notifDisabledBanner.hidden = isPushNotificationsAllowed();
 }
 
 async function openPushNotificationsView() {
@@ -1803,6 +1827,8 @@ pushNotificationsView.addEventListener('change', async (e) => {
   const box = e.target.closest('[data-notif-key]');
   if (!box) return;
   const key = box.dataset.notifKey;
+  localStorage.setItem(`notif_${key}`, String(box.checked));
+  if (key === 'quietHours') quietHoursTimeRow.hidden = !box.checked;
   try {
     const res = await authFetch(`${API}/settings/notifications`, {
       method: 'POST',
@@ -1814,7 +1840,40 @@ pushNotificationsView.addEventListener('change', async (e) => {
     state.settings = data;
   } catch (err) {
     box.checked = !box.checked;
+    localStorage.setItem(`notif_${key}`, String(box.checked));
+    if (key === 'quietHours') quietHoursTimeRow.hidden = !box.checked;
     showToast(err.message, true);
+  }
+});
+
+quietHoursStartInput.addEventListener('change', () => localStorage.setItem('quiet_hours_start', quietHoursStartInput.value));
+quietHoursEndInput.addEventListener('change', () => localStorage.setItem('quiet_hours_end', quietHoursEndInput.value));
+
+// ---------- Simulated iOS System Settings pop-up (banner "Settings" link) ----------
+function openMockDeviceSettings() {
+  mockAllowNotificationsSwitch.setAttribute('aria-checked', String(isPushNotificationsAllowed()));
+  mockDeviceSettingsOverlay.classList.add('open');
+}
+function closeMockDeviceSettingsFn() {
+  mockDeviceSettingsOverlay.classList.remove('open');
+}
+notifBannerSettingsLink.addEventListener('click', openMockDeviceSettings);
+closeMockDeviceSettings.addEventListener('click', closeMockDeviceSettingsFn);
+mockDeviceSettingsOverlay.addEventListener('click', (e) => {
+  if (e.target === mockDeviceSettingsOverlay) closeMockDeviceSettingsFn();
+});
+
+mockAllowNotificationsSwitch.addEventListener('click', () => {
+  const next = mockAllowNotificationsSwitch.getAttribute('aria-checked') !== 'true';
+  mockAllowNotificationsSwitch.setAttribute('aria-checked', String(next));
+  localStorage.setItem('push_notifications_enabled', String(next));
+  if (next) {
+    closeMockDeviceSettingsFn();
+    notifDisabledBanner.classList.add('fading-out');
+    setTimeout(() => {
+      notifDisabledBanner.hidden = true;
+      notifDisabledBanner.classList.remove('fading-out');
+    }, 350);
   }
 });
 
@@ -1884,6 +1943,74 @@ function closeGoalsView() {
 }
 
 goalsBackBtn.addEventListener('click', closeGoalsView);
+
+// ---------- iOS-style 3D snap drum wheel picker (Goals -> Workouts/Week & Minutes/Workout) ----------
+// Reuses the buildWheelColumn/scrollWheelToIndex/getWheelSelectedIndex/
+// highlightWheelSelection helpers defined below for the Add Weight sheet —
+// they're generic over any .wheel-col element, just with a single full-width
+// column here instead of three narrow ones.
+const GOAL_WHEEL_FIELDS = {
+  workoutsPerWeek: {
+    title: 'Workouts / Week',
+    values: Array.from({ length: 29 }, (_, i) => i), // 0-28
+    format: (v) => String(v),
+    fallback: 3
+  },
+  minutesPerWorkout: {
+    title: 'Minutes / Workout',
+    values: Array.from({ length: 361 }, (_, i) => i), // 0-360 in 1-minute increments
+    format: (v) => `${v} min`,
+    fallback: 45
+  }
+};
+
+let activeGoalWheelField = null;
+
+function openGoalWheelPicker(field) {
+  const config = GOAL_WHEEL_FIELDS[field];
+  if (!config) return;
+  activeGoalWheelField = field;
+  iosWheelPickerTitle.textContent = config.title;
+  buildWheelColumn(iosWheelPickerTrack, config.values, config.format);
+  const current = state.settings?.[field] ?? config.fallback;
+  scrollWheelToIndex(iosWheelPickerTrack, Math.max(0, Math.min(config.values.length - 1, current)));
+  highlightWheelSelection(iosWheelPickerTrack);
+  iosWheelPickerSheet.classList.add('open');
+}
+
+function closeGoalWheelPicker() {
+  iosWheelPickerSheet.classList.remove('open');
+  activeGoalWheelField = null;
+}
+
+goalsWorkoutsPerWeekRow.addEventListener('click', () => openGoalWheelPicker('workoutsPerWeek'));
+goalsMinutesPerWorkoutRow.addEventListener('click', () => openGoalWheelPicker('minutesPerWorkout'));
+iosWheelPickerCloseBtn.addEventListener('click', closeGoalWheelPicker);
+iosWheelPickerBackdrop.addEventListener('click', closeGoalWheelPicker);
+setupWheelScrollHighlight(iosWheelPickerTrack);
+
+iosWheelPickerSaveBtn.addEventListener('click', async () => {
+  const field = activeGoalWheelField;
+  const config = GOAL_WHEEL_FIELDS[field];
+  if (!field || !config) return;
+  const idx = Math.max(0, Math.min(config.values.length - 1, getWheelSelectedIndex(iosWheelPickerTrack)));
+  const value = config.values[idx];
+  try {
+    const res = await authFetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update goal');
+    state.settings = data;
+    localStorage.setItem(`goal_${field}`, String(value));
+    closeGoalWheelPicker();
+    requestAnimationFrame(() => renderGoalsView());
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
 
 // ---------- Additional Nutrient Goals sub-view (nested full-screen view, opened from Goals) ----------
 // Daily Value-style reference targets (FDA 2016 label update), keyed the same

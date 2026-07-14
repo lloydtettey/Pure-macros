@@ -1125,6 +1125,24 @@
     </div>
   </div>
 
+  <!-- iOS-style 3D Snap Drum Wheel Picker Sheet (Goals -> Workouts/Week & Minutes/Workout) -->
+  <div class="wheel-sheet" id="iosWheelPickerSheet">
+    <div class="wheel-sheet-backdrop" id="iosWheelPickerBackdrop"></div>
+    <div class="wheel-sheet-panel">
+      <div class="wheel-sheet-bar">
+        <button type="button" class="icon-btn" id="iosWheelPickerCloseBtn" aria-label="Close">✕</button>
+        <span class="wheel-sheet-title" id="iosWheelPickerTitle">—</span>
+        <button type="button" class="icon-btn utility-screen-save" id="iosWheelPickerSaveBtn" aria-label="Save">✓</button>
+      </div>
+      <div class="wheel-columns ios-wheel-picker-columns">
+        <div class="wheel-selection-indicator" aria-hidden="true"></div>
+        <div class="wheel-col" id="iosWheelPickerTrack"></div>
+        <div class="ios-wheel-picker-fade ios-wheel-picker-fade--top" aria-hidden="true"></div>
+        <div class="ios-wheel-picker-fade ios-wheel-picker-fade--bottom" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Exercise bottom sheet (opened from the log overlay's utility dock) -->
   <div class="exercise-sheet" id="addExerciseSheet">
     <div class="exercise-sheet-panel" id="addExerciseSheetPanel">
@@ -2329,7 +2347,7 @@
       <span class="settings-view-header-spacer" aria-hidden="true"></span>
     </header>
     <div class="settings-view-body">
-      <p class="notif-disabled-banner" id="notifDisabledBanner" hidden>Notifications are currently disabled. To receive notifications, go to Settings.</p>
+      <p class="notif-disabled-banner" id="notifDisabledBanner" hidden>Notifications are currently disabled for Pure Macros. To receive notifications, go to <button type="button" class="notif-banner-settings-link" id="notifBannerSettingsLink">Settings</button>.</p>
 
       <h2 class="notif-section-header">Send me a push notification when</h2>
       <section class="card more-menu-card">
@@ -2358,9 +2376,42 @@
             <span class="more-menu-title">Do not notify me between</span>
             <input type="checkbox" class="notif-toggle-circle" data-notif-key="quietHours" aria-label="Toggle quiet hours" />
           </li>
+          <li class="more-menu-item quiet-hours-time-row" id="quietHoursTimeRow" hidden>
+            <label class="quiet-hours-time-field">
+              <span class="quiet-hours-time-label">Start</span>
+              <input type="time" id="quietHoursStartInput" value="22:00" />
+            </label>
+            <label class="quiet-hours-time-field">
+              <span class="quiet-hours-time-label">End</span>
+              <input type="time" id="quietHoursEndInput" value="07:00" />
+            </label>
+          </li>
         </ul>
       </section>
       <p class="notif-footer-note">Notifications may be delayed while your device is locked or Low Power Mode is enabled, and can always be managed from your device's system settings.</p>
+    </div>
+  </div>
+
+  <!-- Simulated iOS System Settings pop-up (Push Notifications banner -> "Settings" link) -->
+  <div class="modal-overlay" id="mockDeviceSettingsOverlay">
+    <div class="modal mock-settings-modal">
+      <div class="modal-header">
+        <h3>Pure Macros</h3>
+        <button class="icon-btn" id="closeMockDeviceSettings" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <section class="card more-menu-card">
+          <ul class="more-menu-list">
+            <li class="more-menu-item">
+              <span class="more-menu-title">Allow Notifications</span>
+              <button type="button" class="toggle-switch toggle-switch--green" id="mockAllowNotificationsSwitch" role="switch" aria-checked="false" aria-label="Allow Notifications">
+                <span class="toggle-switch-thumb"></span>
+              </button>
+            </li>
+          </ul>
+        </section>
+        <p class="mock-settings-hint">This simulates your device's system notification permission for Pure Macros.</p>
+      </div>
     </div>
   </div>
 
@@ -2435,11 +2486,11 @@
       <section class="card">
         <h2 class="card-title goals-section-title goals-section-title--flush">Fitness Goals</h2>
         <div class="profile-details">
-          <div class="profile-row">
+          <div class="profile-row profile-row--clickable" id="goalsWorkoutsPerWeekRow" data-goal-field="workoutsPerWeek">
             <span class="profile-label">Workouts/Week</span>
             <span class="profile-value" id="goalsWorkoutsPerWeek">—</span>
           </div>
-          <div class="profile-row">
+          <div class="profile-row profile-row--clickable" id="goalsMinutesPerWorkoutRow" data-goal-field="minutesPerWorkout">
             <span class="profile-label">Minutes/Workout</span>
             <span class="profile-value" id="goalsMinutesPerWorkout">—</span>
           </div>

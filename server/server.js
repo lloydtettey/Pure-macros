@@ -833,6 +833,8 @@ const SETTINGS_VALIDATORS = {
   currentWeightKg: (v) => v === null || (typeof v === 'number' && !Number.isNaN(v) && v > 0),
   activityLevel: (v) => ACTIVITY_LEVELS.includes(v),
   fitnessGoal: (v) => FITNESS_GOALS.includes(v),
+  workoutsPerWeek: (v) => Number.isInteger(v) && v >= 0 && v <= 28,
+  minutesPerWorkout: (v) => Number.isInteger(v) && v >= 0 && v <= 360,
   bio: (v) => typeof v === 'string',
   location: (v) => typeof v === 'string',
   displayName: (v) => typeof v === 'string',

@@ -1705,6 +1705,13 @@ body {
   z-index: 130;
 }
 
+/* Opened from inside the Push Notifications sub-view (.settings-view,
+   z-index: 120) via the disabled-notifications banner's "Settings" link —
+   same stacking need as #macroGoalsOverlay above. */
+#mockDeviceSettingsOverlay {
+  z-index: 130;
+}
+
 /* Opened from inside the log overlay's feature grid (.log-overlay, z-index:
    210) and stays stacked on top of it while open, mirroring the Voice Log
    sheet (.exercise-sheet, z-index: 220) so closing it reveals the still-open
@@ -1793,6 +1800,10 @@ body {
 .profile-label { font-size: 13px; color: var(--text-2); }
 .profile-value { font-size: 13px; font-weight: 700; color: var(--text-1); }
 .profile-value--cyan { color: var(--neon-cyan); }
+
+.profile-row--clickable { cursor: pointer; transition: border-color 0.15s ease; }
+.profile-row--clickable:hover { border-color: var(--neon-cyan); }
+.profile-row--clickable .profile-value { color: var(--neon-cyan); }
 
 /* ---------- Goals sub-view ---------- */
 .goals-section-title { padding: var(--pad-lg) var(--pad-lg) 0; }
@@ -4397,6 +4408,33 @@ html.has-session .auth-overlay {
   pointer-events: none;
 }
 
+/* Single full-width drum column (Goals -> Workouts/Week & Minutes/Workout),
+   layered over .wheel-columns/.wheel-col from the weight picker above with
+   top/bottom fade masks so off-center choices dim out toward the edges. */
+/* Absolutely-positioned siblings otherwise always paint above flex items
+   (they're promoted past the inline-block paint step regardless of DOM
+   order), which buried the centered number under the indicator's opaque
+   background — pull the column itself above it explicitly. */
+.ios-wheel-picker-columns .wheel-col { max-width: none; width: 100%; position: relative; z-index: 1; }
+.ios-wheel-picker-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: var(--panel-glass-bg);
+  pointer-events: none;
+}
+.ios-wheel-picker-fade--top {
+  top: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+}
+.ios-wheel-picker-fade--bottom {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(0deg, #000 0%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 0%, transparent 100%);
+}
+
 /* ---------- Add Exercise bottom sheet ---------- */
 .exercise-sheet {
   position: fixed;
@@ -5474,6 +5512,44 @@ html.has-session .auth-overlay {
   color: var(--text-1);
   font-size: 13px;
   line-height: 1.5;
+  transition: opacity 0.35s ease;
+}
+.notif-disabled-banner.fading-out { opacity: 0; }
+
+.notif-banner-settings-link {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--neon-cyan);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Simulated iOS System Settings pop-up (Push Notifications banner -> "Settings") */
+.mock-settings-modal .modal-body { gap: 12px; }
+.mock-settings-hint { margin: 0; padding: 0 4px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+/* "Do not notify me between" quiet-hours start/end time picker, appended
+   inline under the checklist row when the quietHours toggle is checked. */
+.quiet-hours-time-row[hidden] { display: none; }
+.quiet-hours-time-row { gap: 16px; }
+.quiet-hours-time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.quiet-hours-time-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.quiet-hours-time-field input[type="time"] {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 8px;
+  color: var(--text-1);
+  font-size: 13px;
 }
 
 .notif-section-header {
