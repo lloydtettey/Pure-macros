@@ -336,9 +336,13 @@ const waterCupsEl = document.getElementById('waterCups');
 const waterFilledEl = document.getElementById('waterFilled');
 
 const weightForm = document.getElementById('weightForm');
+const weightDateInput = document.getElementById('weightDateInput');
 const weightInput = document.getElementById('weightInput');
 const weightError = document.getElementById('weightError');
 const weightTimelineEl = document.getElementById('weightTimeline');
+const weightChartAxisEl = document.getElementById('weightChartAxis');
+const weightChartSvgEl = document.getElementById('weightChartSvg');
+const weightChartEmptyEl = document.getElementById('weightChartEmpty');
 
 const progressSubnavBtns = document.querySelectorAll('.progress-subnav-btn');
 const progressSubviews = document.querySelectorAll('.progress-subview');
@@ -1123,8 +1127,12 @@ mealCards.forEach((card) => {
 
   // Automated Smart Nutrition Lookup Engine — once the user finishes typing a
   // custom food name (on blur), ask the server for a per-100g estimate and
-  // auto-fill kcal/protein/carbs/fat, then recompute the preview so an
-  // already-entered weight immediately reflects the new density.
+  // auto-fill kcal/protein/carbs/fat. If the name carried a parseable portion
+  // ("chicken breast 150g", "2 scoops whey protein", "1 medium apple") the
+  // server also resolves that to a gram figure in estimate.grams; auto-fill
+  // the Weight field with it (only if the user hasn't already typed their
+  // own) so the density and quantity combine correctly, then recompute the
+  // preview so it reflects both immediately.
   let nutritionLookupSeq = 0;
   customNameInput.addEventListener('blur', async () => {
     const name = customNameInput.value.trim();
@@ -1136,6 +1144,7 @@ mealCards.forEach((card) => {
     customProteinInput.value = estimate.protein;
     customCarbsInput.value = estimate.carbs;
     customFatInput.value = estimate.fat;
+    if (!gramsInput.value && estimate.grams) gramsInput.value = estimate.grams;
     updateFoodPreview(card);
   });
 
@@ -2878,8 +2887,9 @@ function autoEstimateMacros(name, kcal, grams) {
 // Automated Smart Nutrition Lookup Engine — asks the server's
 // POST /api/estimate-nutrition for a per-100g { kcal, protein, carbs, fat }
 // estimate for a typed food name (staple dictionary match, or a generic
-// 4/4/9-balanced fallback). Returns null on any network/parse failure so
-// callers can silently skip auto-population rather than surface an error.
+// 4/4/9-balanced fallback), plus a parsed/default portion size in `grams`.
+// Returns null on any network/parse failure so callers can silently skip
+// auto-population rather than surface an error.
 async function fetchNutritionEstimate(foodName) {
   try {
     const res = await fetch(`${API}/estimate-nutrition`, {
@@ -3311,11 +3321,62 @@ function renderWeights() {
     empty.className = 'empty-state';
     empty.textContent = 'No weight logged yet.';
     weightTimelineEl.appendChild(empty);
-    return;
+  } else {
+    // state.weights arrives newest-first from GET /api/weights, so this list
+    // is already in descending order without a client-side sort.
+    for (const w of state.weights) {
+      weightTimelineEl.appendChild(buildWeightEntry(w));
+    }
   }
-  for (const w of state.weights) {
-    weightTimelineEl.appendChild(buildWeightEntry(w));
+  renderWeightChart();
+}
+
+// Glowing cyan trend line across every logged weigh-in, reusing the same
+// .macro-history-* SVG conventions as the Weight & Measurements chart
+// (renderWeightMeasurementsChart) so both charts render identically.
+function renderWeightChart() {
+  weightChartAxisEl.innerHTML = '';
+  weightChartSvgEl.innerHTML = '';
+
+  const chronological = state.weights.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const hasEnoughData = chronological.length >= 2;
+  weightChartEmptyEl.classList.toggle('hidden', hasEnoughData);
+  weightChartSvgEl.classList.toggle('hidden', !hasEnoughData);
+  weightChartAxisEl.classList.toggle('hidden', !hasEnoughData);
+  if (!hasEnoughData) return;
+
+  const unit = getWeightUnit();
+  const values = chronological.map((w) => (unit === 'lbs' ? kgToLbs(w.weight) : w.weight));
+  const maxVal = Math.max(...values);
+  const minVal = Math.min(...values);
+  const ceiling = maxVal === minVal ? maxVal + 1 : maxVal;
+  const floor = maxVal === minVal ? Math.max(0, minVal - 1) : minVal;
+
+  for (let i = 4; i >= 0; i--) {
+    const span = document.createElement('span');
+    span.textContent = Math.round(floor + ((ceiling - floor) / 4) * i);
+    weightChartAxisEl.appendChild(span);
   }
+
+  const width = 300;
+  const height = 140;
+  const padY = 6;
+  const plotHeight = height - padY * 2;
+  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
+  const points = values
+    .map((v, i) => {
+      const x = values.length > 1 ? i * stepX : width / 2;
+      const y = padY + plotHeight - ((v - floor) / (ceiling - floor)) * plotHeight;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const gridLines = [0, 1, 2, 3, 4]
+    .map((i) => {
+      const y = (padY + (plotHeight / 4) * i).toFixed(1);
+      return `<line class="macro-history-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}" />`;
+    })
+    .join('');
+  weightChartSvgEl.innerHTML = `${gridLines}<polyline class="macro-history-line cyan" points="${points}" />`;
 }
 
 function buildWeightEntry(entry) {
@@ -3342,7 +3403,10 @@ function formatDateLabel(dateStr) {
 }
 
 // Weight is always stored server-side in kg; a lbs entry is converted before
-// the request goes out, and results are converted back for display.
+// the request goes out, and results are converted back for display. The date
+// picker defaults to the active diary date (see openWeightSubtab) but can be
+// backdated — POST /api/weights upserts by date, so logging again for a date
+// that already has an entry updates it instead of duplicating.
 async function handleWeightSubmit(e) {
   e.preventDefault();
   weightError.textContent = '';
@@ -3351,12 +3415,13 @@ async function handleWeightSubmit(e) {
     weightError.textContent = 'Enter a valid weight';
     return;
   }
+  const date = weightDateInput.value || state.date;
   const weightKg = getWeightUnit() === 'lbs' ? lbsToKg(entered) : entered;
   try {
     const res = await authFetch(`${API}/weights`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: state.date, weight: Math.round(weightKg * 10) / 10 })
+      body: JSON.stringify({ date, weight: Math.round(weightKg * 10) / 10 })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to log weight');
@@ -3782,6 +3847,7 @@ function openProgressTab() {
 
 function openWeightSubtab() {
   weightError.textContent = '';
+  weightDateInput.value = state.date;
   applyWeightUnitUI();
 }
 
@@ -4612,6 +4678,7 @@ document.addEventListener('click', (e) => {
 });
 
 function renderMeals() {
+  openSwipeRow = null;
   mealCards.forEach((card) => {
     const mealKey = card.dataset.meal;
     const items = state.entries.filter((e) => e.meal === mealKey);
@@ -4641,25 +4708,103 @@ function formatMacroGrams(value) {
 }
 
 function buildFoodItem(item) {
-  const li = document.createElement('li');
-  li.className = 'food-item';
+  const wrapper = document.createElement('li');
+  wrapper.className = 'food-item-swipe';
   // .food-info is a column flexbox, so this sibling span (rather than being
   // nested inside .food-name) naturally lands on its own line directly
   // beneath the food name instead of trailing it inline.
   const gramsLine = item.grams ? `<span class="food-grams">${item.grams}g</span>` : '';
-  li.innerHTML = `
-    <div class="food-info">
-      <span class="food-name">${escapeHtml(item.name)}</span>
-      ${gramsLine}
-      <span class="food-macros"><span class="m-protein">P ${formatMacroGrams(item.protein)}g</span> · <span class="m-carbs">C ${formatMacroGrams(item.carbs)}g</span> · <span class="m-fat">F ${formatMacroGrams(item.fat)}g</span></span>
+  wrapper.innerHTML = `
+    <div class="food-item-delete-bg">
+      <button type="button" class="food-item-delete-trigger" aria-label="Delete ${escapeHtml(item.name)}">🗑</button>
     </div>
-    <div class="food-right">
-      <span class="food-kcal">${item.calories} kcal</span>
-      <button class="delete-btn" aria-label="Delete">✕</button>
+    <div class="food-item">
+      <div class="food-info">
+        <span class="food-name">${escapeHtml(item.name)}</span>
+        ${gramsLine}
+        <span class="food-macros"><span class="m-protein">P ${formatMacroGrams(item.protein)}g</span> · <span class="m-carbs">C ${formatMacroGrams(item.carbs)}g</span> · <span class="m-fat">F ${formatMacroGrams(item.fat)}g</span></span>
+      </div>
+      <div class="food-right">
+        <span class="food-kcal">${item.calories} kcal</span>
+      </div>
     </div>
   `;
-  li.querySelector('.delete-btn').addEventListener('click', () => deleteEntry(item.id));
-  return li;
+  attachSwipeToDelete(wrapper, () => deleteEntry(item.id));
+  return wrapper;
+}
+
+// ---------- Swipe-to-delete (diary food rows) ----------
+// Only one row is ever open at a time; opening a new one or tapping outside
+// the currently-open row closes it.
+const SWIPE_DELETE_THRESHOLD = 80;
+const SWIPE_DELETE_OPEN_X = 76;
+let openSwipeRow = null;
+
+function closeSwipeRow(row) {
+  row.classList.remove('food-item-swipe--open');
+  row.querySelector('.food-item').style.transform = '';
+  if (openSwipeRow === row) openSwipeRow = null;
+}
+
+document.addEventListener('touchstart', (e) => {
+  if (openSwipeRow && !openSwipeRow.contains(e.target)) closeSwipeRow(openSwipeRow);
+}, { passive: true });
+document.addEventListener('click', (e) => {
+  if (openSwipeRow && !openSwipeRow.contains(e.target)) closeSwipeRow(openSwipeRow);
+});
+
+function attachSwipeToDelete(wrapper, onDelete) {
+  const content = wrapper.querySelector('.food-item');
+  let startX = 0;
+  let startY = 0;
+  let dx = 0;
+  let dragging = null; // null = undecided, true = horizontal drag, false = vertical scroll
+
+  wrapper.addEventListener('touchstart', (e) => {
+    if (openSwipeRow && openSwipeRow !== wrapper) closeSwipeRow(openSwipeRow);
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    dx = wrapper.classList.contains('food-item-swipe--open') ? -SWIPE_DELETE_OPEN_X : 0;
+    dragging = null;
+    wrapper.classList.add('food-item-swipe--dragging');
+  }, { passive: true });
+
+  wrapper.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    const rawDx = t.clientX - startX;
+    const rawDy = t.clientY - startY;
+    if (dragging === null) {
+      if (Math.abs(rawDx) < 6 && Math.abs(rawDy) < 6) return;
+      dragging = Math.abs(rawDx) > Math.abs(rawDy);
+    }
+    if (!dragging) return;
+    const base = wrapper.classList.contains('food-item-swipe--open') ? -SWIPE_DELETE_OPEN_X : 0;
+    dx = Math.min(0, Math.max(-SWIPE_DELETE_OPEN_X - 12, base + rawDx));
+    content.style.transform = `translate3d(${dx}px, 0, 0)`;
+  }, { passive: true });
+
+  wrapper.addEventListener('touchend', () => {
+    wrapper.classList.remove('food-item-swipe--dragging');
+    if (!dragging) return;
+    if (dx <= -SWIPE_DELETE_THRESHOLD) {
+      wrapper.classList.add('food-item-swipe--open');
+      content.style.transform = `translate3d(${-SWIPE_DELETE_OPEN_X}px, 0, 0)`;
+      openSwipeRow = wrapper;
+    } else {
+      closeSwipeRow(wrapper);
+    }
+    dragging = null;
+  });
+
+  wrapper.querySelector('.food-item-delete-trigger').addEventListener('click', () => {
+    wrapper.style.maxHeight = `${wrapper.scrollHeight}px`;
+    requestAnimationFrame(() => {
+      wrapper.classList.add('food-item-swipe--collapsing');
+      wrapper.style.maxHeight = '0px';
+    });
+    wrapper.addEventListener('transitionend', () => onDelete(), { once: true });
+  });
 }
 
 function computeTotals(entries) {

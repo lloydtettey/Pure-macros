@@ -635,10 +635,16 @@
             <div class="weight-log">
               <span class="profile-label"><span id="weightLogLabel">Log today's weight</span> <span class="unit-hint" id="weightUnitHint">(kg)</span></span>
               <div class="weight-form" id="weightForm">
+                <input type="date" id="weightDateInput" class="weight-date-input" aria-label="Weigh-in date" />
                 <input type="number" id="weightInput" placeholder="Weight (kg)" min="1" step="0.1" />
                 <button type="button" class="btn-add-inline" id="weightSubmitBtn" aria-label="Log weight">+</button>
               </div>
               <p class="form-error" id="weightError"></p>
+              <div class="macro-history-chart-wrap" id="weightChartWrap">
+                <div class="scaled-bar-chart-axis" id="weightChartAxis"></div>
+                <svg class="macro-history-svg" id="weightChartSvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+              </div>
+              <p class="empty-state hidden" id="weightChartEmpty">Log at least two weigh-ins to see your trend line.</p>
               <ul class="weight-timeline" id="weightTimeline"></ul>
             </div>
           </section>

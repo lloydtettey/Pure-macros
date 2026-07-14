@@ -323,7 +323,7 @@ function defaultUserData() {
       },
       activeDayType: null,
       // Diary Settings sub-view
-      diary: { showDecimalMacros: false, quickAddEnabled: false, multiAddDefault: false },
+      diary: { showDecimalMacros: false, quickAddEnabled: true, multiAddDefault: false },
       // Start of the Week sub-view
       weekStart: 'monday',
       // Sharing & Privacy sub-view
@@ -737,17 +737,40 @@ app.get('/api/foods/search', async (req, res) => {
 });
 
 // ---------- Automated Smart Nutrition Lookup Engine ----------
-// A small high-accuracy reference dictionary for common staples (keyed by
-// keyword match against the typed food name), plus a keyword-classified
-// generic fallback for anything else. The fallback's protein/carbs/fat are
-// always derived from its kcal via the 4/4/9 calorie-per-gram rule, so the
-// macro split balances back to the calorie figure exactly.
+// A high-accuracy reference dictionary for common staples and mixed dishes
+// (keyed by keyword match against the typed food name), plus a
+// keyword-classified generic fallback for anything else. The fallback's
+// protein/carbs/fat are always derived from its kcal via the 4/4/9
+// calorie-per-gram rule, so the macro split balances back to the calorie
+// figure exactly.
+//
+// Order matters: entries are matched top-to-bottom with the first keyword
+// hit winning (see findStapleNutrition), so multi-word/narrower entries
+// (e.g. "chicken salad", "brown rice") are listed before the broader
+// single-word staples they'd otherwise collide with (e.g. "chicken", "rice").
+// servingGrams is each staple's typical single-serving weight, used by
+// parsePortionGrams() as the fallback when the typed name has no quantity.
 const NUTRITION_STAPLE_DICTIONARY = [
-  { keywords: ['chicken breast', 'chicken'], name: 'Chicken Breast', kcal: 165, protein: 31, carbs: 0, fat: 3.6 },
-  { keywords: ['white rice', 'cooked rice', 'rice'], name: 'Cooked White Rice', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3 },
-  { keywords: ['oatmeal', 'oats'], name: 'Oatmeal', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9 },
-  { keywords: ['egg'], name: 'Whole Egg', kcal: 155, protein: 13, carbs: 1.1, fat: 11 },
-  { keywords: ['banana'], name: 'Banana', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3 }
+  { keywords: ['chicken salad'], name: 'Chicken Salad', kcal: 190, protein: 16, carbs: 4, fat: 12, servingGrams: 200 },
+  { keywords: ['beef stew'], name: 'Beef Stew', kcal: 120, protein: 9, carbs: 7, fat: 6, servingGrams: 250 },
+  { keywords: ['sirloin steak', 'sirloin'], name: 'Sirloin Steak', kcal: 201, protein: 27, carbs: 0, fat: 10, servingGrams: 170 },
+  { keywords: ['tuna'], name: 'Tuna', kcal: 132, protein: 28, carbs: 0, fat: 1.3, servingGrams: 100 },
+  { keywords: ['whey protein', 'whey'], name: 'Whey Protein', kcal: 400, protein: 80, carbs: 8, fat: 6, servingGrams: 30 },
+  { keywords: ['mixed nuts'], name: 'Mixed Nuts', kcal: 607, protein: 20, carbs: 21, fat: 54, servingGrams: 30 },
+  { keywords: ['peanut butter'], name: 'Peanut Butter', kcal: 588, protein: 25, carbs: 20, fat: 50, servingGrams: 32 },
+  { keywords: ['rice cake'], name: 'Rice Cakes', kcal: 387, protein: 8, carbs: 82, fat: 2.8, servingGrams: 9 },
+  { keywords: ['brown rice'], name: 'Brown Rice', kcal: 123, protein: 2.7, carbs: 25.6, fat: 1, servingGrams: 150 },
+  { keywords: ['baguette'], name: 'Baguette', kcal: 274, protein: 9, carbs: 55, fat: 1.7, servingGrams: 60 },
+  { keywords: ['apple'], name: 'Apple', kcal: 52, protein: 0.3, carbs: 14, fat: 0.2, servingGrams: 182 },
+  { keywords: ['avocado'], name: 'Avocado', kcal: 160, protein: 2, carbs: 8.5, fat: 14.7, servingGrams: 150 },
+  { keywords: ['protein bar'], name: 'Protein Bar', kcal: 375, protein: 30, carbs: 35, fat: 12, servingGrams: 60 },
+  { keywords: ['dark chocolate'], name: 'Dark Chocolate', kcal: 546, protein: 4.9, carbs: 61, fat: 31, servingGrams: 30 },
+  { keywords: ['pasta', 'spaghetti', 'penne'], name: 'Pasta', kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, servingGrams: 140 },
+  { keywords: ['chicken breast', 'chicken'], name: 'Chicken Breast', kcal: 165, protein: 31, carbs: 0, fat: 3.6, servingGrams: 150 },
+  { keywords: ['white rice', 'cooked rice', 'rice'], name: 'Cooked White Rice', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, servingGrams: 150 },
+  { keywords: ['oatmeal', 'oats'], name: 'Oatmeal', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, servingGrams: 40 },
+  { keywords: ['egg'], name: 'Whole Egg', kcal: 155, protein: 13, carbs: 1.1, fat: 11, servingGrams: 50 },
+  { keywords: ['banana'], name: 'Banana', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3, servingGrams: 118 }
 ];
 
 // kcal here is a rough per-100g density guess by food category; the macro
@@ -758,9 +781,52 @@ const NUTRITION_GENERIC_PROFILES = [
   { keywords: ['oil', 'butter', 'avocado', 'nuts', 'almond', 'peanut', 'cheese', 'mayo', 'dressing', 'lard'], kcal: 500, protein: 0.15, carbs: 0.15, fat: 0.7 }
 ];
 const NUTRITION_GENERIC_DEFAULT = { kcal: 200, protein: 0.3, carbs: 0.4, fat: 0.3 };
+const NUTRITION_GENERIC_DEFAULT_SERVING_GRAMS = 100;
+
+// Generic weight-per-unit table for portion words that aren't tied to a
+// specific food (e.g. "2 scoops", "1 tablespoon", "1 medium"). Used by
+// parsePortionGrams() when the typed name has a quantity but no explicit
+// gram figure.
+const PORTION_UNIT_GRAMS = {
+  scoop: 30, scoops: 30,
+  tablespoon: 15, tablespoons: 15, tbsp: 15,
+  teaspoon: 5, teaspoons: 5, tsp: 5,
+  cup: 240, cups: 240,
+  slice: 30, slices: 30,
+  piece: 50, pieces: 50,
+  can: 400, cans: 400,
+  bar: 60, bars: 60,
+  medium: 120, mediums: 120,
+  small: 90, smalls: 90,
+  large: 170, larges: 170,
+  serving: 100, servings: 100
+};
+const PORTION_UNIT_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${Object.keys(PORTION_UNIT_GRAMS).join('|')})\\b`, 'i');
+const PORTION_BARE_UNIT_PATTERN = new RegExp(`\\b(${Object.keys(PORTION_UNIT_GRAMS).join('|')})\\b`, 'i');
 
 function findStapleNutrition(lowerName) {
   return NUTRITION_STAPLE_DICTIONARY.find((entry) => entry.keywords.some((kw) => lowerName.includes(kw))) || null;
+}
+
+// Extracts a portion weight in grams from the typed food name: an explicit
+// gram figure ("150g", "200 grams") wins first, then a quantity+unit portion
+// ("2 scoops", "1 tablespoon", "1 medium"), then a bare unit word with an
+// implicit quantity of 1 ("a medium apple"). Falls back to the matched
+// staple's typical serving size, or a flat 100g for unrecognized foods.
+function parsePortionGrams(lowerName, staple) {
+  const gramsMatch = lowerName.match(/(\d+(?:\.\d+)?)\s*(?:g|gram|grams)\b/);
+  if (gramsMatch) return Math.round(parseFloat(gramsMatch[1]));
+
+  const unitMatch = lowerName.match(PORTION_UNIT_PATTERN);
+  if (unitMatch) {
+    const qty = parseFloat(unitMatch[1]);
+    return Math.round(qty * PORTION_UNIT_GRAMS[unitMatch[2].toLowerCase()]);
+  }
+
+  const bareUnitMatch = lowerName.match(PORTION_BARE_UNIT_PATTERN);
+  if (bareUnitMatch) return PORTION_UNIT_GRAMS[bareUnitMatch[1].toLowerCase()];
+
+  return (staple && staple.servingGrams) || NUTRITION_GENERIC_DEFAULT_SERVING_GRAMS;
 }
 
 function estimateGenericNutrition(foodName, lowerName) {
@@ -776,11 +842,17 @@ function estimateGenericNutrition(foodName, lowerName) {
   };
 }
 
-// POST /api/estimate-nutrition — body: { foodName }. Returns a per-100g
-// { name, kcal, protein, carbs, fat, source } estimate for a typed food name:
+// POST /api/estimate-nutrition — body: { foodName }. Returns
+// { name, kcal, protein, carbs, fat, grams, source } for a typed food name:
 // a match against NUTRITION_STAPLE_DICTIONARY, or a generic 4/4/9-balanced
-// fallback otherwise. Used by the meal-logging forms' custom-food fields to
-// auto-populate macros as the user types a food name.
+// fallback otherwise. kcal/protein/carbs/fat are always a per-100g density
+// (the meal-logging forms' custom-food fields multiply this by their own
+// grams field — see updateFoodPreview client-side — so the density figure
+// must never be pre-scaled here). `grams` is the portion size parsed out of
+// the typed name (e.g. "chicken breast 150g", "2 scoops whey protein"), or
+// the food's standard serving size when the name has no quantity in it; the
+// client uses it to auto-fill the grams field, which is what actually scales
+// the logged totals.
 app.post('/api/estimate-nutrition', (req, res) => {
   const foodName = ((req.body && req.body.foodName) || '').toString().trim();
   if (!foodName) {
@@ -788,10 +860,11 @@ app.post('/api/estimate-nutrition', (req, res) => {
   }
   const lowerName = foodName.toLowerCase();
   const staple = findStapleNutrition(lowerName);
+  const grams = parsePortionGrams(lowerName, staple);
   if (staple) {
-    return res.json({ name: staple.name, kcal: staple.kcal, protein: staple.protein, carbs: staple.carbs, fat: staple.fat, source: 'staple' });
+    return res.json({ name: staple.name, kcal: staple.kcal, protein: staple.protein, carbs: staple.carbs, fat: staple.fat, grams, source: 'staple' });
   }
-  res.json(estimateGenericNutrition(foodName, lowerName));
+  res.json({ ...estimateGenericNutrition(foodName, lowerName), grams });
 });
 
 // POST /api/vision/scan — body: { image: "data:image/...;base64,...", filename? }

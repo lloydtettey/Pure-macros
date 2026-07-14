@@ -974,10 +974,12 @@ body {
 
 .weight-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .weight-form input {
-  flex: 1;
+  flex: 1 1 120px;
+  min-width: 0;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
@@ -991,6 +993,12 @@ body {
   border-color: var(--neon-cyan);
   box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
 }
+.weight-form input.weight-date-input {
+  flex: 1 1 100%;
+  color-scheme: dark;
+}
+:root[data-theme="light"] .weight-form input.weight-date-input { color-scheme: light; }
+.weight-form .btn-add-inline { flex: 0 0 auto; }
 
 .weight-timeline {
   list-style: none;
@@ -1288,6 +1296,52 @@ body {
 }
 .delete-btn:hover { background: #311717; color: var(--danger); }
 :root[data-theme="light"] .delete-btn:hover { background: #ffeaea; color: var(--danger); }
+
+/* ---------- Swipe-to-delete diary rows ---------- */
+/* .food-item-swipe is the overflow-hidden clip layer; .food-item-delete-bg
+   sits underneath, revealed as .food-item (the content layer) translates
+   left. touch-action: pan-y lets the list still scroll vertically while the
+   JS handlers own horizontal drags. */
+.food-item-swipe {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--card-border);
+}
+.food-item-swipe:last-child { border-bottom: none; }
+.food-item-swipe .food-item {
+  position: relative;
+  background: var(--card-bg);
+  border-bottom: none;
+  touch-action: pan-y;
+  will-change: transform;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.food-item-swipe.food-item-swipe--dragging .food-item { transition: none; }
+.food-item-delete-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: var(--danger);
+}
+.food-item-delete-trigger {
+  width: 44px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.food-item-swipe--collapsing {
+  transition: max-height 0.22s ease, opacity 0.18s ease, border-color 0.22s ease;
+  opacity: 0;
+  border-bottom-color: transparent;
+}
 
 .empty-state {
   font-size: 12px;
