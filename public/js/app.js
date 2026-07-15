@@ -9862,29 +9862,3 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
-(function() {
-const originalSetTheme = setTheme;
-window.__themeTimings = [];
-function updateDebugOverlay() {
-let overlay = document.getElementById('theme-debug-overlay');
-if (!overlay) {
-overlay = document.createElement('div');
-overlay.id = 'theme-debug-overlay';
-overlay.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.9);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:999999;max-height:150px;overflow-y:auto;white-space:pre;';
-document.body.appendChild(overlay);
-}
-const recent = window.__themeTimings.slice(-10);
-const lines = recent.map((t, i) => {
-const num = window.__themeTimings.length - recent.length + i + 1;
-return 'Swap ' + num + ': ' + t.toFixed(1) + 'ms';
-});
-overlay.textContent = lines.join('\n');
-}
-setTheme = function(preference) {
-const start = performance.now();
-originalSetTheme(preference);
-const elapsed = performance.now() - start;
-window.__themeTimings.push(elapsed);
-updateDebugOverlay();
-};
-})();
