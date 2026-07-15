@@ -9862,24 +9862,3 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
-(function() {
-const originalSetTheme = setTheme;
-let timings = [];
-try { timings = JSON.parse(localStorage.getItem('__themeTimings') || '[]'); } catch(e) {}
-setTheme = function(preference) {
-const start = performance.now();
-originalSetTheme(preference);
-const elapsed = performance.now() - start;
-timings.push(elapsed);
-try { localStorage.setItem('__themeTimings', JSON.stringify(timings)); } catch(e) {}
-};
-window.showThemeTimings = function() {
-let t = [];
-try { t = JSON.parse(localStorage.getItem('__themeTimings') || '[]'); } catch(e) {}
-alert(t.length ? t.map((v, i) => 'Swap ' + (i+1) + ': ' + v.toFixed(1) + 'ms').join('\n') : 'No timings recorded yet');
-};
-window.clearThemeTimings = function() {
-localStorage.removeItem('__themeTimings');
-alert('Cleared');
-};
-})();
