@@ -9864,14 +9864,22 @@ function escapeHtml(str) {
 }
 (function() {
 const originalSetTheme = setTheme;
-window.__themeTimings = [];
+let timings = [];
+try { timings = JSON.parse(localStorage.getItem('__themeTimings') || '[]'); } catch(e) {}
 setTheme = function(preference) {
 const start = performance.now();
 originalSetTheme(preference);
 const elapsed = performance.now() - start;
-window.__themeTimings.push(elapsed);
+timings.push(elapsed);
+try { localStorage.setItem('__themeTimings', JSON.stringify(timings)); } catch(e) {}
 };
 window.showThemeTimings = function() {
-alert(window.__themeTimings.map((t, i) => 'Swap ' + (i+1) + ': ' + t.toFixed(1) + 'ms').join('\n'));
+let t = [];
+try { t = JSON.parse(localStorage.getItem('__themeTimings') || '[]'); } catch(e) {}
+alert(t.length ? t.map((v, i) => 'Swap ' + (i+1) + ': ' + v.toFixed(1) + 'ms').join('\n') : 'No timings recorded yet');
+};
+window.clearThemeTimings = function() {
+localStorage.removeItem('__themeTimings');
+alert('Cleared');
 };
 })();
