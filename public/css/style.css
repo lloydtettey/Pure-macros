@@ -32,8 +32,8 @@ html, body { background: #0f0f12; color: #fff; }
   --pad-sm: 16px;
   --pad-lg: 24px;
 
-  --shadow-card: none;
-  --shadow-card-hover:none;
+  --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.55);
+  --shadow-card-hover: 0 6px 26px rgba(0, 0, 0, 0.7);
   --input-bg: #1c1c1f;
   --track-bg: #2a2b30;
   --chrome-bg: #0a0a0c;
@@ -61,8 +61,8 @@ html, body { background: #0f0f12; color: #fff; }
   --text-1: #14141a;
   --text-2: #55555f;
   --text-3: #83838d;
-  --shadow-card:none;
-  --shadow-card-hover:none;
+  --shadow-card: 0 4px 18px rgba(20, 20, 40, 0.1);
+  --shadow-card-hover: 0 6px 26px rgba(20, 20, 40, 0.16);
   --input-bg: #f1f2f4;
   /* Deep charcoal/slate track — sharp and clearly visible under neon fills. */
   --track-bg: #334155;
@@ -3630,7 +3630,7 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-   backdrop-filter: none/* was blur(6px)*/;
+  backdrop-filter: blur(6px);
 }
 
 .recipe-modal-body { padding: 18px 20px 28px; }
@@ -3818,7 +3818,7 @@ html.has-session .auth-overlay {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: none/* was blur(6px)*/;
+  backdrop-filter: blur(6px);
 }
 
 .workout-modal-body { padding: 18px 20px 28px; }
@@ -3997,7 +3997,7 @@ html.has-session .auth-overlay {
   --text-2: #5b5f6b;
   --text-3: #8b8f9a;
   --input-bg: #f4f6f9;
-  --shadow-card:none;
+  --shadow-card: 0 4px 14px rgba(20, 20, 40, 0.08);
 }
 
 .pw-panel {
