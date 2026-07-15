@@ -9862,3 +9862,16 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+(function() {
+const originalSetTheme = setTheme;
+window.__themeTimings = [];
+setTheme = function(preference) {
+const start = performance.now();
+originalSetTheme(preference);
+const elapsed = performance.now() - start;
+window.__themeTimings.push(elapsed);
+};
+window.showThemeTimings = function() {
+alert(window.__themeTimings.map((t, i) => 'Swap ' + (i+1) + ': ' + t.toFixed(1) + 'ms').join('\n'));
+};
+})();
