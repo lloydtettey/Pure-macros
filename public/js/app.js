@@ -876,7 +876,7 @@ function setTheme(preference) {
     document.body.classList.remove('no-transitions');
     themeTimeout = null;
     themeToggleLocked = false;
-  }, 300);
+  }, 700);
 }
 
 // Boot-time theme scan: never let a corrupt localStorage value or a thrown
