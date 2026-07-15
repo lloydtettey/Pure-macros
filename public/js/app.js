@@ -6294,22 +6294,24 @@ function openSubView(view) {
   requestAnimationFrame(() => view.classList.add('open'));
 }
 function closeSubView(view) {
-  view.classList.remove('open');
-  const idx = subViewStack.indexOf(view);
-  if (idx !== -1) subViewStack.splice(idx, 1);
-  const base = currentBase();
-  if (base) base.classList.remove('subview-covered');
-
-  // Marks the view fully closed once its slide-out transition ends, so a
-  // rapid re-open can't race the tail of the previous close. Guards against
-  // bubbled transitionend from children (e.g. an inner card) and against a
-  // stale listener firing after the view was reopened mid-transition.
-  function finishClose(e) {
-    if (e.target !== view || view.classList.contains('open')) return;
-    view.classList.add('subview-closed');
-    view.removeEventListener('transitionend', finishClose);
-  }
-  view.addEventListener('transitionend', finishClose);
+view.classList.remove('open');
+const idx = subViewStack.indexOf(view);
+if (idx !== -1) subViewStack.splice(idx, 1);
+const base = currentBase();
+if (base) base.classList.remove('subview-covered');
+let closed = false;
+const markClosed = () => {
+if (closed) return;
+closed = true;
+view.classList.add('subview-closed');
+view.removeEventListener('transitionend', finishClose);
+};
+const finishClose = (e) => {
+if (e.target !== view || view.classList.contains('open')) return;
+markClosed();
+};
+view.addEventListener('transitionend', finishClose);
+setTimeout(markClosed, 320);
 }
 
 // Native iOS-style "swipe from the left edge to pop the screen" gesture for

@@ -126,6 +126,7 @@ select, input, textarea {
    compositing instead of just sitting at opacity:0 behind an opaque sheet —
    the fix for text bleeding through stacked full-screen views on iOS Safari. */
 .subview-covered { display: none !important; }
+.settings-view.subview-closed { display: none !important; }
 
 html, body { height: 100%; max-width: 100vw; overflow-x: hidden; }
 
