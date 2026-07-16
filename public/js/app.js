@@ -6377,6 +6377,40 @@ view.addEventListener('transitionend', finishClose);
 setTimeout(markClosed, 320);
 }
 
+function countStuckViews() {
+  let stuck = 0;
+  document.querySelectorAll('*').forEach(el => {
+    const cs = getComputedStyle(el);
+    if (cs.opacity === '0' && cs.pointerEvents === 'none' && cs.display !== 'none') {
+      stuck++;
+    }
+  });
+  return stuck;
+}
+
+(function trackStuckViews() {
+  const history = [];
+
+  function updateOverlay() {
+    const stuckCount = countStuckViews();
+    const totalNodes = document.querySelectorAll('*').length;
+    history.push(stuckCount);
+    if (history.length > 15) history.shift();
+
+    let overlay = document.getElementById('stuck-view-tracker');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'stuck-view-tracker';
+      overlay.style.cssText = 'position:fixed;top:40px;right:8px;z-index:999999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:12px;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre;';
+      document.body.appendChild(overlay);
+    }
+    overlay.textContent = 'Stuck: ' + stuckCount + '  Nodes: ' + totalNodes + '\nTrend: ' + history.join(',');
+  }
+
+  setInterval(updateOverlay, 2000);
+  updateOverlay();
+})();
+
 // Native iOS-style "swipe from the left edge to pop the screen" gesture for
 // every full-screen .settings-view sub-view (the More tab's 13 subpages plus
 // their nested Settings screens). Purely additive — it drives the same
