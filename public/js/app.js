@@ -24,6 +24,36 @@ if ('serviceWorker' in navigator) {
 }
 
 const API = '/api';
+
+// ---------- Direct-to-Cloudinary image uploads ----------
+// Weight-log and meal-scan photos upload straight from the browser to
+// Cloudinary (unsigned preset) instead of being base64-encoded into our own
+// API requests — keeps multi-MB phone photos off our JSON bodies entirely.
+let mediaConfigPromise = null;
+function getMediaConfig() {
+  if (!mediaConfigPromise) {
+    mediaConfigPromise = fetch(`${API}/media/config`).then((res) => res.json());
+  }
+  return mediaConfigPromise;
+}
+
+// Uploads a File/Blob to Cloudinary and resolves with its secure_url. Throws
+// if Cloudinary isn't configured or the upload fails — callers surface that
+// as a toast rather than falling back to a base64 upload.
+async function uploadImageToCloudinary(file) {
+  const { cloudName, uploadPreset } = await getMediaConfig();
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Image uploads are not configured on this server');
+  }
+  const body = new FormData();
+  body.append('file', file);
+  body.append('upload_preset', uploadPreset);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Image upload failed');
+  return data.secure_url;
+}
+
 const CUSTOM_FOOD_ID = '__custom__';
 // Foods surfaced by the live universal search (/api/foods/search) aren't part
 // of the local FOOD_DB reference list, so they're cached here by id — lets
@@ -507,7 +537,7 @@ const addWeightPhotoRow = document.getElementById('addWeightPhotoRow');
 const addWeightPhotoValue = document.getElementById('addWeightPhotoValue');
 const addWeightPhotoInput = document.getElementById('addWeightPhotoInput');
 const addWeightPhotoPreview = document.getElementById('addWeightPhotoPreview');
-let addWeightPending = { weightKg: null, date: null, photo: null };
+let addWeightPending = { weightKg: null, date: null, photo: null, photoUploadPromise: null };
 
 const weightWheelSheet = document.getElementById('weightWheelSheet');
 const weightWheelBackdrop = document.getElementById('weightWheelBackdrop');
@@ -3857,17 +3887,32 @@ addWeightPhotoInput.addEventListener('change', () => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    addWeightPending.photo = reader.result;
-    addWeightPhotoPreview.src = reader.result;
+    addWeightPhotoPreview.src = reader.result; // instant local preview
     addWeightPhotoPreview.classList.remove('hidden');
-    addWeightPhotoValue.textContent = 'Photo added';
   };
   reader.readAsDataURL(file);
+
+  addWeightPending.photo = null;
+  addWeightPhotoValue.textContent = 'Uploading photo…';
+  // Stashed as a promise rather than awaited here — Save resolves it right
+  // before submitting, so picking a photo never blocks the UI thread.
+  addWeightPending.photoUploadPromise = uploadImageToCloudinary(file)
+    .then((url) => {
+      addWeightPending.photo = url;
+      addWeightPhotoValue.textContent = 'Photo added';
+      return url;
+    })
+    .catch((err) => {
+      addWeightPhotoValue.textContent = 'Add photo';
+      addWeightPhotoPreview.classList.add('hidden');
+      showToast(err.message, true);
+      return null;
+    });
 });
 
 function openAddWeightScreen() {
   const latestKg = state.weights[0]?.weight ?? null;
-  addWeightPending = { weightKg: latestKg, date: state.date, photo: null };
+  addWeightPending = { weightKg: latestKg, date: state.date, photo: null, photoUploadPromise: null };
   addWeightValueDisplay.textContent = latestKg ? formatWeightStLbFraction(kgToLbs(latestKg)) : 'Set weight';
   addWeightDateDisplay.textContent = formatAddWeightDateDisplay(state.date);
   addWeightDateInput.max = todayStr();
@@ -3888,6 +3933,7 @@ addWeightSaveBtn.addEventListener('click', async () => {
     return;
   }
   try {
+    if (addWeightPending.photoUploadPromise) await addWeightPending.photoUploadPromise;
     const res = await authFetch(`${API}/weights`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -5280,15 +5326,16 @@ async function handleInlineAddSubmit(e, card) {
 function handleScanFileSelected(input, meal) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => startScan(reader.result, file.name, meal);
-  reader.readAsDataURL(file);
+  // Instant local preview via object URL while the real upload runs in the
+  // background — startScan() only needs the Cloudinary URL once it resolves.
+  const previewUrl = URL.createObjectURL(file);
+  startScan(file, previewUrl, file.name, meal);
   input.value = '';
 }
 
-async function startScan(dataUrl, filename, meal) {
+async function startScan(file, previewUrl, filename, meal) {
   scanContext = null;
-  scanImagePreview.src = dataUrl;
+  scanImagePreview.src = previewUrl;
   scanDetectedName.textContent = 'Analyzing plate…';
   scanConfidence.textContent = '';
   scanError.textContent = '';
@@ -5297,10 +5344,11 @@ async function startScan(dataUrl, filename, meal) {
   scanOverlay.classList.add('open');
 
   try {
+    const imageUrl = await uploadImageToCloudinary(file);
     const res = await authFetch(`${API}/vision/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: dataUrl, filename })
+      body: JSON.stringify({ imageUrl, filename })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Scan failed');

@@ -1,11 +1,20 @@
 require('dotenv').config();
 const express = require('express');
+// Patches Express to forward a rejected async route handler to error-handling
+// middleware instead of leaving it unhandled. Moving storage from a local
+// file to a networked Postgres connection makes a transient failure
+// (dropped connection, pool exhausted) an actual possibility in a way local
+// disk I/O never realistically was — without this, that rejection would be
+// an uncaught promise rejection, which crashes the whole Node process (every
+// in-flight request, every user) instead of failing just the one request.
+require('express-async-errors');
 const path = require('path');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const { readDb, writeDb } = require('./db');
+const { isBase64Image, isHttpUrl, resolveImageUrl } = require('./lib/cloudinary');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +47,14 @@ function verifyAppleIdentityToken(identityToken) {
   });
 }
 
-app.use(express.json({ limit: '12mb' })); // raised limit — scanned plate photos arrive as base64 JSON
+// Scanned plate photos and weight-log photos now upload directly from the
+// browser to Cloudinary (see public/js/app.js uploadImageToCloudinary) and
+// only a short URL crosses this JSON body — the 12mb base64 allowance is no
+// longer needed. A generous-but-bounded limit stays in place only as a
+// fallback for callers that still post a raw base64 data URL (resolved to
+// Cloudinary server-side in resolveImageUrl() below) — sized for an
+// occasional full-resolution phone photo, not routine traffic.
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ---------- iOS Home Screen standalone app routing ----------
@@ -654,6 +670,18 @@ app.get('/api/oauth/config', (req, res) => {
   });
 });
 
+// GET /api/media/config — cloud name + unsigned upload preset for direct
+// browser-to-Cloudinary uploads (weight-log photos, scanned plate photos).
+// Neither value is secret: the cloud name is part of every Cloudinary asset
+// URL, and an unsigned preset only grants "create a new asset in this
+// folder shape" — no read/list/delete/API-secret capability.
+app.get('/api/media/config', (req, res) => {
+  res.json({
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || null,
+    uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || null
+  });
+});
+
 // ---------- Universal food search (Open Food Facts) ----------
 // Open Food Facts is a free, public, crowd-sourced nutrition database
 // covering real-world foods worldwide — no API key/signup required. It
@@ -882,16 +910,31 @@ app.post('/api/estimate-nutrition', (req, res) => {
   res.json({ ...estimateGenericNutrition(foodName, lowerName), grams });
 });
 
-// POST /api/vision/scan — body: { image: "data:image/...;base64,...", filename? }
-// Simulated high-precision food detector. See detectFoodFromImage() above for
-// why this doesn't call an external vision API.
-app.post('/api/vision/scan', requireAuth, (req, res) => {
-  const { image, filename } = req.body || {};
-  if (typeof image !== 'string' || !/^data:image\/[a-z0-9.+-]+;base64,/i.test(image)) {
-    return res.status(400).json({ error: 'image must be a base64 data URL (e.g. data:image/jpeg;base64,...)' });
+// POST /api/vision/scan — body: { imageUrl, filename? } (preferred — the
+// client already uploaded the photo straight to Cloudinary and this is just
+// its secure_url), or { image: "data:image/...;base64,...", filename? } as a
+// fallback for callers that still send the raw photo, which gets uploaded to
+// Cloudinary here before detection runs. Simulated high-precision food
+// detector — see detectFoodFromImage() above for why this doesn't call an
+// external vision API; it works the same whether handed a data URL or a
+// plain image URL, since it only ever hashes whatever string it's given.
+app.post('/api/vision/scan', requireAuth, async (req, res) => {
+  const { image, imageUrl, filename } = req.body || {};
+  let resolvedUrl = imageUrl;
+  if (!resolvedUrl) {
+    if (!isBase64Image(image)) {
+      return res.status(400).json({ error: 'imageUrl or a base64 image data URL is required' });
+    }
+    try {
+      resolvedUrl = await resolveImageUrl(image, `pure-macros/${req.userId}/vision-scans`);
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to upload scan photo' });
+    }
+  } else if (!isHttpUrl(resolvedUrl)) {
+    return res.status(400).json({ error: 'imageUrl must be an http(s) URL' });
   }
 
-  const { food, grams, confidence } = detectFoodFromImage(image, filename);
+  const { food, grams, confidence } = detectFoodFromImage(resolvedUrl, filename);
   const macros = computeFromGrams(food, grams);
 
   res.json({
@@ -1243,8 +1286,10 @@ app.get('/api/weights', requireAuth, async (req, res) => {
 
 // POST /api/weights — body: { date, weight, photo? }. One entry per date;
 // logging again for the same date updates that entry instead of creating a
-// duplicate. photo (optional) is a base64 image data URL, same shape as the
-// vision-scan upload — a progress photo attached to that day's weigh-in.
+// duplicate. photo (optional) is normally an https Cloudinary URL — the
+// client uploads the progress photo directly to Cloudinary and passes back
+// its secure_url — but a base64 image data URL is also accepted as a
+// fallback and gets uploaded to Cloudinary here instead of being stored inline.
 app.post('/api/weights', requireAuth, async (req, res) => {
   const { date, weight, photo } = req.body || {};
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
@@ -1253,8 +1298,16 @@ app.post('/api/weights', requireAuth, async (req, res) => {
   if (typeof weight !== 'number' || Number.isNaN(weight) || weight <= 0) {
     return res.status(400).json({ error: 'weight must be a positive number' });
   }
-  if (photo !== undefined && photo !== null && !/^data:image\/[a-z0-9.+-]+;base64,/i.test(photo)) {
-    return res.status(400).json({ error: 'photo must be a base64 image data URL' });
+  if (photo !== undefined && photo !== null && !isBase64Image(photo) && !isHttpUrl(photo)) {
+    return res.status(400).json({ error: 'photo must be a base64 image data URL or an https URL' });
+  }
+  let photoUrl;
+  if (photo) {
+    try {
+      photoUrl = await resolveImageUrl(photo, `pure-macros/${req.userId}/weight-logs`);
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to upload photo' });
+    }
   }
 
   const weightLogs = req.db.userdata[req.userId].weightLogs;
@@ -1262,11 +1315,11 @@ app.post('/api/weights', requireAuth, async (req, res) => {
   let entry;
   if (existing) {
     existing.weight = weight;
-    if (photo !== undefined) existing.photo = photo || null;
+    if (photo !== undefined) existing.photo = photoUrl || null;
     existing.createdAt = new Date().toISOString();
     entry = existing;
   } else {
-    entry = { id: crypto.randomUUID(), date, weight, photo: photo || null, createdAt: new Date().toISOString() };
+    entry = { id: crypto.randomUUID(), date, weight, photo: photoUrl || null, createdAt: new Date().toISOString() };
     weightLogs.push(entry);
   }
   await writeDb(req.db);
@@ -1872,6 +1925,15 @@ app.get('/api/day', requireAuth, async (req, res) => {
 // on the app shell instead of a dead page.
 app.get(/^\/(?!api\/).*/, (req, res) => {
   res.status(200).sendFile(INDEX_HTML_PATH);
+});
+
+// Final error handler — catches anything a route threw/rejected (requires
+// express-async-errors above to also catch async rejections, not just sync
+// throws) and responds with a plain 500 instead of letting it crash the
+// process or hang the request.
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {

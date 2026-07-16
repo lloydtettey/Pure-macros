@@ -115,7 +115,12 @@
       "Bash(NODE_PATH=\"C:\\\\Users\\\\lloyd\\\\calorie-tracker-app\\\\node_modules\" node \"C:\\\\Users\\\\lloyd\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lloyd-calorie-tracker-app\\\\2abd9bdb-5d1a-4797-b8ca-fbac66d43c4b\\\\scratchpad\\\\verify2.js\")",
       "Bash(xargs wc -l)",
       "Bash(sort -u -t: -k2)",
-      "Bash(powershell -Command \"Get-Content public/js/app.js | Select-String -Pattern 'DOMContentLoaded' -SimpleMatch\")"
+      "Bash(powershell -Command \"Get-Content public/js/app.js | Select-String -Pattern 'DOMContentLoaded' -SimpleMatch\")",
+      "Bash(pg_lsclusters)",
+      "Bash(PORT=51234 DATABASE_URL=\"postgresql://user:pass@localhost:5432/db\" CLOUDINARY_CLOUD_NAME=demo CLOUDINARY_UPLOAD_PRESET=demo_preset node server/server.js)",
+      "Bash(PORT=51235 DATABASE_URL=\"postgresql://user:pass@localhost:5432/db\" CLOUDINARY_CLOUD_NAME=demo CLOUDINARY_UPLOAD_PRESET=demo_preset node server/server.js)",
+      "Bash(PORT=51236 DATABASE_URL=\"postgresql://user:pass@localhost:5432/db\" CLOUDINARY_CLOUD_NAME=demo CLOUDINARY_UPLOAD_PRESET=demo_preset node server/server.js)",
+      "Bash(jobs)"
     ]
   }
 }
