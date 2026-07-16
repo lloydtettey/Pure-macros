@@ -1,3 +1,18 @@
+// Global tap guard — ignores any click/tap that fires within 300ms of the
+// previous one, anywhere in the app, so double-taps and rapid re-fires
+// (common on iOS Safari) don't trigger a handler twice. Capture phase so it
+// runs before any other click listener gets a chance to act.
+let lastGlobalTapAt = 0;
+document.addEventListener('click', (e) => {
+  const now = Date.now();
+  if (now - lastGlobalTapAt < 300) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+  lastGlobalTapAt = now;
+}, true);
+
 // Cache-first PWA service worker — registered after the page load event so it
 // never competes with the initial render for network/CPU time.
 if ('serviceWorker' in navigator) {
